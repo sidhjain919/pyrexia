@@ -1,0 +1,259 @@
+import { useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { Phone, Ticket, ArrowRight } from 'lucide-react'
+import { territories } from '../data/events'
+import { territoryPhoto, territoryFocus } from '../data/media'
+import { Icon } from '../lib/icons'
+import { Reveal, SectionTitle, Compass } from './primitives'
+import { useRegistration } from '../registration/context'
+import { useNavTo } from './routing'
+
+export default function IslandMap({ preview = false }: { preview?: boolean }) {
+  const reduce = useReducedMotion()
+  const { openRegister } = useRegistration()
+  const navTo = useNavTo()
+  const [activeId, setActiveId] = useState('chorea')
+  const active = territories.find((t) => t.id === activeId)!
+
+  // route path through territories (visual only)
+  const route = territories.map((t) => `${t.map.x},${t.map.y}`).join(' ')
+
+  return (
+    <section id="island" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(80% 60% at 50% 40%, rgba(23,74,82,0.16), transparent 70%)' }}
+      />
+      <div className="relative mx-auto max-w-6xl px-6">
+        <SectionTitle
+          index="02"
+          eyebrow="Explore the Island"
+          title="Eleven Territories"
+          kicker="Every vertical of PYREXIA is a stretch of the lost island. Chart a marker to discover what waits there."
+        />
+
+        <div className="mt-14 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
+          {/* MAP */}
+          <Reveal>
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl frame-gold map-grid bg-[#071b22] sm:aspect-[16/11]">
+              {/* island landmass */}
+              <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
+                <defs>
+                  <radialGradient id="land" cx="50%" cy="45%" r="60%">
+                    <stop offset="0%" stopColor="#123a2c" />
+                    <stop offset="70%" stopColor="#0c2a26" />
+                    <stop offset="100%" stopColor="#0a2029" />
+                  </radialGradient>
+                </defs>
+                <path
+                  d="M50 8 C64 8 72 16 78 26 C88 30 92 42 90 54 C94 64 88 78 76 84 C70 92 56 94 48 90 C36 94 22 90 16 80 C6 74 8 60 12 52 C6 42 12 28 24 24 C30 14 40 8 50 8 Z"
+                  fill="url(#land)"
+                  stroke="#2b7d84"
+                  strokeWidth="0.4"
+                  opacity="0.9"
+                />
+                {/* contour rings */}
+                {[20, 30, 40].map((r) => (
+                  <path
+                    key={r}
+                    d={`M50 ${50 - r * 0.7} C${50 + r * 0.7} ${50 - r * 0.7} ${50 + r * 0.7} ${50 + r * 0.7} 50 ${50 + r * 0.7} C${50 - r * 0.7} ${50 + r * 0.7} ${50 - r * 0.7} ${50 - r * 0.7} 50 ${50 - r * 0.7} Z`}
+                    fill="none"
+                    stroke="#c89b3c"
+                    strokeWidth="0.15"
+                    opacity="0.16"
+                  />
+                ))}
+                {/* dotted route */}
+                <motion.polyline
+                  points={route}
+                  fill="none"
+                  stroke="#c89b3c"
+                  strokeWidth="0.35"
+                  strokeDasharray="1 1.6"
+                  opacity="0.55"
+                  initial={reduce ? undefined : { pathLength: 0 }}
+                  whileInView={{ pathLength: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 2.4, ease: 'easeInOut' }}
+                />
+              </svg>
+
+              {/* compass rose */}
+              <div className="pointer-events-none absolute bottom-3 right-3 opacity-40 sm:bottom-5 sm:right-5">
+                <Compass size={78} />
+              </div>
+              <div className="pointer-events-none absolute left-4 top-3 font-log text-[0.55rem] uppercase tracking-cinema text-gold/50">
+                The Lost Island · Chart No. VI
+              </div>
+
+              {/* markers */}
+              {territories.map((t) => {
+                const on = t.id === activeId
+                return (
+                  <button
+                    key={t.id}
+                    onMouseEnter={() => !reduce && setActiveId(t.id)}
+                    onFocus={() => setActiveId(t.id)}
+                    onClick={() => setActiveId(t.id)}
+                    data-cursor="OPEN"
+                    aria-label={`${t.code} — ${t.territory}`}
+                    className="group absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: `${t.map.x}%`, top: `${t.map.y}%` }}
+                  >
+                    {/* pulse */}
+                    <span
+                      className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                      style={{
+                        background: t.accent,
+                        opacity: on ? 0.4 : 0,
+                        animation: on && !reduce ? 'pulsemark 1.8s ease-out infinite' : 'none',
+                      }}
+                    />
+                    <span
+                      className="relative flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-300"
+                      style={{
+                        borderColor: on ? t.accent : 'rgba(200,155,60,0.5)',
+                        background: on ? t.accent : 'rgba(6,20,27,0.8)',
+                        boxShadow: on ? `0 0 18px ${t.accent}` : 'none',
+                        transform: on ? 'scale(1.15)' : 'scale(1)',
+                      }}
+                    >
+                      <Icon
+                        name={t.icon}
+                        size={13}
+                        style={{ color: on ? '#04141b' : '#e6c25e' }}
+                      />
+                    </span>
+                    <span
+                      className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap font-log text-[0.5rem] uppercase tracking-wide2 transition-opacity ${
+                        on ? 'opacity-100' : 'opacity-0 group-hover:opacity-70'
+                      }`}
+                      style={{ color: t.accent }}
+                    >
+                      {t.territory}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </Reveal>
+
+          {/* DETAIL PANEL */}
+          <div className="relative min-h-[420px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.id}
+                initial={reduce ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -12 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                className="glass sticky top-24 overflow-hidden rounded-xl"
+              >
+                {/* territory photo */}
+                <div className="relative h-40 overflow-hidden">
+                  <img
+                    src={territoryPhoto[active.id]}
+                    alt={active.code}
+                    className="h-full w-full object-cover"
+                    style={{ objectPosition: territoryFocus[active.id] ?? '50% 28%' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b1e26] via-[#0b1e26]/40 to-transparent" />
+                  <span
+                    className="absolute bottom-3 left-4 font-log text-[0.56rem] uppercase tracking-cinema"
+                    style={{ color: active.accent }}
+                  >
+                    {active.territory}
+                  </span>
+                </div>
+
+                <div className="p-7 pt-5">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="flex h-11 w-11 items-center justify-center rounded-lg"
+                    style={{ background: `${active.accent}22`, border: `1px solid ${active.accent}66` }}
+                  >
+                    <Icon name={active.icon} size={20} style={{ color: active.accent }} />
+                  </span>
+                  <div>
+                    <div className="font-log text-[0.58rem] uppercase tracking-cinema text-gold/60">
+                      {active.territory}
+                    </div>
+                    <h3 className="font-display text-2xl leading-none text-offwhite">{active.code}</h3>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-[0.82rem] uppercase tracking-wide2 text-parchment/60">
+                  {active.subtitle}
+                </p>
+                <p className="mt-3 text-[0.92rem] leading-relaxed text-parchment/75">{active.blurb}</p>
+
+                <div className="my-5 rule-gold" />
+
+                <div className="flex flex-wrap gap-2">
+                  {active.events.map((e) => (
+                    <button
+                      key={e.name}
+                      onClick={() => openRegister(e.name)}
+                      data-cursor="REGISTER"
+                      className="rounded-full border border-gold/20 bg-ocean/50 px-3 py-1.5 text-[0.72rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright"
+                      title={`Register for ${e.name} — ${e.tag}`}
+                    >
+                      {e.name}
+                    </button>
+                  ))}
+                </div>
+
+                {active.contacts.length > 0 && (
+                  <div className="mt-6">
+                    <div className="font-log text-[0.56rem] uppercase tracking-cinema text-gold/50">
+                      Territory Wardens
+                    </div>
+                    <div className="mt-2 flex flex-col gap-1.5">
+                      {active.contacts.slice(0, 3).map((c) => (
+                        <a
+                          key={c.phone}
+                          href={`tel:${c.phone}`}
+                          data-cursor="CALL"
+                          className="flex items-center gap-2 text-[0.82rem] text-parchment/70 transition-colors hover:text-gold-bright"
+                        >
+                          <Phone size={12} className="text-gold/60" />
+                          <span className="text-offwhite/90">{c.name}</span>
+                          <span className="text-parchment/50">· {c.phone}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => openRegister(active.events.length === 1 ? active.events[0].name : undefined)}
+                  data-cursor="REGISTER"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                >
+                  <Ticket size={14} />
+                  Register for {active.code}
+                </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {preview && (
+          <Reveal>
+            <div className="mt-12 flex justify-center">
+              <button
+                onClick={() => navTo('/events')}
+                data-cursor="ALL"
+                className="group flex items-center gap-2 rounded-full px-7 py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
+              >
+                Explore all 60+ events
+                <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+          </Reveal>
+        )}
+      </div>
+    </section>
+  )
+}

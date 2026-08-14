@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2306141b' stroke='%23c89b3c' stroke-width='4'/%3E%3Cpolygon points='50,18 58,50 50,58 42,50' fill='%23b1341f'/%3E%3Cpolygon points='50,82 58,50 50,42 42,50' fill='%23e8d5ae'/%3E%3C/svg%3E"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#06141b" />
+    <meta
+      name="description"
+      content="PYREXIA 2026 — Pirates of the Lost Island. The annual socio-cultural and sports fest of AIIMS Rishikesh. The island has been lost. The treasure is waiting."
+    />
+    <meta property="og:title" content="PYREXIA 2026 · Pirates of the Lost Island" />
+    <meta property="og:description" content="The annual socio-cultural & sports fest of AIIMS Rishikesh. Your voyage begins here." />
+    <meta property="og:type" content="website" />
+    <title>PYREXIA 2026 · Pirates of the Lost Island · AIIMS Rishikesh</title>
+    <!-- Decodes the deep-link redirect from 404.html (spa-github-pages) -->
+    <script type="text/javascript">
+      ;(function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash)
+        }
+      })(window.location)
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
