@@ -1,8 +1,8 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
-import { Compass, StaggerWords } from './primitives'
+import { StaggerWords } from './primitives'
+import { Chest, Sun, Palm, Coin } from './art'
 import { SITE } from '../data/site'
-import { sectionPhoto } from '../data/media'
 import { useRegistration } from '../registration/context'
 import { useNavTo } from './routing'
 
@@ -11,76 +11,35 @@ export default function CTA() {
   const { openRegister } = useRegistration()
   const navTo = useNavTo()
   return (
-    <section id="register" className="grain relative overflow-hidden py-20 sm:py-28 lg:py-32">
-      {/* photo atmosphere */}
-      <img src={sectionPhoto.cta} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" />
-      <div className="absolute inset-0 bg-gradient-to-b from-abyss via-ocean/90 to-abyss" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(90% 70% at 50% 100%, rgba(200,155,60,0.16), transparent 60%)' }}
-      />
-      <div className="map-grid pointer-events-none absolute inset-0 opacity-20" />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 -z-0 -translate-x-1/2 -translate-y-1/2 opacity-[0.07]"
-        animate={reduce ? undefined : { rotate: 360 }}
-        transition={{ duration: 120, repeat: Infinity, ease: 'linear' }}
-      >
-        <Compass size={520} spin={false} />
-      </motion.div>
+    <section id="register" className="relative overflow-hidden py-20 sm:py-28" style={{ background: 'linear-gradient(180deg,#ffd98a 0%, #ffb267 45%, #ff7d53 100%)' }}>
+      <Sun size={150} className="absolute left-1/2 top-8 -translate-x-1/2 anim-sun opacity-90" />
+      <Palm size={200} className="absolute -bottom-2 left-0 anim-sway drop-ink" />
+      <Palm size={190} flip className="absolute -bottom-2 right-0 anim-sway drop-ink" />
+      <div className="map-dots pointer-events-none absolute inset-0 opacity-25" />
 
       <div className="relative mx-auto max-w-3xl px-6 text-center">
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="font-log text-[0.66rem] uppercase tracking-cinema text-gold/70"
-        >
-          X marks the spot
-        </motion.p>
-
-        <h2 className="mt-5 font-display text-4xl leading-[1.02] text-offwhite sm:text-6xl">
+        <div className="flex justify-center gap-2">
+          <Coin size={30} className="anim-bob" /><Coin size={30} className="anim-bob" style={{ animationDelay: '.3s' }} /><Coin size={30} className="anim-bob" style={{ animationDelay: '.6s' }} />
+        </div>
+        <p className="mt-3 font-hand text-3xl text-red">X marks the spot!</p>
+        <h2 className="mt-2 font-display text-4xl leading-[1.05] text-cream sm:text-6xl title-stroke">
           <StaggerWords text="Will you join the voyage?" />
         </h2>
-
-        <motion.p
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="mx-auto mt-6 max-w-lg text-[1rem] leading-relaxed text-parchment/70"
-        >
-          The island awaits. Grab your delegate card, choose your crew, and set sail into the most
-          epic edition of PYREXIA yet. The treasure is real — come claim it.
+        <motion.p initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="mx-auto mt-5 max-w-lg font-fun text-lg font-medium text-ink/80">
+          The island awaits. Grab your delegate card, choose your crew, and set sail into the most epic edition of PYREXIA yet!
         </motion.p>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.32, duration: 0.8 }}
-          className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
-        >
-          <button
-            onClick={() => openRegister()}
-            data-cursor="JOIN"
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.82rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
-          >
-            Join the Crew
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+        <div className="mt-8 flex justify-center anim-bounce-slow"><Chest size={140} /></div>
+
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button onClick={() => openRegister()} data-cursor="AHOY" className="sticker sticker-press inline-flex items-center gap-2 rounded-full bg-red px-9 py-4 font-display text-lg text-cream">
+            Join the Crew <ArrowRight size={20} strokeWidth={3} />
           </button>
-          <button
-            onClick={() => navTo('/events')}
-            data-cursor="EVENTS"
-            className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.82rem] font-medium uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
-          >
+          <button onClick={() => navTo('/events')} data-cursor="EXPLORE" className="sticker sticker-press inline-flex items-center gap-2 rounded-full bg-cream px-8 py-4 font-display text-lg text-ink">
             Explore Events
           </button>
-        </motion.div>
-
-        <p className="mt-8 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/45">
-          {SITE.window} · {SITE.institution}
-        </p>
+        </div>
+        <p className="mt-7 font-hand text-2xl text-ink/70">{SITE.window} · {SITE.institution}</p>
       </div>
     </section>
   )
