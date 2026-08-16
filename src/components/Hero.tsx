@@ -95,17 +95,17 @@ export default function Hero() {
           animate="show"
           className="relative mt-3 flex items-center justify-center"
         >
-          {/* warm spotlight so the wordmark reads on the dark scene */}
+          {/* soft dark halo so the neon wordmark pops off the scene */}
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[115%] w-[118%] -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ background: 'radial-gradient(closest-side, rgba(244,239,227,0.62), rgba(230,194,94,0.16) 52%, transparent 74%)', filter: 'blur(6px)' }}
+            className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[130%] w-[122%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: 'radial-gradient(closest-side, rgba(3,11,15,0.6), rgba(3,11,15,0.25) 55%, transparent 75%)', filter: 'blur(10px)' }}
           />
           <img
             src={asset('logo.png')}
             alt="PYREXIA 2026"
-            className="anim-float relative w-[min(86vw,680px)]"
-            style={{ filter: 'drop-shadow(0 14px 30px rgba(0,0,0,0.55))' }}
+            className="anim-float relative w-[min(88vw,700px)]"
+            style={{ filter: 'drop-shadow(0 10px 26px rgba(0,0,0,0.5))' }}
           />
         </motion.div>
 

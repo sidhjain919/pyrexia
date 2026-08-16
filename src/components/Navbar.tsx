@@ -53,11 +53,9 @@ export default function Navbar() {
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
-          {/* Real logo on an aged-parchment plate */}
+          {/* Real logo — the neon wordmark reads directly on the dark bar */}
           <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
-            <span className="flex items-center rounded-xl bg-parchment/95 px-2.5 py-1.5 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.8)] ring-1 ring-gold/40">
-              <img src={asset('logo.png')} alt="PYREXIA" className="h-7 w-auto sm:h-8" />
-            </span>
+            <img src={asset('logo.png')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
             <span className="hidden font-log text-[0.5rem] uppercase tracking-cinema text-parchment/55 sm:block">
               {SITE.year}
               <br />

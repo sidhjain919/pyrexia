@@ -37,12 +37,7 @@ export default function Loader({ onDone }: { onDone: () => void }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[130%] w-[125%] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ background: 'radial-gradient(closest-side, rgba(244,239,227,0.5), transparent 72%)', filter: 'blur(6px)' }}
-        />
-        <img src={asset('logo.png')} alt="PYREXIA 2026" className="relative w-64 drop-shadow-[0_10px_24px_rgba(0,0,0,0.5)] sm:w-80" />
+        <img src={asset('logo.png')} alt="PYREXIA 2026" className="relative w-72 drop-shadow-[0_10px_24px_rgba(0,0,0,0.5)] sm:w-96" />
       </motion.div>
 
       <motion.p

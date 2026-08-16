@@ -1,7 +1,6 @@
 import { Reveal, SectionTitle } from './primitives'
 import { LEGEND_META, SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
-import { asset } from '../lib/asset'
 
 const chapters = [
   {
@@ -57,8 +56,6 @@ export default function Legend() {
           {/* Parchment intro card */}
           <Reveal>
             <div className="parchment clip-torn relative rounded-sm p-8 shadow-cinema sm:p-10">
-              <img src={asset('logo.png')} alt="PYREXIA" className="mx-auto mb-4 w-44 sm:w-52" />
-              <div className="rule-gold mb-5 opacity-70" />
               <div className="font-log text-[0.6rem] uppercase tracking-cinema text-wood/60">
                 From the Captain's Log
               </div>
