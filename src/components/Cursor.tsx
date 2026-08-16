@@ -64,16 +64,17 @@ export default function Cursor() {
     <div aria-hidden className={hidden ? 'opacity-0' : 'opacity-100'} style={{ transition: 'opacity .3s' }}>
       <div
         ref={dot}
-        className="pointer-events-none fixed left-0 top-0 z-[9999] h-2 w-2 rounded-full bg-coral"
+        className="pointer-events-none fixed left-0 top-0 z-[9999] h-1.5 w-1.5 rounded-full bg-gold-bright"
+        style={{ mixBlendMode: 'difference' }}
       />
       <div
         ref={ring}
-        className="pointer-events-none fixed left-0 top-0 z-[9998] flex items-center justify-center rounded-full border-[2.5px] border-ink font-display uppercase text-ink transition-[width,height,background-color] duration-200"
+        className="pointer-events-none fixed left-0 top-0 z-[9998] flex items-center justify-center rounded-full border border-gold/70 font-log uppercase tracking-wide2 text-gold-bright transition-[width,height,background-color] duration-300"
         style={{
-          width: active ? 72 : 32,
-          height: active ? 72 : 32,
-          backgroundColor: active ? 'rgba(255,197,66,0.9)' : 'transparent',
-          fontSize: 10,
+          width: active ? 74 : 34,
+          height: active ? 74 : 34,
+          backgroundColor: active ? 'rgba(200,155,60,0.10)' : 'transparent',
+          fontSize: 9,
         }}
       >
         {active && label}

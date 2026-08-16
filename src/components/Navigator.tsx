@@ -6,53 +6,83 @@ import { Reveal, SectionTitle } from './primitives'
 
 export default function Navigator() {
   const [open, setOpen] = useState<number | null>(0)
-  return (
-    <section id="contact" className="relative overflow-hidden bg-cream py-16 sm:py-24">
-      <div className="map-dots pointer-events-none absolute inset-0 opacity-50" />
-      <div className="relative mx-auto max-w-6xl px-6">
-        <SectionTitle index="07" eyebrow="The Navigator's Desk" title="Charts & Queries" color="var(--color-grape)"
-          kicker="Everything a voyager needs before setting sail. Still lost? The crew below will guide you in." />
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
+  return (
+    <section id="contact" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionTitle
+          index="08"
+          eyebrow="The Navigator's Desk"
+          title="Charts & Queries"
+          kicker="Everything a voyager needs before setting sail. Still lost? The crew below will guide you in."
+        />
+
+        <div className="mt-14 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+          {/* FAQ accordion */}
           <div>
-            <p className="font-hand text-2xl text-red">Frequently charted questions</p>
-            <div className="mt-4 space-y-3">
+            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/60">
+              Frequently Charted Questions
+            </div>
+            <div className="mt-4 divide-y divide-gold/12">
               {faqs.map((f, i) => {
                 const isOpen = open === i
                 return (
                   <Reveal as="div" key={f.q} delay={i * 0.04}>
-                    <div className="sticker-sm overflow-hidden rounded-2xl bg-cream-soft">
-                      <button onClick={() => setOpen(isOpen ? null : i)} data-cursor={isOpen ? 'CLOSE' : 'OPEN'} className="flex w-full items-center justify-between gap-4 p-4 text-left">
-                        <span className="font-fun text-lg font-bold text-ink">{f.q}</span>
-                        <span className="sticker-sm flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sun text-ink transition-transform duration-300" style={{ transform: isOpen ? 'rotate(45deg)' : 'none' }}><Plus size={16} strokeWidth={3} /></span>
-                      </button>
-                      <AnimatePresence initial={false}>
-                        {isOpen && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
-                            <p className="px-4 pb-4 font-fun text-[1rem] leading-relaxed text-ink/75">{f.a}</p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    <button
+                      onClick={() => setOpen(isOpen ? null : i)}
+                      data-cursor={isOpen ? 'CLOSE' : 'OPEN'}
+                      className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                    >
+                      <span className="font-display text-lg text-offwhite">{f.q}</span>
+                      <span
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-transform duration-300"
+                        style={{ transform: isOpen ? 'rotate(45deg)' : 'none' }}
+                      >
+                        <Plus size={14} />
+                      </span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden"
+                        >
+                          <p className="pb-5 pr-10 text-[0.92rem] leading-relaxed text-parchment/70">
+                            {f.a}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </Reveal>
                 )
               })}
             </div>
           </div>
 
+          {/* ARSWA crew */}
           <Reveal>
-            <div className="sticker-lg rounded-3xl bg-sea p-7 text-cream">
-              <p className="font-hand text-2xl text-sun">ARSWA · The Chief Coordinating Committee</p>
-              <ul className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div className="glass rounded-xl p-7">
+              <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/60">
+                ARSWA · The Chief Coordinating Committee
+              </div>
+              <ul className="mt-5 grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
                 {arswa.map((o) => (
-                  <li key={o.role} className="border-b-2 border-dashed border-cream/25 pb-2">
-                    <div className="font-hand text-lg text-foam">{o.role}</div>
-                    <div className="font-fun font-semibold text-cream">{o.name}</div>
+                  <li key={o.role} className="border-b border-gold/8 pb-2.5">
+                    <div className="font-log text-[0.54rem] uppercase tracking-wide2 text-gold/55">
+                      {o.role}
+                    </div>
+                    <div className="mt-0.5 text-[0.95rem] text-offwhite/90">{o.name}</div>
                   </li>
                 ))}
               </ul>
-              <div className="sticker-sm mt-5 rounded-2xl bg-cream p-4 text-ink">
-                <p className="font-fun text-[0.95rem] leading-relaxed text-ink/80">Registrations for delegate cards and every event happen on the official PYREXIA website. Reach the PR crew for any query — the island keeps its gates open!</p>
+              <div className="mt-6 rounded-lg bg-ocean/50 p-4">
+                <p className="text-[0.85rem] leading-relaxed text-parchment/70">
+                  Registrations for delegate cards and every event happen entirely on the official
+                  PYREXIA website. Reach the PR crew for any query — the island keeps its gates open.
+                </p>
               </div>
             </div>
           </Reveal>
