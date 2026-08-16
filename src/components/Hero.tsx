@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown } from 'lucide-react'
 import OceanScene from './OceanScene'
 import { Compass } from './primitives'
 import { SITE } from '../data/site'
+import { asset } from '../lib/asset'
 
 export default function Hero() {
   const scope = useRef<HTMLElement>(null)
@@ -86,40 +87,43 @@ export default function Hero() {
           {SITE.institution} · presents
         </motion.p>
 
-        <motion.h1
+        {/* Real PYREXIA logo, spotlit out of the dark */}
+        <motion.div
           custom={1}
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-5 flex items-baseline justify-center gap-3 sm:gap-6"
+          className="relative mt-3 flex items-center justify-center"
         >
-          <span className="font-deco text-foil text-[clamp(3.4rem,15vw,11rem)] leading-[0.82] tracking-[0.04em]">
-            PYREXIA
-          </span>
-        </motion.h1>
-        <motion.span
-          custom={1.5}
-          variants={rise}
-          initial="hidden"
-          animate="show"
-          className="mt-1 font-display text-foil text-[clamp(1.5rem,5vw,3rem)] tracking-[0.5em]"
-        >
-          2026
-        </motion.span>
+          {/* warm spotlight so the wordmark reads on the dark scene */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[115%] w-[118%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: 'radial-gradient(closest-side, rgba(244,239,227,0.62), rgba(230,194,94,0.16) 52%, transparent 74%)', filter: 'blur(6px)' }}
+          />
+          <img
+            src={asset('logo.png')}
+            alt="PYREXIA 2026"
+            className="anim-float relative w-[min(86vw,680px)]"
+            style={{ filter: 'drop-shadow(0 14px 30px rgba(0,0,0,0.55))' }}
+          />
+        </motion.div>
 
-        {/* divider with skull */}
+        {/* theme + year line */}
         <motion.div
           custom={2}
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-6 flex items-center gap-4"
+          className="mt-4 flex items-center gap-4"
         >
-          <span className="h-px w-10 bg-gold/40 sm:w-16" />
-          <span className="font-display text-sm uppercase tracking-[0.35em] text-parchment/85 sm:text-base">
+          <span className="h-px w-8 bg-gold/50 sm:w-14" />
+          <span className="font-display text-sm uppercase tracking-[0.32em] text-parchment/90 sm:text-base">
             Pirates of the Lost Island
           </span>
-          <span className="h-px w-10 bg-gold/40 sm:w-16" />
+          <span className="text-gold-bright">·</span>
+          <span className="font-display text-sm tracking-[0.3em] text-gold-bright sm:text-base">2026</span>
+          <span className="h-px w-8 bg-gold/50 sm:w-14" />
         </motion.div>
 
         <motion.p

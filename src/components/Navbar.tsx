@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { NAV, SITE } from '../data/site'
 import { Compass } from './primitives'
+import { asset } from '../lib/asset'
 import { useNavTo } from './routing'
 import { useRegistration } from '../registration/context'
 
@@ -52,14 +53,15 @@ export default function Navbar() {
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
-          {/* Wordmark */}
+          {/* Real logo on an aged-parchment plate */}
           <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
-            <Compass size={30} spin={false} />
-            <span className="flex flex-col leading-none">
-              <span className="font-deco text-foil text-lg tracking-[0.18em]">{SITE.name}</span>
-              <span className="font-log text-[0.5rem] uppercase tracking-cinema text-parchment/50">
-                {SITE.year} · AIIMS Rishikesh
-              </span>
+            <span className="flex items-center rounded-xl bg-parchment/95 px-2.5 py-1.5 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.8)] ring-1 ring-gold/40">
+              <img src={asset('logo.png')} alt="PYREXIA" className="h-7 w-auto sm:h-8" />
+            </span>
+            <span className="hidden font-log text-[0.5rem] uppercase tracking-cinema text-parchment/55 sm:block">
+              {SITE.year}
+              <br />
+              AIIMS Rishikesh
             </span>
           </Link>
 

@@ -1,6 +1,7 @@
 import { NAV, SITE, SOCIAL } from '../data/site'
 import { Icon } from '../lib/icons'
 import { Compass } from './primitives'
+import { asset } from '../lib/asset'
 import { useNavTo } from './routing'
 import { useRegistration } from '../registration/context'
 
@@ -30,9 +31,8 @@ export default function Footer() {
         <div className="grid gap-10 border-t border-gold/10 py-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* brand */}
           <div>
-            <div className="flex items-center gap-2.5">
-              <Compass size={30} spin={false} />
-              <span className="font-deco text-foil text-xl tracking-[0.16em]">{SITE.name}</span>
+            <div className="inline-flex items-center rounded-xl bg-parchment/95 px-3 py-2 ring-1 ring-gold/40">
+              <img src={asset('logo.png')} alt="PYREXIA" className="h-9 w-auto" />
             </div>
             <p className="mt-4 max-w-xs text-[0.85rem] leading-relaxed text-parchment/55">
               The annual socio-cultural and sports fest of {SITE.institutionFull}.

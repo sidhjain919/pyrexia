@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Compass } from './primitives'
 import { SITE } from '../data/site'
+import { asset } from '../lib/asset'
 
 /**
  * Branded loading sequence: a compass settles, the wordmark unfolds, then the
@@ -30,16 +31,19 @@ export default function Loader({ onDone }: { onDone: () => void }) {
         <Compass size={132} />
       </motion.div>
 
-      <div className="mt-10 overflow-hidden">
-        <motion.h1
-          className="font-deco text-foil text-3xl tracking-[0.25em] sm:text-4xl"
-          initial={{ y: '110%' }}
-          animate={{ y: 0 }}
-          transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {SITE.name}
-        </motion.h1>
-      </div>
+      <motion.div
+        className="relative mt-8"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[130%] w-[125%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ background: 'radial-gradient(closest-side, rgba(244,239,227,0.5), transparent 72%)', filter: 'blur(6px)' }}
+        />
+        <img src={asset('logo.png')} alt="PYREXIA 2026" className="relative w-64 drop-shadow-[0_10px_24px_rgba(0,0,0,0.5)] sm:w-80" />
+      </motion.div>
 
       <motion.p
         className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/60"

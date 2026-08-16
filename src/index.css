@@ -20,6 +20,12 @@
   --color-gold-deep: #9e7427;
   --color-blood: #7a2318;
 
+  /* Warm accents pulled from the official PYREXIA logo */
+  --color-coral: #e0603f;
+  --color-ember: #e08a4a;
+  --color-aqua: #2fa58f;
+  --color-grape: #8a5a93;
+
   /* Fonts */
   --font-display: 'Cinzel', ui-serif, Georgia, serif;
   --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
@@ -56,7 +62,11 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(120% 90% at 50% -10%, #0d2731 0%, var(--color-ocean) 42%, var(--color-abyss) 100%);
+    radial-gradient(70% 55% at 12% 6%, rgba(47, 165, 143, 0.12), transparent 62%),
+    radial-gradient(70% 55% at 90% 3%, rgba(138, 90, 147, 0.14), transparent 62%),
+    radial-gradient(90% 65% at 50% 112%, rgba(224, 96, 63, 0.12), transparent 60%),
+    radial-gradient(120% 90% at 50% -10%, #123742 0%, var(--color-ocean) 44%, var(--color-abyss) 100%);
+  background-attachment: fixed;
   color: var(--color-offwhite);
   font-family: var(--font-body);
   font-feature-settings: 'ss01', 'cv01';
