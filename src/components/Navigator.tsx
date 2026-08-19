@@ -14,13 +14,14 @@ export default function Navigator() {
           index="08"
           eyebrow="The Navigator's Desk"
           title="Charts & Queries"
+          meaning="Contact & FAQ"
           kicker="Everything a voyager needs before setting sail. Still lost? The crew below will guide you in."
         />
 
         <div className="mt-14 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
           {/* FAQ accordion */}
           <div>
-            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/60">
+            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
               Frequently Charted Questions
             </div>
             <div className="mt-4 divide-y divide-gold/12">
@@ -65,13 +66,13 @@ export default function Navigator() {
           {/* ARSWA crew */}
           <Reveal>
             <div className="glass rounded-xl p-7">
-              <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/60">
+              <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
                 ARSWA · The Chief Coordinating Committee
               </div>
               <ul className="mt-5 grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
                 {arswa.map((o) => (
                   <li key={o.role} className="border-b border-gold/8 pb-2.5">
-                    <div className="font-log text-[0.54rem] uppercase tracking-wide2 text-gold/55">
+                    <div className="font-log text-[0.7rem] uppercase tracking-wide2 text-gold/70">
                       {o.role}
                     </div>
                     <div className="mt-0.5 text-[0.95rem] text-offwhite/90">{o.name}</div>

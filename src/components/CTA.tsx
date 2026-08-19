@@ -64,15 +64,15 @@ export default function CTA() {
           <button
             onClick={() => openRegister()}
             data-cursor="JOIN"
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.82rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
+            className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
           >
             Join the Crew
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </button>
           <button
-            onClick={() => navTo('/events')}
+            onClick={() => navTo('/#island')}
             data-cursor="EVENTS"
-            className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.82rem] font-medium uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
+            className="font-accent inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.92rem] uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
           >
             Explore Events
           </button>

@@ -110,7 +110,7 @@ export default function RegisterForm({
             {events.length > 8 && <span className="px-2 py-1 text-[0.72rem] text-parchment/60">+{events.length - 8} more</span>}
           </div>
         )}
-        <p className="mt-6 font-log text-[0.58rem] uppercase tracking-cinema text-parchment/40">
+        <p className="mt-6 font-log text-[0.72rem] uppercase tracking-cinema text-parchment/58">
           Demo capture · connect a backend or Google Form to collect live entries
         </p>
         <button
@@ -139,7 +139,7 @@ export default function RegisterForm({
             >
               {step > i ? <Check size={13} /> : i + 1}
             </span>
-            <span className={`font-log text-[0.66rem] uppercase tracking-wide2 ${step >= i ? 'text-gold-bright' : 'text-parchment/45'}`}>
+            <span className={`font-log text-[0.66rem] uppercase tracking-wide2 ${step >= i ? 'text-gold-bright' : 'text-parchment/62'}`}>
               {s}
             </span>
             {i === 0 && <span className="mx-1 h-px w-6 bg-gold/25 sm:w-10" />}
@@ -234,7 +234,7 @@ export default function RegisterForm({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[0.86rem] text-offwhite">{e.name}</span>
-                      <span className="block truncate font-log text-[0.56rem] uppercase tracking-wide2 text-parchment/45">
+                      <span className="block truncate font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/62">
                         {e.terr}
                       </span>
                     </span>
@@ -257,7 +257,7 @@ export default function RegisterForm({
               >
                 Back
               </button>
-              <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/55">
+              <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/70">
                 {events.length} selected
               </span>
               <button
@@ -278,7 +278,7 @@ export default function RegisterForm({
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/55">{label}</span>
+      <span className="mb-1.5 block font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/70">{label}</span>
       {children}
       {error && <span className="mt-1 block text-[0.72rem] text-blood/90" style={{ color: '#e0894a' }}>{error}</span>}
     </label>

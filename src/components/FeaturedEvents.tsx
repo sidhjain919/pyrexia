@@ -10,7 +10,6 @@ import { useNavTo } from './routing'
 type Pick = { code: string; event: string }
 
 const picks: Pick[] = [
-  { code: 'fahrenheit', event: 'Fahrenheit' },
   { code: 'sinfonia', event: 'Battle of Bands' },
   { code: 'chorea', event: 'Ballismus' },
   { code: 'velocity', event: 'Cricket' },
@@ -113,7 +112,7 @@ export default function FeaturedEvents() {
                       <Ticket size={13} /> Register
                     </button>
                     <button
-                      onClick={() => navTo('/events')}
+                      onClick={() => navTo('/#island')}
                       data-cursor="DISCOVER"
                       className="rounded-full px-3.5 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-gold/15 hover:text-gold-bright hover:ring-gold/40"
                     >
@@ -127,7 +126,7 @@ export default function FeaturedEvents() {
 
           {/* end cap */}
           <button
-            onClick={() => navTo('/events')}
+            onClick={() => navTo('/#island')}
             data-cursor="ALL"
             className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gold/25 text-center text-gold/70 transition-colors hover:border-gold/50 hover:text-gold-bright"
           >

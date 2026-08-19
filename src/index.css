@@ -29,8 +29,9 @@
   /* Fonts */
   --font-display: 'Cinzel', ui-serif, Georgia, serif;
   --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
-  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'EB Garamond', 'Space Grotesk', ui-serif, Georgia, serif;
   --font-log: 'Special Elite', 'Courier New', monospace;
+  --font-accent: 'Rye', 'Cinzel', cursive, serif;
 
   /* Motion */
   --ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
@@ -118,6 +119,7 @@ body {
   .font-display { font-family: var(--font-display); }
   .font-deco { font-family: var(--font-deco); }
   .font-log { font-family: var(--font-log); }
+  .font-accent { font-family: var(--font-accent); }
 
   .tracking-cinema { letter-spacing: 0.28em; }
   .tracking-wide2 { letter-spacing: 0.16em; }

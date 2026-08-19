@@ -15,6 +15,7 @@ export default function Artists() {
           index="05"
           eyebrow="The Crew · Legends"
           title="Starlight Summit"
+          meaning="Lineup"
           kicker="The peak of every voyage. A glimpse of the legends who have lit the PYREXIA sky — and the names still charted in secret."
         />
 
@@ -26,10 +27,10 @@ export default function Artists() {
                 <div className="absolute inset-0 map-grid opacity-30" />
                 <Lock size={20} className="text-gold/60 transition-transform group-hover:-translate-y-1" />
                 <div className="mt-3 font-display text-xl text-offwhite">{m.label}</div>
-                <div className="mt-1 max-w-[80%] font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50">
+                <div className="mt-1 max-w-[80%] font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65">
                   {m.hint}
                 </div>
-                <div className="mt-3 rounded-full bg-gold/10 px-3 py-1 font-log text-[0.55rem] uppercase tracking-cinema text-gold-bright">
+                <div className="mt-3 rounded-full bg-gold/10 px-3 py-1 font-log text-[0.7rem] uppercase tracking-cinema text-gold-bright">
                   2026 · Reveal soon
                 </div>
               </div>
@@ -39,7 +40,7 @@ export default function Artists() {
 
         {/* past legends */}
         <Reveal>
-          <div className="mt-16 flex items-center gap-3 font-log text-[0.62rem] uppercase tracking-cinema text-gold/60">
+          <div className="mt-16 flex items-center gap-3 font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
             <Star size={12} />
             A glimpse of past voyages · Auriga lineups
           </div>
@@ -73,7 +74,7 @@ export default function Artists() {
                 {/* info */}
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <div className="font-display text-sm leading-tight text-offwhite">{a.name}</div>
-                  <div className="mt-0.5 font-log text-[0.54rem] uppercase tracking-wide2 text-parchment/70">
+                  <div className="mt-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/70">
                     {a.role} · {a.year}
                   </div>
                 </div>

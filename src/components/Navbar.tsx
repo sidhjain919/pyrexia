@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Menu, X, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { NAV, SITE } from '../data/site'
 import { Compass } from './primitives'
 import { asset } from '../lib/asset'
-import { useNavTo } from './routing'
+import { useNavTo, useActiveSection } from './routing'
 import { useRegistration } from '../registration/context'
+
+const SECTION_IDS = NAV.map((n) => n.to.split('#')[1])
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -14,7 +16,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const navTo = useNavTo()
   const { openRegister } = useRegistration()
-  const { pathname } = useLocation()
+  const activeId = useActiveSection(SECTION_IDS)
 
   useEffect(() => {
     let last = window.scrollY
@@ -35,10 +37,7 @@ export default function Navbar() {
     }
   }, [open])
 
-  const isActive = (to: string) => {
-    const path = to.split('#')[0] || '/'
-    return path !== '/' ? pathname.startsWith(path) : pathname === '/' && !to.includes('#')
-  }
+  const isActive = (to: string) => to.split('#')[1] === activeId
 
   return (
     <>
@@ -53,10 +52,10 @@ export default function Navbar() {
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
-          {/* Real logo — the neon wordmark reads directly on the dark bar */}
+          {/* Wordmark reads directly on the dark bar */}
           <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
-            <img src={asset('logo.png')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
-            <span className="hidden font-log text-[0.5rem] uppercase tracking-cinema text-parchment/55 sm:block">
+            <img src={asset('logo-wordmark.webp')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
+            <span className="hidden font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 sm:block">
               {SITE.year}
               <br />
               AIIMS Rishikesh
@@ -70,6 +69,7 @@ export default function Navbar() {
                 <button
                   onClick={() => navTo(n.to)}
                   data-cursor="GO"
+                  title={n.meaning || undefined}
                   className={`group relative font-body text-[0.82rem] transition-colors hover:text-offwhite ${
                     isActive(n.to) ? 'text-gold-bright' : 'text-parchment/75'
                   }`}
@@ -89,7 +89,7 @@ export default function Navbar() {
             <button
               onClick={() => openRegister()}
               data-cursor="JOIN"
-              className="hidden rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+              className="font-accent hidden rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
             >
               Register Now
             </button>
@@ -121,34 +121,67 @@ export default function Navbar() {
             </div>
 
             <div className="relative flex items-center justify-between px-6 pt-6">
-              <span className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
-                Navigator's Chart
-              </span>
+              <div className="flex items-center gap-2.5">
+                <Compass size={26} spin={false} />
+                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
+                  Navigator's Chart
+                </span>
+              </div>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
-                className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright"
+                className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-colors hover:bg-gold/10"
               >
                 <X size={18} />
               </button>
             </div>
+            <div className="relative mx-6 mt-4 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
-            <nav className="relative flex flex-1 flex-col justify-center gap-1 px-8">
-              {NAV.map((n, i) => (
-                <motion.button
-                  key={n.to}
-                  onClick={() => navTo(n.to, () => setOpen(false))}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.08 * i + 0.1, ease: [0.16, 1, 0.3, 1] }}
-                  className="group flex items-baseline gap-4 border-b border-gold/10 py-3 text-left"
-                >
-                  <span className="font-log text-xs text-gold/50">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="font-display text-3xl text-offwhite transition-colors group-hover:text-gold-bright">
-                    {n.label}
-                  </span>
-                </motion.button>
-              ))}
+            <nav className="relative flex flex-1 flex-col justify-center gap-0.5 overflow-y-auto px-6 py-4">
+              {NAV.map((n, i) => {
+                const active = isActive(n.to)
+                return (
+                  <motion.button
+                    key={n.to}
+                    onClick={() => navTo(n.to, () => setOpen(false))}
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.06 * i + 0.1, ease: [0.16, 1, 0.3, 1] }}
+                    className="group relative flex items-center gap-4 rounded-xl px-2 py-3 text-left transition-colors hover:bg-gold/5"
+                  >
+                    <span
+                      className={`absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-full bg-gold-bright transition-opacity ${
+                        active ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    />
+                    <span
+                      className={`font-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.7rem] ring-1 transition-colors ${
+                        active ? 'bg-gold-bright text-abyss ring-gold-bright' : 'text-gold/65 ring-gold/25'
+                      }`}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="flex-1">
+                      <span
+                        className={`block font-display text-2xl leading-tight transition-colors sm:text-3xl ${
+                          active ? 'text-gold-bright' : 'text-offwhite group-hover:text-gold-bright'
+                        }`}
+                      >
+                        {n.label}
+                      </span>
+                      {n.meaning && (
+                        <span className="mt-0.5 block font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
+                          {n.meaning}
+                        </span>
+                      )}
+                    </span>
+                    <ArrowRight
+                      size={16}
+                      className="shrink-0 text-gold/40 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-gold-bright"
+                    />
+                  </motion.button>
+                )
+              })}
             </nav>
 
             <div className="relative px-8 pb-10">
@@ -157,7 +190,7 @@ export default function Navbar() {
                   setOpen(false)
                   openRegister()
                 }}
-                className="block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-sm font-semibold uppercase tracking-wide2 text-abyss"
+                className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
               >
                 Join the Crew →
               </button>

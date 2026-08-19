@@ -28,6 +28,8 @@ export type Territory = {
   accent: string
   events: SubEvent[]
   contacts: Contact[]
+  /** True for territories that aren't a competitive event to sign up for (e.g. the opening ceremony). */
+  noRegister?: boolean
 }
 
 export const territories: Territory[] = [
@@ -41,9 +43,12 @@ export const territories: Territory[] = [
     map: { x: 50, y: 20 },
     accent: '#e0894a',
     events: [{ name: 'Fahrenheit', tag: 'Grand Opening Ceremony' }],
+    /** Opening ceremony — every delegate attends automatically, so no registration. */
+    noRegister: true,
     contacts: [
-      { name: 'Arunima', phone: '9741001680' },
-      { name: 'Devanshu', phone: '7986477572' },
+      { name: 'Pulkit', phone: '6387508295' },
+      { name: 'Shreya', phone: '8887878101' },
+      { name: 'Gautam', phone: '8540909279' },
     ],
   },
   {
@@ -62,9 +67,9 @@ export const territories: Territory[] = [
       { name: 'Ballismus', tag: 'Western Dance' },
     ],
     contacts: [
-      { name: 'Sonal', phone: '7747882919' },
-      { name: 'Gurbir', phone: '9888281783' },
-      { name: 'Jasgeet', phone: '8360125977' },
+      { name: 'Ritika', phone: '9302596114' },
+      { name: 'Raheel', phone: '7086042407' },
+      { name: 'Shivanshi', phone: '9258542725' },
     ],
   },
   {
@@ -84,10 +89,9 @@ export const territories: Territory[] = [
       { name: 'Rhythm Revolution', tag: 'Rap & Beatboxing' },
     ],
     contacts: [
-      { name: 'Atharva', phone: '7709048685' },
-      { name: 'Ayush', phone: '7983283731' },
-      { name: 'Sweta', phone: '8595651487' },
-      { name: 'Anusha', phone: '7888941481' },
+      { name: 'Ritika', phone: '9302596114' },
+      { name: 'Raheel', phone: '7086042407' },
+      { name: 'Shivanshi', phone: '9258542725' },
     ],
   },
   {
@@ -106,8 +110,9 @@ export const territories: Territory[] = [
       { name: 'Nukkad Natak', tag: 'Street Play' },
     ],
     contacts: [
-      { name: 'Devendra', phone: '6265618860' },
-      { name: 'Arpit', phone: '9914670293' },
+      { name: 'Ritika', phone: '9302596114' },
+      { name: 'Raheel', phone: '7086042407' },
+      { name: 'Shivanshi', phone: '9258542725' },
     ],
   },
   {
@@ -133,10 +138,9 @@ export const territories: Territory[] = [
       { name: 'Chess', tag: 'Board' },
     ],
     contacts: [
-      { name: 'Sahil', phone: '6350274294' },
-      { name: 'Abhishek', phone: '9001229622' },
-      { name: 'Partyaksh', phone: '8988639379' },
-      { name: 'Suhani', phone: '9929018373' },
+      { name: 'Sharva', phone: '8484857561' },
+      { name: 'Saransh', phone: '6377478125' },
+      { name: 'Harnoor', phone: '7719602007' },
     ],
   },
   {
@@ -179,9 +183,10 @@ export const territories: Territory[] = [
       { name: 'Hindi Gyan Utsav', tag: 'Literature Quiz' },
     ],
     contacts: [
-      { name: 'Dibya', phone: '9475753525' },
-      { name: 'Arnav', phone: '8971290704' },
-      { name: 'Aditya', phone: '7483319871' },
+      { name: 'Jatin', phone: '9571602438' },
+      { name: 'Chetna', phone: '8885284755' },
+      { name: 'Kriti', phone: '8837824605' },
+      { name: 'Sudeshna', phone: '7041351726' },
     ],
   },
   {
@@ -205,8 +210,8 @@ export const territories: Territory[] = [
       { name: 'Cupful of Doodles', tag: 'Cup Doodling' },
     ],
     contacts: [
-      { name: 'Ronak', phone: '8769235744' },
-      { name: 'Rashi', phone: '8200093641' },
+      { name: 'Mudassir', phone: '8861384164' },
+      { name: 'Bhavya', phone: '8764213826' },
     ],
   },
   {
@@ -235,9 +240,8 @@ export const territories: Territory[] = [
       { name: 'Drape It', tag: 'Style face-off' },
     ],
     contacts: [
-      { name: 'VKK Jayanth', phone: '9515359653' },
-      { name: 'Vishal', phone: '8209039899' },
-      { name: 'Muskan', phone: '9784431503' },
+      { name: 'Shail Nandini', phone: '9817818054' },
+      { name: 'Ranjeeta', phone: '9939179798' },
     ],
   },
   {
@@ -257,8 +261,8 @@ export const territories: Territory[] = [
       { name: 'Mortal Kombat', tag: 'Tournament' },
     ],
     contacts: [
-      { name: 'Deepanshu', phone: '6367292318' },
-      { name: 'Saurabh', phone: '9958625272' },
+      { name: 'Bharat', phone: '9588957283' },
+      { name: 'Lokesh', phone: '623890083' },
     ],
   },
   {

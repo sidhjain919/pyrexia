@@ -74,12 +74,15 @@ export function SectionTitle({
   index,
   eyebrow,
   title,
+  meaning,
   align = 'left',
   kicker,
 }: {
   index?: string
   eyebrow: string
   title: string
+  /** Plain-English translation of a slang title, e.g. "SCHEDULE" for "Captain's Log". */
+  meaning?: string
   align?: 'left' | 'center'
   kicker?: string
 }) {
@@ -91,7 +94,7 @@ export function SectionTitle({
             align === 'center' ? 'justify-center' : ''
           }`}
         >
-          {index && <span className="text-gold/50">{index}</span>}
+          {index && <span className="font-accent text-gold/50">{index}</span>}
           <span className="h-px w-8 bg-gold/40" />
           <span>{eyebrow}</span>
         </div>
@@ -101,6 +104,19 @@ export function SectionTitle({
           <StaggerWords text={title} />
         </h2>
       </Reveal>
+      {meaning && (
+        <Reveal delay={0.08}>
+          <div
+            className={`mt-3 flex items-center gap-2.5 ${align === 'center' ? 'justify-center' : ''}`}
+          >
+            <span className="h-px w-5 bg-coral/50" />
+            <span className="font-accent text-[0.8rem] uppercase tracking-wide2 text-coral/85 sm:text-[0.88rem]">
+              {meaning}
+            </span>
+            <span className="h-px w-5 bg-coral/50" />
+          </div>
+        </Reveal>
+      )}
       {kicker && (
         <Reveal delay={0.12}>
           <p
@@ -204,7 +220,7 @@ export function MagneticButton({
   dataCursor?: string
 }) {
   const base =
-    'group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[0.78rem] font-medium uppercase tracking-wide2 transition-colors duration-300'
+    'font-accent group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[0.9rem] uppercase tracking-wide2 transition-colors duration-300'
   const styles =
     variant === 'solid'
       ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss shadow-[0_18px_40px_-18px_rgba(200,155,60,0.8)] hover:from-gold hover:to-gold-deep'

@@ -15,15 +15,17 @@ export const SITE = {
   registerUrl: '#register',
 } as const
 
+/** `meaning` is the plain-English translation shown as a subtitle wherever the
+ * slang name alone wouldn't be obvious (mobile nav, desktop nav tooltip). */
 export const NAV = [
-  { label: 'Home', to: '/' },
-  { label: 'The Legend', to: '/#legend' },
-  { label: 'Events', to: '/events' },
-  { label: "Captain's Log", to: '/schedule' },
-  { label: 'Legends', to: '/artists' },
-  { label: 'Voyages', to: '/gallery' },
-  { label: 'Allies', to: '/sponsors' },
-  { label: 'Navigator', to: '/#contact' },
+  { label: 'Home', to: '/#home', meaning: '' },
+  { label: 'The Legend', to: '/#legend', meaning: 'About' },
+  { label: 'Events', to: '/#island', meaning: 'Explore & register' },
+  { label: "Captain's Log", to: '/#log', meaning: 'Schedule' },
+  { label: 'Legends', to: '/#artists', meaning: 'Lineup' },
+  { label: 'Voyages', to: '/#gallery', meaning: 'Gallery' },
+  { label: 'Allies', to: '/#allies', meaning: 'Sponsors' },
+  { label: 'Navigator', to: '/#contact', meaning: 'Contact & FAQ' },
 ] as const
 
 export const SOCIAL = [

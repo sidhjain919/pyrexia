@@ -37,7 +37,7 @@ function WaxSeal({ name, big = false }: { name: string; big?: boolean }) {
   )
 }
 
-export default function Sponsors({ preview = false }: { preview?: boolean }) {
+export default function Sponsors() {
   const navTo = useNavTo()
   return (
     <section id="allies" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
@@ -47,6 +47,7 @@ export default function Sponsors({ preview = false }: { preview?: boolean }) {
           index="07"
           eyebrow="The Trading Ports"
           title="Allies of the Voyage"
+          meaning="Sponsors"
           align="center"
           kicker="No island is conquered alone. Our partners power the fever — the wind in our sails."
         />
@@ -86,7 +87,7 @@ export default function Sponsors({ preview = false }: { preview?: boolean }) {
               thousands of voyagers from across India.
             </p>
             <button
-              onClick={() => navTo(preview ? '/sponsors' : '/#contact')}
+              onClick={() => navTo('/#contact')}
               data-cursor="ALLY"
               className="rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
             >

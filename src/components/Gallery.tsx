@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { gallery, galleryCats, type GalleryCat } from '../data/gallery'
 import { Reveal, SectionTitle } from './primitives'
-import { useNavTo } from './routing'
 
 type Filter = 'All' | GalleryCat
 
-export default function Gallery({ preview = false }: { preview?: boolean }) {
+export default function Gallery() {
   const [filter, setFilter] = useState<Filter>('All')
   const [lightbox, setLightbox] = useState<number | null>(null)
   const reduce = useReducedMotion()
-  const navTo = useNavTo()
 
   const shots = useMemo(() => {
-    const base = filter === 'All' ? gallery : gallery.filter((s) => s.cat === filter)
-    return preview ? base.slice(0, 12) : base
-  }, [filter, preview])
+    return filter === 'All' ? gallery : gallery.filter((s) => s.cat === filter)
+  }, [filter])
 
   const close = useCallback(() => setLightbox(null), [])
   const step = useCallback(
@@ -46,11 +43,11 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
           index="06"
           eyebrow="Previous Voyages"
           title="Memories from the Sea"
+          meaning="Gallery"
           kicker="Real frames from past editions of PYREXIA at AIIMS Rishikesh — the fever, the crews, the roar."
         />
 
         {/* filters */}
-        {!preview && (
         <Reveal>
           <div className="mt-10 flex flex-wrap gap-2">
             {(['All', ...galleryCats] as Filter[]).map((c) => (
@@ -58,7 +55,7 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
                 key={c}
                 onClick={() => setFilter(c)}
                 data-cursor="FILTER"
-                className={`rounded-full px-4 py-2 font-log text-[0.64rem] uppercase tracking-wide2 transition-all duration-300 ${
+                className={`font-accent rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 ${
                   filter === c
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                     : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
@@ -69,7 +66,6 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
             ))}
           </div>
         </Reveal>
-        )}
 
         {/* mosaic — dense grid fills gaps; wide/tall shots span extra cells */}
         <motion.div
@@ -100,7 +96,7 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-2 p-3 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  <span className="font-log text-[0.52rem] uppercase tracking-wide2 text-gold-bright">
+                  <span className="font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright">
                     {s.cat}
                   </span>
                   <p className="mt-0.5 text-[0.78rem] leading-snug text-offwhite">{s.caption}</p>
@@ -109,21 +105,6 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
             ))}
           </AnimatePresence>
         </motion.div>
-
-        {preview && (
-          <Reveal>
-            <div className="mt-10 flex justify-center">
-              <button
-                onClick={() => navTo('/gallery')}
-                data-cursor="ALL"
-                className="group flex items-center gap-2 rounded-full px-7 py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
-              >
-                View all voyages
-                <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-              </button>
-            </div>
-          </Reveal>
-        )}
       </div>
 
       {/* lightbox */}
@@ -172,7 +153,7 @@ export default function Gallery({ preview = false }: { preview?: boolean }) {
                 className="max-h-[76vh] w-auto rounded-lg border border-gold/20 object-contain shadow-cinema"
               />
               <figcaption className="mt-3 text-center">
-                <span className="font-log text-[0.58rem] uppercase tracking-cinema text-gold-bright">
+                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold-bright">
                   {shots[lightbox].cat}
                 </span>
                 <p className="mt-1 text-sm text-parchment/80">{shots[lightbox].caption}</p>

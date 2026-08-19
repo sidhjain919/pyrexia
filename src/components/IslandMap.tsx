@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Phone, Ticket, ArrowRight } from 'lucide-react'
+import { Phone, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { Icon } from '../lib/icons'
 import { Reveal, SectionTitle, Compass } from './primitives'
 import { useRegistration } from '../registration/context'
-import { useNavTo } from './routing'
 
-export default function IslandMap({ preview = false }: { preview?: boolean }) {
+export default function IslandMap() {
   const reduce = useReducedMotion()
   const { openRegister } = useRegistration()
-  const navTo = useNavTo()
   const [activeId, setActiveId] = useState('chorea')
   const active = territories.find((t) => t.id === activeId)!
 
@@ -82,7 +80,7 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
               <div className="pointer-events-none absolute bottom-3 right-3 opacity-40 sm:bottom-5 sm:right-5">
                 <Compass size={78} />
               </div>
-              <div className="pointer-events-none absolute left-4 top-3 font-log text-[0.55rem] uppercase tracking-cinema text-gold/50">
+              <div className="pointer-events-none absolute left-4 top-3 font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
                 The Lost Island · Chart No. VI
               </div>
 
@@ -125,7 +123,7 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
                       />
                     </span>
                     <span
-                      className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap font-log text-[0.5rem] uppercase tracking-wide2 transition-opacity ${
+                      className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap font-log text-[0.68rem] uppercase tracking-wide2 transition-opacity ${
                         on ? 'opacity-100' : 'opacity-0 group-hover:opacity-70'
                       }`}
                       style={{ color: t.accent }}
@@ -159,7 +157,7 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b1e26] via-[#0b1e26]/40 to-transparent" />
                   <span
-                    className="absolute bottom-3 left-4 font-log text-[0.56rem] uppercase tracking-cinema"
+                    className="absolute bottom-3 left-4 font-log text-[0.7rem] uppercase tracking-cinema"
                     style={{ color: active.accent }}
                   >
                     {active.territory}
@@ -175,7 +173,7 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
                     <Icon name={active.icon} size={20} style={{ color: active.accent }} />
                   </span>
                   <div>
-                    <div className="font-log text-[0.58rem] uppercase tracking-cinema text-gold/60">
+                    <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
                       {active.territory}
                     </div>
                     <h3 className="font-display text-2xl leading-none text-offwhite">{active.code}</h3>
@@ -189,23 +187,29 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
 
                 <div className="my-5 rule-gold" />
 
-                <div className="flex flex-wrap gap-2">
-                  {active.events.map((e) => (
-                    <button
-                      key={e.name}
-                      onClick={() => openRegister(e.name)}
-                      data-cursor="REGISTER"
-                      className="rounded-full border border-gold/20 bg-ocean/50 px-3 py-1.5 text-[0.72rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright"
-                      title={`Register for ${e.name} — ${e.tag}`}
-                    >
-                      {e.name}
-                    </button>
-                  ))}
-                </div>
+                {active.noRegister ? (
+                  <p className="rounded-lg bg-ocean/50 px-3 py-2.5 text-[0.78rem] text-parchment/60">
+                    No registration needed — every delegate is welcomed in.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {active.events.map((e) => (
+                      <button
+                        key={e.name}
+                        onClick={() => openRegister(e.name)}
+                        data-cursor="REGISTER"
+                        className="rounded-full border border-gold/20 bg-ocean/50 px-3 py-1.5 text-[0.72rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright"
+                        title={`Register for ${e.name} — ${e.tag}`}
+                      >
+                        {e.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {active.contacts.length > 0 && (
                   <div className="mt-6">
-                    <div className="font-log text-[0.56rem] uppercase tracking-cinema text-gold/50">
+                    <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
                       Territory Wardens
                     </div>
                     <div className="mt-2 flex flex-col gap-1.5">
@@ -225,34 +229,21 @@ export default function IslandMap({ preview = false }: { preview?: boolean }) {
                   </div>
                 )}
 
-                <button
-                  onClick={() => openRegister(active.events.length === 1 ? active.events[0].name : undefined)}
-                  data-cursor="REGISTER"
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
-                >
-                  <Ticket size={14} />
-                  Register for {active.code}
-                </button>
+                {!active.noRegister && (
+                  <button
+                    onClick={() => openRegister(active.events.length === 1 ? active.events[0].name : undefined)}
+                    data-cursor="REGISTER"
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                  >
+                    <Ticket size={14} />
+                    Register for {active.code}
+                  </button>
+                )}
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
-
-        {preview && (
-          <Reveal>
-            <div className="mt-12 flex justify-center">
-              <button
-                onClick={() => navTo('/events')}
-                data-cursor="ALL"
-                className="group flex items-center gap-2 rounded-full px-7 py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
-              >
-                Explore all 60+ events
-                <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-              </button>
-            </div>
-          </Reveal>
-        )}
       </div>
     </section>
   )

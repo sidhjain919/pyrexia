@@ -37,11 +37,11 @@ export default function Loader({ onDone }: { onDone: () => void }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
       >
-        <img src={asset('logo.png')} alt="PYREXIA 2026" className="relative w-72 drop-shadow-[0_10px_24px_rgba(0,0,0,0.5)] sm:w-96" />
+        <img src={asset('logo-wordmark.webp')} alt="PYREXIA 2026" className="relative w-72 drop-shadow-[0_10px_24px_rgba(0,0,0,0.5)] sm:w-96" />
       </motion.div>
 
       <motion.p
-        className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/60"
+        className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/70"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.8 }}
@@ -58,7 +58,7 @@ export default function Loader({ onDone }: { onDone: () => void }) {
           transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
-      <p className="mt-4 font-log text-[0.58rem] uppercase tracking-cinema text-gold/50">
+      <p className="mt-4 font-log text-[0.72rem] uppercase tracking-cinema text-gold/65">
         Charting the course…
       </p>
     </motion.div>

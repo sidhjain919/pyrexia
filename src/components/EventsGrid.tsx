@@ -18,7 +18,10 @@ type Row = {
   photo: string
 }
 
-const rows: Row[] = territories.flatMap((t) =>
+// The opening ceremony (Fahrenheit) isn't a competition to browse/register for.
+const registerable = territories.filter((t) => !t.noRegister)
+
+const rows: Row[] = registerable.flatMap((t) =>
   t.events.map((e) => ({
     name: e.name,
     tag: e.tag,
@@ -35,50 +38,57 @@ export default function EventsGrid() {
   const { openRegister } = useRegistration()
   const reduce = useReducedMotion()
   const [query, setQuery] = useState('')
-  const [cat, setCat] = useState('All')
+  const [cat, setCat] = useState(registerable[0].code)
 
-  const cats = ['All', ...territories.map((t) => t.code)]
+  const cats = registerable.map((t) => t.code)
+  const searching = query.trim().length > 0
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return rows.filter((r) => {
-      const matchCat = cat === 'All' || r.terr === cat
+      const matchCat = searching || r.terr === cat
       const matchQ = !q || r.name.toLowerCase().includes(q) || r.tag.toLowerCase().includes(q) || r.terr.toLowerCase().includes(q)
       return matchCat && matchQ
     })
-  }, [query, cat])
+  }, [query, cat, searching])
 
   return (
     <section className="relative py-14 sm:py-18 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle index="◆" eyebrow="Event Discovery" title="Every Treasure on the Island" kicker="Search 60+ competitions, filter by territory, and sign up for the ones you'll conquer." />
+        <SectionTitle index="◆" eyebrow="Event Discovery" title="Every Treasure on the Island" kicker="Pick a territory to see its events, or search across all 60+ competitions at once." />
 
         {/* controls */}
-        <div className="mt-10 flex flex-col gap-4">
+        <div className="mt-10 flex flex-col gap-5">
           <div className="relative max-w-md">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-parchment/40" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search events…"
+              placeholder="Search all events…"
               className="w-full rounded-full border border-gold/20 bg-ocean/60 py-3 pl-11 pr-4 text-offwhite placeholder:text-parchment/35 outline-none focus:border-gold/60"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {cats.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`rounded-full px-3.5 py-1.5 font-log text-[0.62rem] uppercase tracking-wide2 transition-all ${
-                  cat === c ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss' : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/45">
+
+          {/* territory tabs — hidden while actively searching across everything */}
+          {!searching && (
+            <div className="flex flex-wrap gap-2">
+              {cats.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCat(c)}
+                  className={`font-accent rounded-full px-4 py-1.5 text-[0.78rem] uppercase tracking-wide2 transition-all ${
+                    cat === c ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss' : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/62">
             {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
+            {searching ? ' found' : ` in ${cat}`}
           </div>
         </div>
 
@@ -111,7 +121,7 @@ export default function EventsGrid() {
                   >
                     <Icon name={r.icon} size={15} style={{ color: '#fff' }} />
                   </span>
-                  <span className="absolute bottom-3 left-3 font-log text-[0.56rem] uppercase tracking-wide2" style={{ color: r.accent }}>
+                  <span className="absolute bottom-3 left-3 font-log text-[0.7rem] uppercase tracking-wide2" style={{ color: r.accent }}>
                     {r.terr} · {r.territory}
                   </span>
                 </div>
@@ -128,7 +138,7 @@ export default function EventsGrid() {
                       <Ticket size={13} />
                       Register
                     </button>
-                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50 ring-1 ring-gold/15">
+                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-gold/15">
                       <ArrowUpRight size={12} />
                     </span>
                   </div>

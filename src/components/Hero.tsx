@@ -82,7 +82,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="font-log text-[0.62rem] uppercase tracking-cinema text-parchment/70 sm:text-xs"
+          className="font-log text-xs uppercase tracking-cinema text-parchment/70 sm:text-sm"
         >
           {SITE.institution} · presents
         </motion.p>
@@ -93,18 +93,18 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="relative mt-3 flex items-center justify-center"
+          className="relative mt-7 flex items-center justify-center sm:mt-8"
         >
-          {/* soft dark halo so the neon wordmark pops off the scene */}
+          {/* soft dark halo so the wordmark pops off the scene */}
           <div
             aria-hidden
             className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[130%] w-[122%] -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ background: 'radial-gradient(closest-side, rgba(3,11,15,0.6), rgba(3,11,15,0.25) 55%, transparent 75%)', filter: 'blur(10px)' }}
           />
           <img
-            src={asset('logo.png')}
+            src={asset('logo-full.webp')}
             alt="PYREXIA 2026"
-            className="anim-float relative w-[min(88vw,700px)]"
+            className="anim-float relative w-[min(58vw,400px)]"
             style={{ filter: 'drop-shadow(0 10px 26px rgba(0,0,0,0.5))' }}
           />
         </motion.div>
@@ -115,7 +115,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-4 flex items-center gap-4"
+          className="mt-6 flex items-center gap-4"
         >
           <span className="h-px w-8 bg-gold/50 sm:w-14" />
           <span className="font-display text-sm uppercase tracking-[0.32em] text-parchment/90 sm:text-base">
@@ -147,7 +147,7 @@ export default function Hero() {
           <a
             href="#legend"
             data-cursor="ENTER"
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-8 py-4 text-[0.78rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
+            className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-8 py-4 text-[0.9rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
           >
             Enter the Island
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -155,7 +155,7 @@ export default function Hero() {
           <a
             href="#island"
             data-cursor="EXPLORE"
-            className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.78rem] font-medium uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
+            className="font-accent inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.9rem] uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
           >
             Explore PYREXIA
           </a>
@@ -168,12 +168,12 @@ export default function Hero() {
         variants={rise}
         initial="hidden"
         animate="show"
-        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-6 font-log text-[0.58rem] uppercase tracking-cinema text-parchment/55 sm:text-[0.62rem]"
+        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-6 font-log text-[0.78rem] uppercase tracking-cinema text-parchment/70 sm:text-sm"
       >
         <span>{SITE.window}</span>
-        <span className="h-3 w-px bg-gold/30" />
+        <span className="h-4 w-px bg-gold/40" />
         <span className="hidden sm:inline">30°06′N&nbsp;·&nbsp;78°16′E</span>
-        <span className="h-3 w-px bg-gold/30 sm:hidden" />
+        <span className="hidden h-4 w-px bg-gold/40 sm:block" />
         <span>{SITE.edition}</span>
       </motion.div>
 
@@ -185,7 +185,7 @@ export default function Hero() {
         animate={reduce ? undefined : { y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <span className="font-log text-[0.55rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
+        <span className="font-log text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
           Set sail
         </span>
         <ChevronDown size={16} />
