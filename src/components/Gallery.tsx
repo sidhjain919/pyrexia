@@ -54,7 +54,7 @@ export default function Gallery() {
 
         {/* filters */}
         <Reveal>
-          <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-6 mt-10 flex flex-nowrap gap-2 overflow-x-auto px-6 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
             {(['All', ...galleryCats] as Filter[]).map((c) => (
               <button
                 key={c}
@@ -63,7 +63,7 @@ export default function Gallery() {
                 className={`font-accent shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 ${
                   filter === c
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
-                    : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
+                    : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'
                 }`}
               >
                 {c}
@@ -75,7 +75,7 @@ export default function Gallery() {
         {/* mosaic — dense grid fills gaps; wide/tall shots span extra cells */}
         <motion.div
           layout
-          className="mt-10 grid grid-flow-dense auto-rows-[116px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-3 lg:auto-rows-[168px] lg:grid-cols-4"
+          className="mt-8 grid grid-flow-dense auto-rows-[116px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-3 lg:auto-rows-[168px] lg:grid-cols-4"
         >
           <AnimatePresence mode="popLayout">
             {shown.map((s, i) => (
@@ -117,7 +117,7 @@ export default function Gallery() {
               <button
                 onClick={() => setVisible((v) => v + PAGE_SIZE)}
                 data-cursor="MORE"
-                className="font-accent group flex items-center gap-2 rounded-full px-7 py-3 text-[0.86rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
+                className="font-accent group flex items-center gap-2 rounded-full px-7 py-3 text-[0.86rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10 hover:ring-gold"
               >
                 Show More
                 <ChevronDown size={15} className="transition-transform group-hover:translate-y-0.5" />
@@ -140,7 +140,7 @@ export default function Gallery() {
             <button
               onClick={close}
               aria-label="Close"
-              className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright hover:bg-gold/10"
+              className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright hover:bg-gold/10"
             >
               <X size={18} />
             </button>

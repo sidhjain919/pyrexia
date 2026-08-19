@@ -63,7 +63,7 @@ export default function Artists() {
                 />
                 {/* grain + gold outline on hover */}
                 <div className="grain absolute inset-0" />
-                <div className="absolute inset-0 ring-1 ring-inset ring-transparent transition-all duration-500 group-hover:ring-gold/50" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-transparent transition-all duration-500 group-hover:ring-gold/85" />
                 {/* monogram seal */}
                 <span
                   className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full font-deco text-[0.62rem] backdrop-blur"

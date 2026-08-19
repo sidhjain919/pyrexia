@@ -236,12 +236,6 @@ export default function IslandMap() {
                     style={{ objectPosition: territoryFocus[active.id] ?? '50% 28%' }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b1e26] via-[#0b1e26]/40 to-transparent" />
-                  <span
-                    className="absolute bottom-3 left-4 font-display text-[0.7rem] uppercase tracking-cinema"
-                    style={{ color: active.accent }}
-                  >
-                    {active.territory}
-                  </span>
                 </div>
 
                 <div className="p-7 pt-5">

@@ -29,21 +29,22 @@ export default function OceanScene() {
       />
 
       {/*
-        Moon. On mobile it sits top-right, high above the eyebrow (vertical
-        clearance). On desktop it moves to the upper-left margin — the centered
-        title never reaches that band at any viewport height, so no overlap.
+        Moon. On mobile it is pinned into the very top-right corner, above the
+        eyebrow's band — at its old centre-right position its glow washed out
+        "AIIMS Rishikesh · presents". On desktop it moves to the upper-left
+        margin, which the centred title never reaches at any viewport height.
       */}
       <div
         data-depth="6"
-        className="parallax-layer absolute left-[58%] top-[0%] h-28 w-28 rounded-full sm:left-[2%] sm:top-[11%] sm:h-44 sm:w-44"
+        className="parallax-layer absolute left-[48%] top-[-5%] h-28 w-28 rounded-full sm:left-[2%] sm:top-[11%] sm:h-44 sm:w-44"
         style={{
           background: 'radial-gradient(circle, rgba(230,213,174,0.75) 0%, rgba(230,213,174,0.14) 34%, transparent 60%)',
         }}
       />
       <div
         data-depth="6"
-        className="parallax-layer absolute left-[64%] top-[3%] h-11 w-11 rounded-full sm:left-[6%] sm:top-[14%] sm:h-14 sm:w-14"
-        style={{ background: 'radial-gradient(circle, #f4efe3 0%, #d9c79a 70%, #b89f6a 100%)', boxShadow: '0 0 46px 10px rgba(232,213,174,0.3)' }}
+        className="parallax-layer absolute left-[56%] top-[0.8%] h-8 w-8 rounded-full sm:left-[6%] sm:top-[14%] sm:h-14 sm:w-14"
+        style={{ background: 'radial-gradient(circle, #f4efe3 0%, #d9c79a 70%, #b89f6a 100%)', boxShadow: '0 0 34px 6px rgba(232,213,174,0.24)' }}
       />
 
       {/* Stars */}
@@ -61,26 +62,64 @@ export default function OceanScene() {
         ))}
       </svg>
 
-      {/* Distant island silhouette */}
-      <svg
+      {/*
+        Distant island. `slice` makes the silhouette cover the full band at any
+        width — with `meet` it shrank to a thin strip on mobile and left hard
+        vertical walls where the artboard ended on desktop. Two ridges + a haze
+        wash give it depth; the paths run past the viewBox edges so the coast
+        never terminates in a straight cut.
+      */}
+      <div
         data-depth="10"
-        className="parallax-layer absolute bottom-[26%] left-0 h-[42%] w-full"
-        viewBox="0 0 1440 420"
-        preserveAspectRatio="xMidYMax meet"
+        className="parallax-layer absolute bottom-[27%] left-0 h-[36%] w-full sm:bottom-[26%] sm:h-[42%]"
+        style={{
+          maskImage: 'linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%)',
+        }}
       >
-        <path
-          d="M0 420 L0 300 C120 270 210 250 320 258 C360 210 420 168 470 176 C520 130 560 120 600 168 C660 150 700 210 760 250 C880 235 980 265 1100 250 C1220 240 1330 268 1440 290 L1440 420 Z"
-          fill="#04151c"
-          opacity="0.9"
-        />
-        {/* palm hint */}
-        <g stroke="#02100f" strokeWidth="4" fill="none" opacity="0.85">
-          <path d="M596 170 C594 150 590 130 588 116" />
-          <path d="M588 116 C572 108 556 112 546 122" />
-          <path d="M588 116 C604 106 622 110 632 122" />
-          <path d="M588 116 C580 100 578 92 584 82" />
-        </g>
-      </svg>
+        <svg className="h-full w-full" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="ridgeBack" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0a2c37" />
+              <stop offset="100%" stopColor="#062028" />
+            </linearGradient>
+            <linearGradient id="ridgeFront" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#05171f" />
+              <stop offset="100%" stopColor="#020d12" />
+            </linearGradient>
+            <filter id="ridgeHaze" x="-10%" y="-30%" width="120%" height="180%">
+              <feGaussianBlur stdDeviation="3.2" />
+            </filter>
+            <filter id="ridgeSoft" x="-10%" y="-30%" width="120%" height="180%">
+              <feGaussianBlur stdDeviation="1.1" />
+            </filter>
+          </defs>
+
+          {/* far ridge — hazier, sits behind */}
+          <path
+            filter="url(#ridgeHaze)"
+            opacity="0.62"
+            fill="url(#ridgeBack)"
+            d="M-80 420 L-80 332 C90 324 200 308 300 294 C382 282 430 254 480 228 C520 208 560 216 596 238 C652 270 720 260 800 252 C900 242 1000 258 1092 242 C1162 230 1210 202 1264 178 C1292 166 1318 170 1340 190 C1382 228 1424 264 1520 288 L1520 420 Z"
+          />
+
+          {/* front ridge — the main island */}
+          <path
+            filter="url(#ridgeSoft)"
+            opacity="0.96"
+            fill="url(#ridgeFront)"
+            d="M-80 420 L-80 318 C110 302 240 288 360 276 C420 270 452 252 486 216 C512 188 540 160 574 134 C590 122 606 120 622 132 C660 160 694 202 726 240 C748 264 780 274 820 278 C960 290 1100 276 1240 290 C1344 300 1424 310 1520 318 L1520 420 Z"
+          />
+
+          {/* palms on the summit */}
+          <g stroke="#010a0e" strokeWidth="4" fill="none" opacity="0.8">
+            <path d="M628 130 C626 110 622 90 620 76" />
+            <path d="M620 76 C604 68 588 72 578 82" />
+            <path d="M620 76 C636 66 654 70 664 82" />
+            <path d="M620 76 C612 60 610 52 616 42" />
+          </g>
+        </svg>
+      </div>
 
       {/* Fog band behind ship */}
       <div

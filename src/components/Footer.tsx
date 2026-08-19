@@ -64,7 +64,7 @@ export default function Footer() {
                     href={s.href}
                     className="group flex items-center gap-3 text-parchment/65 transition-colors hover:text-gold-bright"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-gold/25 group-hover:ring-gold/60">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 group-hover:ring-gold/60">
                       <Icon name={s.icon} size={15} />
                     </span>
                     <span className="text-[0.85rem]">{s.handle}</span>

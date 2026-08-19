@@ -115,7 +115,7 @@ export default function RegisterForm({
         </p>
         <button
           onClick={onDone}
-          className="mt-6 rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 hover:bg-gold/10"
+          className="mt-6 rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/40 hover:bg-gold/10"
         >
           Close
         </button>
@@ -134,7 +134,7 @@ export default function RegisterForm({
           <div key={s} className="flex items-center gap-3">
             <span
               className={`flex h-7 w-7 items-center justify-center rounded-full font-body text-[0.7rem] transition-colors ${
-                step >= i ? 'bg-gold-bright text-abyss' : 'ring-1 ring-gold/30 text-parchment/50'
+                step >= i ? 'bg-gold-bright text-abyss' : 'ring-1 ring-inset ring-gold/45 text-parchment/50'
               }`}
             >
               {step > i ? <Check size={13} /> : i + 1}
@@ -179,8 +179,8 @@ export default function RegisterForm({
                       onClick={() => set('delegate', d)}
                       className={`rounded-full px-4 py-2 text-[0.78rem] transition-colors ${
                         form.delegate === d
-                          ? 'bg-gold/15 text-gold-bright ring-1 ring-gold/50'
-                          : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/40'
+                          ? 'bg-gold/15 text-gold-bright ring-1 ring-inset ring-gold/50'
+                          : 'text-parchment/65 ring-1 ring-inset ring-gold/40 hover:ring-gold/80'
                       }`}
                     >
                       {d}
@@ -253,7 +253,7 @@ export default function RegisterForm({
             <div className="mt-4 flex items-center justify-between gap-3">
               <button
                 onClick={() => setStep(0)}
-                className="rounded-full px-5 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-gold/20 hover:ring-gold/40"
+                className="rounded-full px-5 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 hover:ring-gold/80"
               >
                 Back
               </button>

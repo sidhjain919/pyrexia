@@ -38,7 +38,7 @@ export default function CaptainsLog() {
 
         {/* day tabs */}
         <Reveal>
-          <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-6 mt-10 flex flex-nowrap gap-2 overflow-x-auto px-6 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
             {captainsLog.map((d, i) => (
               <button
                 key={d.day}
@@ -47,7 +47,7 @@ export default function CaptainsLog() {
                 className={`font-accent shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 transition-all duration-300 ${
                   i === day
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
-                    : 'text-parchment/70 ring-1 ring-gold/20 hover:ring-gold/50'
+                    : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'
                 }`}
               >
                 {d.day}

@@ -97,7 +97,7 @@ export default function Navbar() {
               onClick={() => setOpen(true)}
               aria-label="Open menu"
               data-cursor="MAP"
-              className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright lg:hidden"
             >
               <Menu size={18} />
             </button>
@@ -130,7 +130,7 @@ export default function Navbar() {
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
-                className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-colors hover:bg-gold/10"
+                className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright transition-colors hover:bg-gold/10"
               >
                 <X size={18} />
               </button>

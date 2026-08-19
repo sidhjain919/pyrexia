@@ -72,7 +72,7 @@ export default function CTA() {
           <button
             onClick={() => navTo('/#island')}
             data-cursor="EVENTS"
-            className="font-accent inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.92rem] uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
+            className="font-accent inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.92rem] uppercase tracking-wide2 text-parchment ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
           >
             Explore Events
           </button>

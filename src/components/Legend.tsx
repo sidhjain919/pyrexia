@@ -111,7 +111,7 @@ export default function Legend() {
 
         {/* Metadata chips */}
         <Reveal delay={0.1}>
-          <div className="mt-16 flex flex-wrap justify-center gap-2.5 sm:justify-start">
+          <div className="mt-16 flex flex-wrap justify-center gap-2.5">
             {LEGEND_META.map((m) => (
               <span
                 key={m}

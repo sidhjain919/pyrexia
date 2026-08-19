@@ -36,7 +36,7 @@ export default function Navigator() {
                     >
                       <span className="font-display text-lg text-offwhite">{f.q}</span>
                       <span
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-transform duration-300"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright transition-transform duration-300"
                         style={{ transform: isOpen ? 'rotate(45deg)' : 'none' }}
                       >
                         <Plus size={14} />

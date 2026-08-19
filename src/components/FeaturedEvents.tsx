@@ -45,7 +45,7 @@ export default function FeaturedEvents() {
               onClick={() => scrollBy(-1)}
               aria-label="Scroll left"
               data-cursor="PREV"
-              className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-colors hover:bg-gold/10"
+              className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright transition-colors hover:bg-gold/10"
             >
               <ArrowLeft size={16} />
             </button>
@@ -53,7 +53,7 @@ export default function FeaturedEvents() {
               onClick={() => scrollBy(1)}
               aria-label="Scroll right"
               data-cursor="NEXT"
-              className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-gold/30 text-gold-bright transition-colors hover:bg-gold/10"
+              className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright transition-colors hover:bg-gold/10"
             >
               <ArrowRight size={16} />
             </button>
@@ -98,7 +98,7 @@ export default function FeaturedEvents() {
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="font-display text-[0.6rem] uppercase tracking-wide2" style={{ color: t.accent }}>
-                    {t.code} · {t.territory}
+                    {t.code}
                   </div>
                   <h3 className="mt-2 font-display text-2xl leading-tight text-offwhite">{p.event}</h3>
                   <p className="mt-1.5 text-[0.82rem] text-parchment/60">{sub?.tag ?? t.subtitle}</p>
@@ -114,7 +114,7 @@ export default function FeaturedEvents() {
                     <button
                       onClick={() => navTo('/#island')}
                       data-cursor="DISCOVER"
-                      className="rounded-full px-3.5 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-gold/15 hover:text-gold-bright hover:ring-gold/40"
+                      className="rounded-full px-3.5 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-inset ring-gold/35 hover:text-gold-bright hover:ring-gold/80"
                     >
                       Info
                     </button>

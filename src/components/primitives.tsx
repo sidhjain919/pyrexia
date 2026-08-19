@@ -245,7 +245,7 @@ export function MagneticButton({
   const styles =
     variant === 'solid'
       ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss shadow-[0_18px_40px_-18px_rgba(200,155,60,0.8)] hover:from-gold hover:to-gold-deep'
-      : 'text-parchment ring-1 ring-gold/40 hover:ring-gold hover:text-gold-bright'
+      : 'text-parchment ring-1 ring-inset ring-gold/40 hover:ring-gold hover:text-gold-bright'
   const MotionCmp = motion[href ? 'a' : 'button']
   return (
     <MotionCmp

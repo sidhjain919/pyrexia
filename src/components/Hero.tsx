@@ -62,7 +62,7 @@ export default function Hero() {
     <section
       id="home"
       ref={scope}
-      className="grain relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden"
+      className="grain relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden pb-6 pt-24 sm:pb-0 sm:pt-0"
     >
       <OceanScene />
 
@@ -77,6 +77,14 @@ export default function Hero() {
         style={{ background: 'radial-gradient(120% 80% at 50% 44%, transparent 40%, rgba(3,11,15,0.75) 100%)' }}
       />
 
+      {/* bottom scrim — the meta strip sits over the drifting wave rows, and the
+          strokes cut straight through the type without it */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-36 sm:h-44"
+        style={{ background: 'linear-gradient(180deg, transparent 0%, rgba(3,11,15,0.55) 45%, rgba(3,11,15,0.9) 100%)' }}
+      />
+
       {/* Title block */}
       <div className="relative z-10 flex flex-col items-center px-6 text-center">
         <motion.p
@@ -84,7 +92,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="font-display text-xs uppercase tracking-cinema text-parchment/70 sm:text-sm"
+          className="font-display text-xs uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_14px_rgba(3,11,15,0.95)] sm:text-sm"
         >
           {SITE.institution} · presents
         </motion.p>
@@ -95,7 +103,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="relative mt-7 flex items-center justify-center sm:mt-8"
+          className="relative mt-10 flex items-center justify-center sm:mt-8"
         >
           {/* soft dark halo so the wordmark pops off the scene */}
           <div
@@ -165,7 +173,7 @@ export default function Hero() {
         variants={rise}
         initial="hidden"
         animate="show"
-        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-display text-[0.72rem] uppercase tracking-cinema text-parchment/70 sm:absolute sm:bottom-8 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
+        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-display text-[0.72rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
       >
         <span>{SITE.window}</span>
         <span className="h-4 w-px bg-gold/40" />

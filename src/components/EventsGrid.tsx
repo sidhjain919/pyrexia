@@ -71,13 +71,15 @@ export default function EventsGrid() {
 
           {/* territory tabs — a swipeable strip on mobile, wraps normally from sm up; hidden while searching */}
           {!searching && (
-            <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
               {cats.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCat(c)}
                   className={`font-accent shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-[0.78rem] uppercase tracking-wide2 transition-all ${
-                    cat === c ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss' : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
+                    cat === c
+                      ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
+                      : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'
                   }`}
                 >
                   {c}
@@ -122,7 +124,7 @@ export default function EventsGrid() {
                     <Icon name={r.icon} size={15} style={{ color: '#fff' }} />
                   </span>
                   <span className="absolute bottom-3 left-3 font-display text-[0.7rem] uppercase tracking-wide2" style={{ color: r.accent }}>
-                    {r.terr} · {r.territory}
+                    {r.terr}
                   </span>
                 </div>
                 {/* body */}
@@ -138,7 +140,7 @@ export default function EventsGrid() {
                       <Ticket size={13} />
                       Register
                     </button>
-                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-gold/15">
+                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
                       <ArrowUpRight size={12} />
                     </span>
                   </div>

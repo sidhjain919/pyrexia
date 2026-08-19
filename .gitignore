@@ -15,3 +15,8 @@ npm-debug.log*
 .idea
 .DS_Store
 *.local
+
+# local verification artefacts
+.shots/
+.shot*.mjs
+.devserver.log

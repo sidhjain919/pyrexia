@@ -47,7 +47,7 @@ export default function RegisterModal() {
               <button
                 onClick={closeRegister}
                 aria-label="Close"
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-abyss/50 text-gold-bright ring-1 ring-gold/30 hover:bg-abyss/80"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-abyss/50 text-gold-bright ring-1 ring-inset ring-gold/45 hover:bg-abyss/80"
               >
                 <X size={16} />
               </button>

@@ -89,7 +89,7 @@ export default function Sponsors() {
             <button
               onClick={() => navTo('/#contact')}
               data-cursor="ALLY"
-              className="rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
+              className="rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/40 transition-colors hover:bg-gold/10"
             >
               Become an Ally →
             </button>
