@@ -52,7 +52,7 @@ export default function RegisterModal() {
                 <X size={16} />
               </button>
               <div className="absolute bottom-4 left-6">
-                <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/80">Join the Voyage</div>
+                <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/80">Join the Voyage</div>
                 <h2 className="font-display text-2xl text-offwhite sm:text-3xl">Register for PYREXIA 2026</h2>
               </div>
             </div>

@@ -85,7 +85,7 @@ export default function FeaturedEvents() {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/40 to-transparent" />
-                  <span className="absolute left-4 top-3 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/80">
+                  <span className="absolute left-4 top-3 font-display text-[0.6rem] uppercase tracking-cinema text-parchment/80">
                     No. {String(i + 1).padStart(2, '0')}
                   </span>
                   <span
@@ -97,7 +97,7 @@ export default function FeaturedEvents() {
                 </div>
 
                 <div className="flex flex-1 flex-col p-5">
-                  <div className="font-log text-[0.6rem] uppercase tracking-wide2" style={{ color: t.accent }}>
+                  <div className="font-display text-[0.6rem] uppercase tracking-wide2" style={{ color: t.accent }}>
                     {t.code} · {t.territory}
                   </div>
                   <h3 className="mt-2 font-display text-2xl leading-tight text-offwhite">{p.event}</h3>
@@ -114,7 +114,7 @@ export default function FeaturedEvents() {
                     <button
                       onClick={() => navTo('/#island')}
                       data-cursor="DISCOVER"
-                      className="rounded-full px-3.5 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-gold/15 hover:text-gold-bright hover:ring-gold/40"
+                      className="rounded-full px-3.5 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-gold/15 hover:text-gold-bright hover:ring-gold/40"
                     >
                       Info
                     </button>
@@ -131,7 +131,7 @@ export default function FeaturedEvents() {
             className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gold/25 text-center text-gold/70 transition-colors hover:border-gold/50 hover:text-gold-bright"
           >
             <span className="font-display text-lg">All Territories</span>
-            <span className="font-log text-[0.6rem] uppercase tracking-cinema">60+ events await</span>
+            <span className="font-display text-[0.6rem] uppercase tracking-cinema">60+ events await</span>
             <ArrowRight size={18} />
           </button>
         </div>

@@ -110,12 +110,12 @@ export default function RegisterForm({
             {events.length > 8 && <span className="px-2 py-1 text-[0.72rem] text-parchment/60">+{events.length - 8} more</span>}
           </div>
         )}
-        <p className="mt-6 font-log text-[0.72rem] uppercase tracking-cinema text-parchment/58">
+        <p className="mt-6 font-display text-[0.72rem] uppercase tracking-cinema text-parchment/58">
           Demo capture · connect a backend or Google Form to collect live entries
         </p>
         <button
           onClick={onDone}
-          className="mt-6 rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 hover:bg-gold/10"
+          className="mt-6 rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 hover:bg-gold/10"
         >
           Close
         </button>
@@ -133,13 +133,13 @@ export default function RegisterForm({
         {['The Crew', 'Choose Events'].map((s, i) => (
           <div key={s} className="flex items-center gap-3">
             <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full font-log text-[0.7rem] transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-full font-body text-[0.7rem] transition-colors ${
                 step >= i ? 'bg-gold-bright text-abyss' : 'ring-1 ring-gold/30 text-parchment/50'
               }`}
             >
               {step > i ? <Check size={13} /> : i + 1}
             </span>
-            <span className={`font-log text-[0.66rem] uppercase tracking-wide2 ${step >= i ? 'text-gold-bright' : 'text-parchment/62'}`}>
+            <span className={`font-display text-[0.66rem] uppercase tracking-wide2 ${step >= i ? 'text-gold-bright' : 'text-parchment/62'}`}>
               {s}
             </span>
             {i === 0 && <span className="mx-1 h-px w-6 bg-gold/25 sm:w-10" />}
@@ -234,7 +234,7 @@ export default function RegisterForm({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[0.86rem] text-offwhite">{e.name}</span>
-                      <span className="block truncate font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/62">
+                      <span className="block truncate font-display text-[0.7rem] uppercase tracking-wide2 text-parchment/62">
                         {e.terr}
                       </span>
                     </span>
@@ -253,11 +253,11 @@ export default function RegisterForm({
             <div className="mt-4 flex items-center justify-between gap-3">
               <button
                 onClick={() => setStep(0)}
-                className="rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-gold/20 hover:ring-gold/40"
+                className="rounded-full px-5 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-gold/20 hover:ring-gold/40"
               >
                 Back
               </button>
-              <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/70">
+              <span className="font-display text-[0.62rem] uppercase tracking-wide2 text-parchment/70">
                 {events.length} selected
               </span>
               <button
@@ -278,7 +278,7 @@ export default function RegisterForm({
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/70">{label}</span>
+      <span className="mb-1.5 block font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/70">{label}</span>
       {children}
       {error && <span className="mt-1 block text-[0.72rem] text-blood/90" style={{ color: '#e0894a' }}>{error}</span>}
     </label>

@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import { ArrowRight, ChevronDown, Ticket } from 'lucide-react'
 import OceanScene from './OceanScene'
-import { Compass } from './primitives'
+import { Compass, MagneticButton } from './primitives'
 import { SITE } from '../data/site'
 import { asset } from '../lib/asset'
+import { useRegistration } from '../registration/context'
 
 export default function Hero() {
   const scope = useRef<HTMLElement>(null)
   const reduce = useReducedMotion()
+  const { openRegister } = useRegistration()
 
   // Mouse parallax across depth layers
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="font-log text-xs uppercase tracking-cinema text-parchment/70 sm:text-sm"
+          className="font-display text-xs uppercase tracking-cinema text-parchment/70 sm:text-sm"
         >
           {SITE.institution} · presents
         </motion.p>
@@ -115,15 +117,17 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-6 flex items-center gap-4"
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
         >
-          <span className="h-px w-8 bg-gold/50 sm:w-14" />
-          <span className="font-display text-sm uppercase tracking-[0.32em] text-parchment/90 sm:text-base">
+          <span className="hidden h-px w-8 bg-gold/50 sm:block sm:w-14" />
+          <span className="font-display text-sm uppercase tracking-[0.24em] text-parchment/90 sm:tracking-[0.32em] sm:text-base">
             Pirates of the Lost Island
           </span>
-          <span className="text-gold-bright">·</span>
-          <span className="font-display text-sm tracking-[0.3em] text-gold-bright sm:text-base">2026</span>
-          <span className="h-px w-8 bg-gold/50 sm:w-14" />
+          <span className="flex items-center gap-3">
+            <span className="text-gold-bright">·</span>
+            <span className="font-display text-sm tracking-[0.3em] text-gold-bright sm:text-base">2026</span>
+          </span>
+          <span className="hidden h-px w-8 bg-gold/50 sm:block sm:w-14" />
         </motion.div>
 
         <motion.p
@@ -144,31 +148,24 @@ export default function Hero() {
           animate="show"
           className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
         >
-          <a
-            href="#legend"
-            data-cursor="ENTER"
-            className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-8 py-4 text-[0.9rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
-          >
+          <MagneticButton onClick={() => openRegister()} dataCursor="JOIN">
+            <Ticket size={16} />
+            Register Now
+          </MagneticButton>
+          <MagneticButton href="#legend" variant="ghost" dataCursor="ENTER" className="group">
             Enter the Island
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-          </a>
-          <a
-            href="#island"
-            data-cursor="EXPLORE"
-            className="font-accent inline-flex items-center gap-2 rounded-full px-7 py-4 text-[0.9rem] uppercase tracking-wide2 text-parchment ring-1 ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold"
-          >
-            Explore PYREXIA
-          </a>
+          </MagneticButton>
         </motion.div>
       </div>
 
-      {/* meta strip */}
+      {/* meta strip — in normal flow on mobile so it can't collide with the buttons above; floats at the true bottom from sm up */}
       <motion.div
         custom={4}
         variants={rise}
         initial="hidden"
         animate="show"
-        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-6 font-log text-[0.78rem] uppercase tracking-cinema text-parchment/70 sm:text-sm"
+        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-display text-[0.72rem] uppercase tracking-cinema text-parchment/70 sm:absolute sm:bottom-8 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
       >
         <span>{SITE.window}</span>
         <span className="h-4 w-px bg-gold/40" />
@@ -185,7 +182,7 @@ export default function Hero() {
         animate={reduce ? undefined : { y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <span className="font-log text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
+        <span className="font-display text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
           Set sail
         </span>
         <ChevronDown size={16} />

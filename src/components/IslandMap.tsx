@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Phone, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
@@ -7,14 +7,48 @@ import { Icon } from '../lib/icons'
 import { Reveal, SectionTitle, Compass } from './primitives'
 import { useRegistration } from '../registration/context'
 
+/** A smooth, gently irregular island coastline — deterministic per territory so it never reshuffles on re-render. */
+function islandPath(cx: number, cy: number, r: number, seed: number) {
+  const n = 9
+  const pts: [number, number][] = []
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2
+    const jitter = 1 + 0.16 * Math.sin(seed * 12.9898 + i * 4.73) * Math.cos(seed * 3.71 + i * 1.9)
+    const rad = r * jitter
+    pts.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad * 0.82])
+  }
+  let d = `M ${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)} `
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n]
+    const p1 = pts[i]
+    const p2 = pts[(i + 1) % n]
+    const p3 = pts[(i + 2) % n]
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6
+    d += `C ${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)} `
+  }
+  return d + 'Z'
+}
+
 export default function IslandMap() {
   const reduce = useReducedMotion()
   const { openRegister } = useRegistration()
   const [activeId, setActiveId] = useState('chorea')
   const active = territories.find((t) => t.id === activeId)!
 
-  // route path through territories (visual only)
+  // route path through territories, in visiting order (visual only)
   const route = territories.map((t) => `${t.map.x},${t.map.y}`).join(' ')
+
+  // ship heading: angle from wherever it last was, toward the newly active island
+  const prevPos = useRef({ x: active.map.x, y: active.map.y })
+  const dx = active.map.x - prevPos.current.x
+  const dy = active.map.y - prevPos.current.y
+  const heading = dx === 0 && dy === 0 ? 0 : (Math.atan2(dy, dx) * 180) / Math.PI
+  useEffect(() => {
+    prevPos.current = { x: active.map.x, y: active.map.y }
+  }, [activeId, active.map.x, active.map.y])
 
   return (
     <section id="island" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
@@ -27,64 +61,123 @@ export default function IslandMap() {
           index="02"
           eyebrow="Explore the Island"
           title="Eleven Territories"
-          kicker="Every vertical of PYREXIA is a stretch of the lost island. Chart a marker to discover what waits there."
+          eyebrowFont="plain"
+          kicker="Every vertical of PYREXIA is a stretch of the lost archipelago. Chart a course, and your ship sails there — pick an island to see what waits ashore."
         />
 
         <div className="mt-14 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
           {/* MAP */}
           <Reveal>
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl frame-gold map-grid bg-[#071b22] sm:aspect-[16/11]">
-              {/* island landmass */}
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl frame-gold bg-[#071b22] sm:aspect-[16/11]">
+              {/* drifting water light, behind everything */}
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute -inset-x-1/4 -inset-y-1/4 opacity-40"
+                style={{ background: 'radial-gradient(38% 30% at 30% 70%, rgba(47,165,143,0.22), transparent 60%), radial-gradient(30% 24% at 75% 30%, rgba(90,169,208,0.16), transparent 60%)' }}
+                animate={reduce ? undefined : { x: ['0%', '3%', '0%'], y: ['0%', '-2%', '0%'] }}
+                transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <div className="map-grid pointer-events-none absolute inset-0 opacity-25" />
+
               <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
                 <defs>
-                  <radialGradient id="land" cx="50%" cy="45%" r="60%">
-                    <stop offset="0%" stopColor="#123a2c" />
-                    <stop offset="70%" stopColor="#0c2a26" />
-                    <stop offset="100%" stopColor="#0a2029" />
+                  <radialGradient id="land" cx="38%" cy="30%" r="80%">
+                    <stop offset="0%" stopColor="#2a6b4f" />
+                    <stop offset="45%" stopColor="#163f30" />
+                    <stop offset="100%" stopColor="#0a2620" />
                   </radialGradient>
+                  <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#e8d5ae" />
+                    <stop offset="100%" stopColor="#9e7427" />
+                  </linearGradient>
+                  <filter id="islandShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="0.5" stdDeviation="0.6" floodColor="#000" floodOpacity="0.45" />
+                  </filter>
                 </defs>
-                <path
-                  d="M50 8 C64 8 72 16 78 26 C88 30 92 42 90 54 C94 64 88 78 76 84 C70 92 56 94 48 90 C36 94 22 90 16 80 C6 74 8 60 12 52 C6 42 12 28 24 24 C30 14 40 8 50 8 Z"
-                  fill="url(#land)"
-                  stroke="#2b7d84"
-                  strokeWidth="0.4"
-                  opacity="0.9"
-                />
-                {/* contour rings */}
-                {[20, 30, 40].map((r) => (
-                  <path
-                    key={r}
-                    d={`M50 ${50 - r * 0.7} C${50 + r * 0.7} ${50 - r * 0.7} ${50 + r * 0.7} ${50 + r * 0.7} 50 ${50 + r * 0.7} C${50 - r * 0.7} ${50 + r * 0.7} ${50 - r * 0.7} ${50 - r * 0.7} 50 ${50 - r * 0.7} Z`}
-                    fill="none"
-                    stroke="#c89b3c"
-                    strokeWidth="0.15"
-                    opacity="0.16"
-                  />
+
+                {/* wave rings, static chart texture */}
+                {[16, 26, 36, 46].map((r) => (
+                  <ellipse key={r} cx="50" cy="50" rx={r} ry={r * 0.8} fill="none" stroke="#c89b3c" strokeWidth="0.12" opacity="0.12" />
                 ))}
-                {/* dotted route */}
+
+                {/* sailing route between islands */}
                 <motion.polyline
                   points={route}
                   fill="none"
                   stroke="#c89b3c"
                   strokeWidth="0.35"
                   strokeDasharray="1 1.6"
-                  opacity="0.55"
+                  opacity="0.5"
                   initial={reduce ? undefined : { pathLength: 0 }}
                   whileInView={{ pathLength: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 2.4, ease: 'easeInOut' }}
                 />
+
+                {/* the archipelago — one island per territory */}
+                {territories.map((t, i) => {
+                  const on = t.id === activeId
+                  const rOuter = on ? 6.8 : 6.1
+                  return (
+                    <g key={t.id} opacity={on ? 1 : 0.8} filter="url(#islandShadow)" style={{ transition: 'opacity 0.4s' }}>
+                      <path d={islandPath(t.map.x, t.map.y, rOuter, i + 1)} fill="url(#land)" />
+                      {/* a slightly inset shoreline ring — reads as a coastline, not an outline */}
+                      <path
+                        d={islandPath(t.map.x, t.map.y, rOuter * 0.86, i + 1)}
+                        fill="none"
+                        stroke={on ? t.accent : '#3a8a7a'}
+                        strokeWidth={on ? 0.32 : 0.16}
+                        opacity={on ? 0.9 : 0.45}
+                        style={{ transition: 'stroke 0.4s, opacity 0.4s' }}
+                      />
+                    </g>
+                  )
+                })}
+
+                {/* arrival ripple — replays whenever the active island changes */}
+                <motion.circle
+                  key={activeId}
+                  cx={active.map.x}
+                  cy={active.map.y}
+                  r={2}
+                  fill="none"
+                  stroke={active.accent}
+                  strokeWidth={0.4}
+                  initial={reduce ? { opacity: 0 } : { opacity: 0.8, r: 1 }}
+                  animate={reduce ? { opacity: 0 } : { opacity: 0, r: 10 }}
+                  transition={{ duration: 1.4, ease: 'easeOut' }}
+                />
+
+                {/* the ship — sails to whichever island is active */}
+                <motion.g
+                  animate={{ x: active.map.x, y: active.map.y, rotate: heading }}
+                  transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 40, damping: 12, mass: 0.6 }}
+                  style={{ originX: '0px', originY: '0px' }}
+                >
+                  <motion.g
+                    animate={reduce ? undefined : { y: [-3.4, -3.0, -3.4], rotate: [-3, 3, -3] }}
+                    transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    {/* hull */}
+                    <path d="M -2.6,0 L 2.6,0 L 1.7,1.3 L -1.7,1.3 Z" fill="url(#hull)" stroke="#5a3e17" strokeWidth="0.15" />
+                    {/* mast + sail */}
+                    <path d="M 0,0 L 0,-3.6" stroke="#5a3e17" strokeWidth="0.18" />
+                    <path d="M 0.1,-3.4 L 2.2,-1.4 L 0.1,-0.4 Z" fill="#e8d5ae" opacity="0.92" />
+                    {/* tiny flag */}
+                    <path d="M 0,-3.6 L 1.1,-3.3 L 0,-3.0 Z" fill="#b1341f" />
+                  </motion.g>
+                </motion.g>
               </svg>
 
               {/* compass rose */}
-              <div className="pointer-events-none absolute bottom-3 right-3 opacity-40 sm:bottom-5 sm:right-5">
+              <div className="pointer-events-none absolute bottom-3 right-3 opacity-45 sm:bottom-5 sm:right-5">
                 <Compass size={78} />
               </div>
-              <div className="pointer-events-none absolute left-4 top-3 font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
-                The Lost Island · Chart No. VI
+              <div className="pointer-events-none absolute left-4 top-3 font-body text-[0.72rem] italic tracking-wide text-gold/70">
+                The Lost Archipelago · Chart No. VI
               </div>
 
-              {/* markers */}
+              {/* markers, layered over their islands */}
               {territories.map((t) => {
                 const on = t.id === activeId
                 return (
@@ -98,38 +191,25 @@ export default function IslandMap() {
                     className="group absolute -translate-x-1/2 -translate-y-1/2"
                     style={{ left: `${t.map.x}%`, top: `${t.map.y}%` }}
                   >
-                    {/* pulse */}
-                    <span
-                      className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                      style={{
-                        background: t.accent,
-                        opacity: on ? 0.4 : 0,
-                        animation: on && !reduce ? 'pulsemark 1.8s ease-out infinite' : 'none',
-                      }}
-                    />
                     <span
                       className="relative flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-300"
                       style={{
                         borderColor: on ? t.accent : 'rgba(200,155,60,0.5)',
-                        background: on ? t.accent : 'rgba(6,20,27,0.8)',
+                        background: on ? t.accent : 'rgba(6,20,27,0.85)',
                         boxShadow: on ? `0 0 18px ${t.accent}` : 'none',
                         transform: on ? 'scale(1.15)' : 'scale(1)',
                       }}
                     >
-                      <Icon
-                        name={t.icon}
-                        size={13}
-                        style={{ color: on ? '#04141b' : '#e6c25e' }}
-                      />
+                      <Icon name={t.icon} size={13} style={{ color: on ? '#04141b' : '#e6c25e' }} />
                     </span>
-                    <span
-                      className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap font-log text-[0.68rem] uppercase tracking-wide2 transition-opacity ${
-                        on ? 'opacity-100' : 'opacity-0 group-hover:opacity-70'
-                      }`}
-                      style={{ color: t.accent }}
-                    >
-                      {t.territory}
-                    </span>
+                    {on && (
+                      <span
+                        className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 font-display text-[0.68rem] uppercase tracking-wide2 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+                        style={{ background: 'rgba(4,15,20,0.92)', border: `1px solid ${t.accent}77`, color: t.accent }}
+                      >
+                        {t.territory}
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -157,7 +237,7 @@ export default function IslandMap() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b1e26] via-[#0b1e26]/40 to-transparent" />
                   <span
-                    className="absolute bottom-3 left-4 font-log text-[0.7rem] uppercase tracking-cinema"
+                    className="absolute bottom-3 left-4 font-display text-[0.7rem] uppercase tracking-cinema"
                     style={{ color: active.accent }}
                   >
                     {active.territory}
@@ -173,7 +253,7 @@ export default function IslandMap() {
                     <Icon name={active.icon} size={20} style={{ color: active.accent }} />
                   </span>
                   <div>
-                    <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
+                    <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">
                       {active.territory}
                     </div>
                     <h3 className="font-display text-2xl leading-none text-offwhite">{active.code}</h3>
@@ -209,7 +289,7 @@ export default function IslandMap() {
 
                 {active.contacts.length > 0 && (
                   <div className="mt-6">
-                    <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
+                    <div className="font-display text-[0.7rem] uppercase tracking-cinema text-gold/65">
                       Territory Wardens
                     </div>
                     <div className="mt-2 flex flex-col gap-1.5">

@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { gallery, galleryCats, type GalleryCat } from '../data/gallery'
 import { Reveal, SectionTitle } from './primitives'
 
 type Filter = 'All' | GalleryCat
+const PAGE_SIZE = 12
 
 export default function Gallery() {
   const [filter, setFilter] = useState<Filter>('All')
   const [lightbox, setLightbox] = useState<number | null>(null)
+  const [visible, setVisible] = useState(PAGE_SIZE)
   const reduce = useReducedMotion()
 
   const shots = useMemo(() => {
     return filter === 'All' ? gallery : gallery.filter((s) => s.cat === filter)
   }, [filter])
+  const shown = shots.slice(0, visible)
+
+  useEffect(() => setVisible(PAGE_SIZE), [filter])
 
   const close = useCallback(() => setLightbox(null), [])
   const step = useCallback(
@@ -49,13 +54,13 @@ export default function Gallery() {
 
         {/* filters */}
         <Reveal>
-          <div className="mt-10 flex flex-wrap gap-2">
+          <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
             {(['All', ...galleryCats] as Filter[]).map((c) => (
               <button
                 key={c}
                 onClick={() => setFilter(c)}
                 data-cursor="FILTER"
-                className={`font-accent rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 ${
+                className={`font-accent shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 ${
                   filter === c
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                     : 'text-parchment/65 ring-1 ring-gold/20 hover:ring-gold/50'
@@ -73,7 +78,7 @@ export default function Gallery() {
           className="mt-10 grid grid-flow-dense auto-rows-[116px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-3 lg:auto-rows-[168px] lg:grid-cols-4"
         >
           <AnimatePresence mode="popLayout">
-            {shots.map((s, i) => (
+            {shown.map((s, i) => (
               <motion.button
                 key={s.src}
                 layout
@@ -96,7 +101,7 @@ export default function Gallery() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-2 p-3 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  <span className="font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright">
+                  <span className="font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright">
                     {s.cat}
                   </span>
                   <p className="mt-0.5 text-[0.78rem] leading-snug text-offwhite">{s.caption}</p>
@@ -105,6 +110,21 @@ export default function Gallery() {
             ))}
           </AnimatePresence>
         </motion.div>
+
+        {visible < shots.length && (
+          <Reveal>
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                data-cursor="MORE"
+                className="font-accent group flex items-center gap-2 rounded-full px-7 py-3 text-[0.86rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
+              >
+                Show More
+                <ChevronDown size={15} className="transition-transform group-hover:translate-y-0.5" />
+              </button>
+            </div>
+          </Reveal>
+        )}
       </div>
 
       {/* lightbox */}
@@ -153,7 +173,7 @@ export default function Gallery() {
                 className="max-h-[76vh] w-auto rounded-lg border border-gold/20 object-contain shadow-cinema"
               />
               <figcaption className="mt-3 text-center">
-                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold-bright">
+                <span className="font-display text-[0.72rem] uppercase tracking-cinema text-gold-bright">
                   {shots[lightbox].cat}
                 </span>
                 <p className="mt-1 text-sm text-parchment/80">{shots[lightbox].caption}</p>

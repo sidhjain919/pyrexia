@@ -15,7 +15,7 @@ export default function Footer() {
         <Compass size={360} />
       </div>
       <div className="map-grid pointer-events-none absolute inset-0 opacity-20" />
-      <div className="pointer-events-none absolute left-6 top-6 font-log text-[0.7rem] uppercase tracking-cinema text-gold/45">
+      <div className="pointer-events-none absolute left-6 top-6 font-display text-[0.7rem] uppercase tracking-cinema text-gold/45">
         30°06′N · 78°16′E
       </div>
 
@@ -23,7 +23,7 @@ export default function Footer() {
         {/* closing line */}
         <div className="mb-14 text-center">
           <p className="font-display text-3xl text-foil sm:text-4xl">The voyage doesn't end here.</p>
-          <p className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/62">
+          <p className="mt-3 font-display text-[0.62rem] uppercase tracking-cinema text-parchment/62">
             {SITE.theme} · {SITE.window}
           </p>
         </div>
@@ -39,7 +39,7 @@ export default function Footer() {
 
           {/* nav */}
           <div>
-            <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Chart</div>
+            <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">Chart</div>
             <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
               {NAV.map((n) => (
                 <li key={n.to}>
@@ -56,7 +56,7 @@ export default function Footer() {
 
           {/* social */}
           <div>
-            <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Signal the Ship</div>
+            <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">Signal the Ship</div>
             <ul className="mt-4 space-y-3">
               {SOCIAL.map((s) => (
                 <li key={s.label}>
@@ -76,13 +76,13 @@ export default function Footer() {
 
           {/* register */}
           <div>
-            <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
+            <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
               Delegate cards & event registration on the official PYREXIA website.
             </p>
             <button
               onClick={() => openRegister()}
-              className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
+              className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-display text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
             >
               Register Now →
             </button>
@@ -90,10 +90,10 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-gold/10 py-7 text-center sm:flex-row sm:text-left">
-          <p className="font-log text-[0.72rem] uppercase tracking-wide2 text-parchment/58">
+          <p className="font-display text-[0.72rem] uppercase tracking-wide2 text-parchment/58">
             © {SITE.year} PYREXIA · {SITE.institution}. All rights reserved.
           </p>
-          <p className="font-log text-[0.72rem] uppercase tracking-wide2 text-parchment/58">
+          <p className="font-display text-[0.72rem] uppercase tracking-wide2 text-parchment/58">
             Charted with fever · Pirates of the Lost Island
           </p>
         </div>

@@ -38,13 +38,13 @@ export default function CaptainsLog() {
 
         {/* day tabs */}
         <Reveal>
-          <div className="mt-12 flex flex-wrap gap-2">
+          <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
             {captainsLog.map((d, i) => (
               <button
                 key={d.day}
                 onClick={() => setDay(i)}
                 data-cursor="LOG"
-                className={`font-accent rounded-full px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 transition-all duration-300 ${
+                className={`font-accent shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 transition-all duration-300 ${
                   i === day
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                     : 'text-parchment/70 ring-1 ring-gold/20 hover:ring-gold/50'
@@ -65,9 +65,9 @@ export default function CaptainsLog() {
               exit={reduce ? undefined : { opacity: 0, y: -12 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="flex items-baseline gap-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                 <h3 className="font-display text-3xl text-foil">{active.title}</h3>
-                <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/65">
+                <span className="font-display text-[0.7rem] uppercase tracking-wide2 text-parchment/65">
                   {active.subtitle}
                 </span>
               </div>
@@ -90,12 +90,12 @@ export default function CaptainsLog() {
                           className="absolute -left-[6.5px] top-1.5 h-3 w-3 rounded-full border-2 border-ocean"
                           style={{ background: col }}
                         />
-                        <span className="w-14 shrink-0 pt-0.5 font-log text-sm text-gold-bright">{e.time}</span>
+                        <span className="w-14 shrink-0 pt-0.5 font-body text-sm text-gold-bright">{e.time}</span>
                         <div className="flex-1 border-b border-gold/8 pb-4 group-last:border-0">
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <h4 className="font-body text-[1.02rem] text-offwhite">{e.title}</h4>
                             <span
-                              className="rounded-full px-2.5 py-0.5 font-log text-[0.7rem] uppercase tracking-wide2"
+                              className="rounded-full px-2.5 py-0.5 font-display text-[0.7rem] uppercase tracking-wide2"
                               style={{ background: `${col}1c`, color: col }}
                             >
                               {e.cat}

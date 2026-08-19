@@ -30,7 +30,7 @@ function WaxSeal({ name, big = false }: { name: string; big?: boolean }) {
           {initials || 'P'}
         </span>
       </div>
-      <span className="text-center font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/60">
+      <span className="text-center font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/60">
         {name}
       </span>
     </div>
@@ -61,7 +61,7 @@ export default function Sponsors() {
                   <span className="font-display text-lg text-foil">{tier.tier}</span>
                   <span className="h-px w-8 bg-gold/30" />
                 </div>
-                <p className="mt-1 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/45">
+                <p className="mt-1 font-display text-[0.6rem] uppercase tracking-cinema text-parchment/45">
                   {tier.role}
                 </p>
                 <div
@@ -89,7 +89,7 @@ export default function Sponsors() {
             <button
               onClick={() => navTo('/#contact')}
               data-cursor="ALLY"
-              className="rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
+              className="rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-gold/40 transition-colors hover:bg-gold/10"
             >
               Become an Ally →
             </button>

@@ -48,14 +48,14 @@ export default function Navbar() {
         className="fixed inset-x-0 top-0 z-[900] flex justify-center px-4 pt-4"
       >
         <nav
-          className={`flex w-full max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-500 sm:px-5 ${
+          className={`flex w-full max-w-[78rem] items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-all duration-500 sm:px-5 ${
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
           {/* Wordmark reads directly on the dark bar */}
           <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
             <img src={asset('logo-wordmark.webp')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
-            <span className="hidden font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 sm:block">
+            <span className="hidden whitespace-nowrap font-display text-[0.68rem] uppercase tracking-cinema text-parchment/70 lg:block">
               {SITE.year}
               <br />
               AIIMS Rishikesh
@@ -63,15 +63,15 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop links */}
-          <ul className="hidden items-center gap-6 lg:flex">
+          <ul className="hidden items-center gap-4 lg:flex xl:gap-5">
             {NAV.map((n) => (
               <li key={n.to}>
                 <button
                   onClick={() => navTo(n.to)}
                   data-cursor="GO"
                   title={n.meaning || undefined}
-                  className={`group relative font-body text-[0.82rem] transition-colors hover:text-offwhite ${
-                    isActive(n.to) ? 'text-gold-bright' : 'text-parchment/75'
+                  className={`font-display group relative whitespace-nowrap text-[0.82rem] transition-colors hover:text-offwhite xl:text-[0.88rem] ${
+                    isActive(n.to) ? 'text-gold-bright' : 'text-parchment/80'
                   }`}
                 >
                   {n.label}
@@ -89,7 +89,7 @@ export default function Navbar() {
             <button
               onClick={() => openRegister()}
               data-cursor="JOIN"
-              className="font-accent hidden rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+              className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
             >
               Register Now
             </button>
@@ -123,7 +123,7 @@ export default function Navbar() {
             <div className="relative flex items-center justify-between px-6 pt-6">
               <div className="flex items-center gap-2.5">
                 <Compass size={26} spin={false} />
-                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
+                <span className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">
                   Navigator's Chart
                 </span>
               </div>
@@ -170,7 +170,7 @@ export default function Navbar() {
                         {n.label}
                       </span>
                       {n.meaning && (
-                        <span className="mt-0.5 block font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
+                        <span className="mt-0.5 block font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
                           {n.meaning}
                         </span>
                       )}

@@ -69,7 +69,7 @@ export default function Cursor() {
       />
       <div
         ref={ring}
-        className="pointer-events-none fixed left-0 top-0 z-[9998] flex items-center justify-center rounded-full border border-gold/70 font-log uppercase tracking-wide2 text-gold-bright transition-[width,height,background-color] duration-300"
+        className="pointer-events-none fixed left-0 top-0 z-[9998] flex items-center justify-center rounded-full border border-gold/70 font-display uppercase tracking-wide2 text-gold-bright transition-[width,height,background-color] duration-300"
         style={{
           width: active ? 74 : 34,
           height: active ? 74 : 34,

@@ -56,7 +56,7 @@ export default function Legend() {
           {/* Parchment intro card */}
           <Reveal>
             <div className="parchment clip-torn relative rounded-sm p-8 shadow-cinema sm:p-10">
-              <div className="font-log text-[0.6rem] uppercase tracking-cinema text-wood/60">
+              <div className="font-display text-[0.6rem] uppercase tracking-cinema text-wood/60">
                 From the Captain's Log
               </div>
               <p className="mt-4 font-display text-2xl leading-snug text-wood sm:text-[1.7rem]">
@@ -76,7 +76,7 @@ export default function Legend() {
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blood/90 font-display text-xs text-parchment shadow-inner">
                   P
                 </span>
-                <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-wood/70">
+                <span className="font-display text-[0.7rem] uppercase tracking-wide2 text-wood/70">
                   {SITE.window} · Rishikesh
                 </span>
               </div>
@@ -111,11 +111,11 @@ export default function Legend() {
 
         {/* Metadata chips */}
         <Reveal delay={0.1}>
-          <div className="mt-16 flex flex-wrap gap-2.5">
+          <div className="mt-16 flex flex-wrap justify-center gap-2.5 sm:justify-start">
             {LEGEND_META.map((m) => (
               <span
                 key={m}
-                className="glass-parchment rounded-full px-4 py-2 font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/80"
+                className="glass-parchment rounded-full px-4 py-2 font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/80"
               >
                 {m}
               </span>

@@ -39,7 +39,7 @@ export default function Stats() {
       <div className="map-grid pointer-events-none absolute inset-0 opacity-20" />
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
-          <div className="mb-10 text-center font-log text-[0.62rem] uppercase tracking-cinema text-gold/60">
+          <div className="mb-10 text-center font-display text-[0.62rem] uppercase tracking-cinema text-gold/60">
             The Previous Voyage · PYREXIA in numbers
           </div>
         </Reveal>

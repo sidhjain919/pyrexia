@@ -1,5 +1,5 @@
-import { motion, useReducedMotion, type Variants } from 'framer-motion'
-import type { ReactNode } from 'react'
+import { motion, useMotionValue, useReducedMotion, useSpring, type Variants } from 'framer-motion'
+import { useRef, type MouseEvent, type ReactNode } from 'react'
 
 /* ---------- Scroll reveal ---------- */
 export function Reveal({
@@ -77,6 +77,7 @@ export function SectionTitle({
   meaning,
   align = 'left',
   kicker,
+  eyebrowFont = 'log',
 }: {
   index?: string
   eyebrow: string
@@ -85,14 +86,16 @@ export function SectionTitle({
   meaning?: string
   align?: 'left' | 'center'
   kicker?: string
+  /** 'log' (typewriter) reads well at this size; 'plain' swaps to the display serif for sections where it doesn't. */
+  eyebrowFont?: 'log' | 'plain'
 }) {
   return (
     <div className={align === 'center' ? 'text-center' : ''}>
       <Reveal>
         <div
-          className={`flex items-center gap-3 font-log text-[0.7rem] uppercase tracking-cinema text-gold/80 ${
-            align === 'center' ? 'justify-center' : ''
-          }`}
+          className={`flex items-center gap-3 text-[0.7rem] uppercase tracking-cinema text-gold/80 ${
+            eyebrowFont === 'log' ? 'font-log' : 'font-display'
+          } ${align === 'center' ? 'justify-center' : ''}`}
         >
           {index && <span className="font-accent text-gold/50">{index}</span>}
           <span className="h-px w-8 bg-gold/40" />
@@ -203,7 +206,7 @@ export function Compass({ size = 120, className = '', spin = true }: { size?: nu
   )
 }
 
-/* ---------- Magnetic button ---------- */
+/* ---------- Magnetic button — nudges toward the cursor on hover ---------- */
 export function MagneticButton({
   children,
   href,
@@ -219,21 +222,43 @@ export function MagneticButton({
   onClick?: () => void
   dataCursor?: string
 }) {
+  const reduce = useReducedMotion()
+  const ref = useRef<HTMLAnchorElement & HTMLButtonElement>(null)
+  const mx = useMotionValue(0)
+  const my = useMotionValue(0)
+  const x = useSpring(mx, { stiffness: 200, damping: 14, mass: 0.4 })
+  const y = useSpring(my, { stiffness: 200, damping: 14, mass: 0.4 })
+
+  const onMouseMove = (e: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+    if (reduce || !ref.current) return
+    const r = ref.current.getBoundingClientRect()
+    mx.set((e.clientX - (r.left + r.width / 2)) * 0.35)
+    my.set((e.clientY - (r.top + r.height / 2)) * 0.35)
+  }
+  const onMouseLeave = () => {
+    mx.set(0)
+    my.set(0)
+  }
+
   const base =
     'font-accent group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[0.9rem] uppercase tracking-wide2 transition-colors duration-300'
   const styles =
     variant === 'solid'
       ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss shadow-[0_18px_40px_-18px_rgba(200,155,60,0.8)] hover:from-gold hover:to-gold-deep'
       : 'text-parchment ring-1 ring-gold/40 hover:ring-gold hover:text-gold-bright'
-  const Cmp: 'a' | 'button' = href ? 'a' : 'button'
+  const MotionCmp = motion[href ? 'a' : 'button']
   return (
-    <Cmp
+    <MotionCmp
+      ref={ref}
       href={href}
       onClick={onClick}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={{ x, y }}
       data-cursor={dataCursor}
       className={`${base} ${styles} ${className}`}
     >
       {children}
-    </Cmp>
+    </MotionCmp>
   )
 }

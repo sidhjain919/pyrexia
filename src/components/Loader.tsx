@@ -41,7 +41,7 @@ export default function Loader({ onDone }: { onDone: () => void }) {
       </motion.div>
 
       <motion.p
-        className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/70"
+        className="mt-3 font-display text-[0.62rem] uppercase tracking-cinema text-parchment/70"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.8 }}
@@ -58,7 +58,7 @@ export default function Loader({ onDone }: { onDone: () => void }) {
           transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
-      <p className="mt-4 font-log text-[0.72rem] uppercase tracking-cinema text-gold/65">
+      <p className="mt-4 font-display text-[0.72rem] uppercase tracking-cinema text-gold/65">
         Charting the course…
       </p>
     </motion.div>

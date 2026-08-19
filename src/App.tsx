@@ -5,6 +5,7 @@ import Loader from './components/Loader'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import RegisterModal from './components/RegisterModal'
+import VoyageProgress from './components/VoyageProgress'
 import { ScrollManager } from './components/routing'
 import Home from './pages/Home'
 
@@ -17,6 +18,7 @@ export default function App() {
       <Cursor />
       <AnimatePresence>{!loaded && <Loader onDone={() => setLoaded(true)} />}</AnimatePresence>
       <ScrollManager />
+      <VoyageProgress />
       <Navbar />
 
       <main>
