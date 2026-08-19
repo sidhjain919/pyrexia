@@ -34,7 +34,7 @@ function islandPath(cx: number, cy: number, r: number, seed: number) {
 
 export default function IslandMap() {
   const reduce = useReducedMotion()
-  const { openRegister } = useRegistration()
+  const { openRegister, openDelegate } = useRegistration()
   const [activeId, setActiveId] = useState('chorea')
   const active = territories.find((t) => t.id === activeId)!
 
@@ -266,7 +266,11 @@ export default function IslandMap() {
                     No registration needed — every delegate is welcomed in.
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div>
+                    <div className="font-display text-[0.7rem] uppercase tracking-cinema text-gold/65">
+                      Pick an event to enter
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
                     {active.events.map((e) => (
                       <button
                         key={e.name}
@@ -278,6 +282,7 @@ export default function IslandMap() {
                         {e.name}
                       </button>
                     ))}
+                    </div>
                   </div>
                 )}
 
@@ -303,16 +308,16 @@ export default function IslandMap() {
                   </div>
                 )}
 
-                {!active.noRegister && (
-                  <button
-                    onClick={() => openRegister(active.events.length === 1 ? active.events[0].name : undefined)}
-                    data-cursor="REGISTER"
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
-                  >
-                    <Ticket size={14} />
-                    Register for {active.code}
-                  </button>
-                )}
+                {/* Every entry needs a pass first, so the primary CTA sells the pass;
+                    the chips above take you into a specific event's form. */}
+                <button
+                  onClick={openDelegate}
+                  data-cursor="REGISTER"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                >
+                  <Ticket size={14} />
+                  Get your delegate pass
+                </button>
                 </div>
               </motion.div>
             </AnimatePresence>

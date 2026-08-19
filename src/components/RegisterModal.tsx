@@ -1,13 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useRegistration } from '../registration/context'
-import RegisterForm from '../registration/RegisterForm'
+import DelegateForm from '../registration/DelegateForm'
+import EventForm from '../registration/EventForm'
 import { Compass } from './primitives'
 import { sectionPhoto } from '../data/media'
+import { resolveEvent } from '../data/registration'
 
 export default function RegisterModal() {
-  const { open, preselected, closeRegister } = useRegistration()
+  const { open, mode, eventName, openDelegate, closeRegister } = useRegistration()
+  // The event flow can hand off to the delegate flow ("get a pass first") without
+  // losing the event the visitor came from.
+  const [returnTo, setReturnTo] = useState<string | null>(null)
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -19,6 +24,13 @@ export default function RegisterModal() {
     }
   }, [open, closeRegister])
 
+  useEffect(() => {
+    if (!open) setReturnTo(null)
+  }, [open])
+
+  const resolved = eventName ? resolveEvent(eventName) : null
+  const isEvent = mode === 'event' && !!resolved
+
   return (
     <AnimatePresence>
       {open && (
@@ -26,10 +38,13 @@ export default function RegisterModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[3000] flex items-center justify-center overflow-y-auto bg-abyss/85 p-4 backdrop-blur-md sm:p-8"
+          className="fixed inset-0 z-[3000] flex items-start justify-center overflow-y-auto bg-abyss/85 p-4 backdrop-blur-md sm:items-center sm:p-8"
           onClick={closeRegister}
         >
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={isEvent ? `Register for ${eventName}` : 'Delegate registration'}
             initial={{ opacity: 0, y: 30, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -51,14 +66,36 @@ export default function RegisterModal() {
               >
                 <X size={16} />
               </button>
-              <div className="absolute bottom-4 left-6">
-                <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/80">Join the Voyage</div>
-                <h2 className="font-display text-2xl text-offwhite sm:text-3xl">Register for PYREXIA 2026</h2>
+              <div className="absolute bottom-4 left-6 right-16">
+                <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/80">
+                  {isEvent ? 'Event Entry' : 'Join the Voyage'}
+                </div>
+                <h2 className="truncate font-display text-[1.3rem] text-offwhite sm:text-3xl">
+                  {isEvent ? eventName : 'Delegate Registration'}
+                </h2>
               </div>
             </div>
 
-            <div className="max-h-[62vh] overflow-y-auto p-6 sm:p-8">
-              <RegisterForm preselected={preselected} onDone={closeRegister} compact />
+            <div className="max-h-[68vh] overflow-y-auto p-6 sm:p-8">
+              {isEvent ? (
+                <EventForm
+                  key={eventName}
+                  eventName={eventName!}
+                  onNeedDelegate={() => {
+                    setReturnTo(eventName)
+                    openDelegate()
+                  }}
+                />
+              ) : (
+                <DelegateForm key={returnTo ?? 'delegate'} />
+              )}
+
+              {!isEvent && returnTo && (
+                <p className="mt-6 text-center text-[0.8rem] text-parchment/60">
+                  Once your pass is issued, head back to{' '}
+                  <span className="text-gold-bright">{returnTo}</span> to enter.
+                </p>
+              )}
             </div>
           </motion.div>
         </motion.div>
