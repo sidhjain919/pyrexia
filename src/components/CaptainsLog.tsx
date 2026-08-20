@@ -67,7 +67,7 @@ export default function CaptainsLog() {
             >
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                 <h3 className="font-display text-3xl text-foil">{active.title}</h3>
-                <span className="font-display text-[0.7rem] uppercase tracking-wide2 text-parchment/65">
+                <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/65">
                   {active.subtitle}
                 </span>
               </div>
@@ -90,12 +90,12 @@ export default function CaptainsLog() {
                           className="absolute -left-[6.5px] top-1.5 h-3 w-3 rounded-full border-2 border-ocean"
                           style={{ background: col }}
                         />
-                        <span className="w-14 shrink-0 pt-0.5 font-body text-sm text-gold-bright">{e.time}</span>
+                        <span className="w-14 shrink-0 pt-0.5 font-log text-sm text-gold-bright">{e.time}</span>
                         <div className="flex-1 border-b border-gold/8 pb-4 group-last:border-0">
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <h4 className="font-body text-[1.02rem] text-offwhite">{e.title}</h4>
                             <span
-                              className="rounded-full px-2.5 py-0.5 font-display text-[0.7rem] uppercase tracking-wide2"
+                              className="rounded-full px-2.5 py-0.5 font-log text-[0.7rem] uppercase tracking-wide2"
                               style={{ background: `${col}1c`, color: col }}
                             >
                               {e.cat}

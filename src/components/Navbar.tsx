@@ -55,7 +55,7 @@ export default function Navbar() {
           {/* Wordmark reads directly on the dark bar */}
           <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
             <img src={asset('logo-wordmark.webp')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
-            <span className="hidden whitespace-nowrap font-display text-[0.68rem] uppercase tracking-cinema text-parchment/70 lg:block">
+            <span className="hidden whitespace-nowrap font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 lg:block">
               {SITE.year}
               <br />
               AIIMS Rishikesh
@@ -123,7 +123,7 @@ export default function Navbar() {
             <div className="relative flex items-center justify-between px-6 pt-6">
               <div className="flex items-center gap-2.5">
                 <Compass size={26} spin={false} />
-                <span className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">
+                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
                   Navigator's Chart
                 </span>
               </div>
@@ -170,7 +170,7 @@ export default function Navbar() {
                         {n.label}
                       </span>
                       {n.meaning && (
-                        <span className="mt-0.5 block font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
+                        <span className="mt-0.5 block font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
                           {n.meaning}
                         </span>
                       )}

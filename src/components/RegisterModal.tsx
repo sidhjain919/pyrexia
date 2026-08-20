@@ -67,7 +67,7 @@ export default function RegisterModal() {
                 <X size={16} />
               </button>
               <div className="absolute bottom-4 left-6 right-16">
-                <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/80">
+                <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/80">
                   {isEvent ? 'Event Entry' : 'Join the Voyage'}
                 </div>
                 <h2 className="truncate font-display text-[1.3rem] text-offwhite sm:text-3xl">

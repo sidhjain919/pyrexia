@@ -92,7 +92,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="font-display text-xs uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_14px_rgba(3,11,15,0.95)] sm:text-sm"
+          className="font-log text-xs uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_14px_rgba(3,11,15,0.95)] sm:text-sm"
         >
           {SITE.institution} · presents
         </motion.p>
@@ -173,7 +173,7 @@ export default function Hero() {
         variants={rise}
         initial="hidden"
         animate="show"
-        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-display text-[0.72rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
+        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-log text-[0.72rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
       >
         <span>{SITE.window}</span>
         <span className="h-4 w-px bg-gold/40" />
@@ -190,7 +190,7 @@ export default function Hero() {
         animate={reduce ? undefined : { y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <span className="font-display text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
+        <span className="font-log text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
           Set sail
         </span>
         <ChevronDown size={16} />

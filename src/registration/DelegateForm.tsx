@@ -165,7 +165,7 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
               {step > i ? <Check size={13} /> : i + 1}
             </span>
             <span
-              className={`hidden truncate font-display text-[0.62rem] uppercase tracking-wide2 sm:block ${
+              className={`hidden truncate font-log text-[0.62rem] uppercase tracking-wide2 sm:block ${
                 step === i ? 'text-gold-bright' : 'text-parchment/45'
               }`}
             >
@@ -396,13 +396,13 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
               </div>
 
               <div className="rounded-xl border border-gold/25 bg-ocean/50 p-4">
-                <div className="flex items-center justify-between font-display text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
+                <div className="flex items-center justify-between font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
                   <span>{pass.name}</span>
                   <span>₹{pass.amount}</span>
                 </div>
                 <div className="my-3 rule-gold" />
                 <div className="flex items-center justify-between">
-                  <span className="font-display text-[0.8rem] uppercase tracking-wide2 text-parchment/80">
+                  <span className="font-log text-[0.8rem] uppercase tracking-wide2 text-parchment/80">
                     Total
                   </span>
                   <span className="font-display text-2xl text-foil">₹{pass.amount}</span>
@@ -435,7 +435,7 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
             type="button"
             onClick={() => setStep((s) => s - 1)}
             disabled={busy}
-            className="flex items-center gap-1.5 rounded-full px-5 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 disabled:opacity-40"
           >
             <ArrowLeft size={13} /> Back
           </button>
@@ -444,7 +444,7 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
           type="button"
           onClick={step === 2 ? submit : next}
           disabled={busy}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-display text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
         >
           {busy ? (
             <>

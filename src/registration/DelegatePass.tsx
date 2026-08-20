@@ -41,7 +41,7 @@ export default function DelegatePass({ delegate }: { delegate: Delegate }) {
       <div className="parchment relative overflow-hidden rounded-xl p-6 shadow-cinema">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="font-display text-[0.6rem] uppercase tracking-cinema text-wood/60">
+            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-wood/60">
               Delegate Pass · PYREXIA 2026
             </div>
             <div className="mt-1 font-display text-xl leading-tight text-wood">{delegate.name}</div>
@@ -64,15 +64,15 @@ export default function DelegatePass({ delegate }: { delegate: Delegate }) {
           </div>
           <dl className="min-w-0 flex-1 space-y-2.5">
             <div>
-              <dt className="font-display text-[0.56rem] uppercase tracking-wide2 text-wood/55">Pass No.</dt>
+              <dt className="font-log text-[0.56rem] uppercase tracking-wide2 text-wood/55">Pass No.</dt>
               <dd className="font-display text-[0.98rem] tracking-wide text-wood">{delegate.delegateId}</dd>
             </div>
             <div>
-              <dt className="font-display text-[0.56rem] uppercase tracking-wide2 text-wood/55">Tier</dt>
+              <dt className="font-log text-[0.56rem] uppercase tracking-wide2 text-wood/55">Tier</dt>
               <dd className="text-[0.86rem] text-wood/85">{pass?.name ?? delegate.passId}</dd>
             </div>
             <div>
-              <dt className="font-display text-[0.56rem] uppercase tracking-wide2 text-wood/55">Status</dt>
+              <dt className="font-log text-[0.56rem] uppercase tracking-wide2 text-wood/55">Status</dt>
               <dd className="text-[0.86rem] font-semibold text-[#1d6b4f]">Confirmed</dd>
             </div>
           </dl>
@@ -88,7 +88,7 @@ export default function DelegatePass({ delegate }: { delegate: Delegate }) {
         type="button"
         onClick={download}
         disabled={!qr}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10 disabled:opacity-40"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10 disabled:opacity-40"
       >
         <Download size={14} /> Download QR
       </button>

@@ -20,7 +20,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
+      <span className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
         {label}
         {required && <span className="ml-1 text-coral/80">*</span>}
       </span>
@@ -188,7 +188,7 @@ export function DocumentUpload({
 
   return (
     <div>
-      <span className="font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
+      <span className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
         {label}
         <span className="ml-1 text-coral/80">*</span>
       </span>

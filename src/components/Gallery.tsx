@@ -101,7 +101,7 @@ export default function Gallery() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-abyss/90 via-abyss/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-2 p-3 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  <span className="font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright">
+                  <span className="font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright">
                     {s.cat}
                   </span>
                   <p className="mt-0.5 text-[0.78rem] leading-snug text-offwhite">{s.caption}</p>
@@ -173,7 +173,7 @@ export default function Gallery() {
                 className="max-h-[76vh] w-auto rounded-lg border border-gold/20 object-contain shadow-cinema"
               />
               <figcaption className="mt-3 text-center">
-                <span className="font-display text-[0.72rem] uppercase tracking-cinema text-gold-bright">
+                <span className="font-log text-[0.72rem] uppercase tracking-cinema text-gold-bright">
                   {shots[lightbox].cat}
                 </span>
                 <p className="mt-1 text-sm text-parchment/80">{shots[lightbox].caption}</p>

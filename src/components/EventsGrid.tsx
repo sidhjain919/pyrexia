@@ -88,7 +88,7 @@ export default function EventsGrid() {
             </div>
           )}
 
-          <div className="font-display text-[0.62rem] uppercase tracking-wide2 text-parchment/62">
+          <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/62">
             {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
             {searching ? ' found' : ` in ${cat}`}
           </div>
@@ -123,7 +123,7 @@ export default function EventsGrid() {
                   >
                     <Icon name={r.icon} size={15} style={{ color: '#fff' }} />
                   </span>
-                  <span className="absolute bottom-3 left-3 font-display text-[0.7rem] uppercase tracking-wide2" style={{ color: r.accent }}>
+                  <span className="absolute bottom-3 left-3 font-log text-[0.7rem] uppercase tracking-wide2" style={{ color: r.accent }}>
                     {r.terr}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export default function EventsGrid() {
                       <Ticket size={13} />
                       Register
                     </button>
-                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-display text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
+                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
                       <ArrowUpRight size={12} />
                     </span>
                   </div>

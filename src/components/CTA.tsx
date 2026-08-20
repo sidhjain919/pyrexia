@@ -34,7 +34,7 @@ export default function CTA() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-display text-[0.66rem] uppercase tracking-cinema text-gold/70"
+          className="font-log text-[0.66rem] uppercase tracking-cinema text-gold/70"
         >
           X marks the spot
         </motion.p>
@@ -78,7 +78,7 @@ export default function CTA() {
           </button>
         </motion.div>
 
-        <p className="mt-8 font-display text-[0.6rem] uppercase tracking-cinema text-parchment/45">
+        <p className="mt-8 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/45">
           {SITE.window} · {SITE.institution}
         </p>
       </div>

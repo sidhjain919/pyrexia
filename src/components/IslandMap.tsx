@@ -204,7 +204,7 @@ export default function IslandMap() {
                     </span>
                     {on && (
                       <span
-                        className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 font-display text-[0.68rem] uppercase tracking-wide2 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+                        className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 font-log text-[0.68rem] uppercase tracking-wide2 shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
                         style={{ background: 'rgba(4,15,20,0.92)', border: `1px solid ${t.accent}77`, color: t.accent }}
                       >
                         {t.territory}
@@ -247,7 +247,7 @@ export default function IslandMap() {
                     <Icon name={active.icon} size={20} style={{ color: active.accent }} />
                   </span>
                   <div>
-                    <div className="font-display text-[0.72rem] uppercase tracking-cinema text-gold/70">
+                    <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
                       {active.territory}
                     </div>
                     <h3 className="font-display text-2xl leading-none text-offwhite">{active.code}</h3>
@@ -267,7 +267,7 @@ export default function IslandMap() {
                   </p>
                 ) : (
                   <div>
-                    <div className="font-display text-[0.7rem] uppercase tracking-cinema text-gold/65">
+                    <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
                       Pick an event to enter
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -288,7 +288,7 @@ export default function IslandMap() {
 
                 {active.contacts.length > 0 && (
                   <div className="mt-6">
-                    <div className="font-display text-[0.7rem] uppercase tracking-cinema text-gold/65">
+                    <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
                       Territory Wardens
                     </div>
                     <div className="mt-2 flex flex-col gap-1.5">

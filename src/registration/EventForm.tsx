@@ -193,7 +193,7 @@ export default function EventForm({
       {/* The modal header already prints the event name — this row carries the
           territory and the sub-title only, so it isn't said twice. */}
       <div className="min-w-0">
-        <div className="font-display text-[0.66rem] uppercase tracking-cinema text-gold/70">
+        <div className="font-log text-[0.66rem] uppercase tracking-cinema text-gold/70">
           {territory.code} · {territory.territory}
         </div>
         <div className="truncate font-display text-[1.05rem] leading-tight text-offwhite">
@@ -268,7 +268,7 @@ export default function EventForm({
               type="button"
               onClick={checkPass}
               disabled={checking}
-              className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-2.5 font-display text-[0.68rem] uppercase tracking-wide2 text-abyss disabled:opacity-60"
+              className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-2.5 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss disabled:opacity-60"
             >
               {checking ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
               Check
@@ -288,7 +288,7 @@ export default function EventForm({
           <button
             type="button"
             onClick={onNeedDelegate}
-            className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
+            className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
           >
             <Ticket size={14} /> Get your delegate pass first
           </button>
@@ -379,7 +379,7 @@ export default function EventForm({
 
             <div>
               <div className="flex items-baseline justify-between">
-                <span className="font-display text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
+                <span className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
                   Team-mates
                 </span>
                 <span className={`text-[0.72rem] ${size < min || size > max ? 'text-coral' : 'text-parchment/45'}`}>
@@ -395,7 +395,7 @@ export default function EventForm({
                 {members.map((m, i) => (
                   <div key={i} className="rounded-lg border border-gold/15 bg-ocean/40 p-3">
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="font-display text-[0.62rem] uppercase tracking-wide2 text-gold/70">
+                      <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-gold/70">
                         Member {i + 2}
                       </span>
                       {members.length > Math.max(min - 1, 1) && (
@@ -447,7 +447,7 @@ export default function EventForm({
                 <button
                   type="button"
                   onClick={() => setMembers((ms) => [...ms, emptyMember()])}
-                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gold/35 py-2.5 font-display text-[0.64rem] uppercase tracking-wide2 text-parchment/65 transition-colors hover:border-gold/70 hover:text-gold-bright"
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-gold/35 py-2.5 font-log text-[0.64rem] uppercase tracking-wide2 text-parchment/65 transition-colors hover:border-gold/70 hover:text-gold-bright"
                 >
                   <Plus size={13} /> Add team-mate
                 </button>
@@ -484,7 +484,7 @@ export default function EventForm({
             setFatal(null)
           }}
           disabled={busy}
-          className="flex items-center gap-1.5 rounded-full px-5 py-3 font-display text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 disabled:opacity-40"
         >
           <ArrowLeft size={13} /> Not you?
         </button>
@@ -492,7 +492,7 @@ export default function EventForm({
           type="button"
           onClick={submit}
           disabled={busy}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-display text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
         >
           {busy ? (
             <>
