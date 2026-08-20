@@ -40,7 +40,7 @@ export const territories: Territory[] = [
     territory: 'Ember Landing',
     blurb: 'Where the fever is lit. The gates open and the voyage begins in fire and light.',
     icon: 'Flame',
-    map: { x: 50, y: 20 },
+    map: { x: 48.5, y: 20.0 },
     accent: '#e0894a',
     events: [{ name: 'Fahrenheit', tag: 'Grand Opening Ceremony' }],
     /** Opening ceremony — every delegate attends automatically, so no registration. */
@@ -58,7 +58,7 @@ export const territories: Territory[] = [
     territory: 'Rhythm Reef',
     blurb: 'Every wave keeps time. Solo storms, folk tides and street currents collide on the reef.',
     icon: 'Music4',
-    map: { x: 24, y: 34 },
+    map: { x: 17.8, y: 23.5 },
     accent: '#d05a8a',
     events: [
       { name: 'Adaptune', tag: 'Extempore Dance' },
@@ -79,7 +79,7 @@ export const territories: Territory[] = [
     territory: "Siren's Harbor",
     blurb: 'Voices that lure ships to shore — classical swells, western storms, bands and rap battles.',
     icon: 'Mic2',
-    map: { x: 71, y: 30 },
+    map: { x: 76.8, y: 22.5 },
     accent: '#5aa9d0',
     events: [
       { name: 'Tarang', tag: 'Indian / Classical Singing' },
@@ -101,7 +101,7 @@ export const territories: Territory[] = [
     territory: 'Masquerade Bay',
     blurb: 'Masks, monologues and mayhem. The stage where every story is a heist.',
     icon: 'Drama',
-    map: { x: 38, y: 52 },
+    map: { x: 31.0, y: 42.5 },
     accent: '#b06fd0',
     events: [
       { name: 'Comic Combat', tag: 'Stand-up Comedy' },
@@ -122,7 +122,7 @@ export const territories: Territory[] = [
     territory: 'Conquest Arena',
     blurb: 'Sand, sweat and glory. Eleven battlegrounds where crews fight for the flag.',
     icon: 'Swords',
-    map: { x: 82, y: 55 },
+    map: { x: 78.0, y: 46.5 },
     accent: '#4fae8b',
     events: [
       { name: 'Cricket', tag: 'Team' },
@@ -150,7 +150,7 @@ export const territories: Territory[] = [
     territory: 'Crown Isle',
     blurb: 'Poise, wit and presence. The isle that crowns the faces of the fever.',
     icon: 'Crown',
-    map: { x: 58, y: 46 },
+    map: { x: 53.5, y: 43.0 },
     accent: '#e6c25e',
     events: [{ name: 'Mr. & Ms. PYREXIA', tag: 'Personality Showcase' }],
     contacts: [
@@ -167,7 +167,7 @@ export const territories: Territory[] = [
     territory: 'Ink & Lore Lagoon',
     blurb: 'Words are weapons here — poetry duels, debates, extempore and quizzes of every realm.',
     icon: 'ScrollText',
-    map: { x: 17, y: 62 },
+    map: { x: 17.5, y: 59.5 },
     accent: '#c98f5a',
     events: [
       { name: 'JAM', tag: '60-second Extempore' },
@@ -196,7 +196,7 @@ export const territories: Territory[] = [
     territory: 'Painted Cliffs',
     blurb: 'Pigment, clay and coffee. Cliffs where the island paints its own legend.',
     icon: 'Palette',
-    map: { x: 30, y: 78 },
+    map: { x: 24.3, y: 80.0 },
     accent: '#d98f6a',
     events: [
       { name: 'Fantasy Faces', tag: 'Face Painting' },
@@ -221,7 +221,7 @@ export const territories: Territory[] = [
     territory: 'Carnival Cove',
     blurb: 'No rules, all riot. Squid games, dates, dumb charades and treasure hunts on the sand.',
     icon: 'PartyPopper',
-    map: { x: 63, y: 74 },
+    map: { x: 57.0, y: 62.5 },
     accent: '#e07a5a',
     events: [
       { name: 'Squid Game', tag: 'Win big or else' },
@@ -251,7 +251,7 @@ export const territories: Territory[] = [
     territory: 'Thunder Keep',
     blurb: 'Screens flash like lightning. Squads clash in the keep of the digital storm.',
     icon: 'Gamepad2',
-    map: { x: 78, y: 82 },
+    map: { x: 79.5, y: 79.5 },
     accent: '#6f7bd0',
     events: [
       { name: 'BGMI', tag: 'Squad Tournament' },
@@ -272,7 +272,7 @@ export const territories: Territory[] = [
     territory: 'Starlight Summit',
     blurb: 'The peak of the voyage. Where the biggest names light up the island sky.',
     icon: 'Star',
-    map: { x: 50, y: 88 },
+    map: { x: 50.2, y: 79.5 },
     accent: '#e6c25e',
     events: [{ name: 'The Star Nights', tag: 'Headline Performances' }],
     contacts: [],

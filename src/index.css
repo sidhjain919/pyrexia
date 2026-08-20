@@ -29,7 +29,7 @@
   /* Fonts */
   --font-display: 'Cinzel', ui-serif, Georgia, serif;
   --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
-  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-log: 'Special Elite', 'Courier New', monospace;
   --font-accent: 'Rye', 'Cinzel', cursive, serif;
 
@@ -70,7 +70,6 @@ body {
   background-attachment: fixed;
   color: var(--color-offwhite);
   font-family: var(--font-body);
-  font-feature-settings: 'ss01', 'cv01';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
