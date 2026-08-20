@@ -29,7 +29,7 @@
   /* Fonts */
   --font-display: 'Cinzel', ui-serif, Georgia, serif;
   --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
-  --font-body: 'EB Garamond', 'Space Grotesk', ui-serif, Georgia, serif;
+  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-log: 'Special Elite', 'Courier New', monospace;
   --font-accent: 'Rye', 'Cinzel', cursive, serif;
 
