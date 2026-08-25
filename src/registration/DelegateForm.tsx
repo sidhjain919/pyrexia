@@ -1,39 +1,57 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Ticket } from 'lucide-react'
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Star, Ticket, X } from 'lucide-react'
+
 import {
-  DELEGATE_CATEGORIES,
-  DELEGATE_PASSES,
-  PRICING_ANNOUNCED,
-  type DelegateCategory,
-} from '../data/registration'
-import { api, IS_MOCK_BACKEND } from './api'
-import { payWithRazorpay, paymentsAreLive } from './razorpay'
-import { RegistrationError, type Delegate, type DocumentKind, type DocumentRef } from './types'
-import { ChipGroup, DocumentUpload, Field, Select, TextInput } from './fields'
-import DelegatePass from './DelegatePass'
+  ApiError,
+  api,
+  newIdempotencyKey,
+  waitForConfirmation,
+  type Product,
+  type RegistrationInput,
+} from '../api/client'
+import { openCheckout, PaymentCancelled } from './razorpay'
+import { Field, Select, TextInput } from './fields'
 
-const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRe = /^[6-9]\d{9}$/
+/**
+ * Registration.
+ *
+ * Two steps, not three. The identity-document step used to sit between details
+ * and payment; it now happens *after* payment, from the pass page. Blocking a
+ * ₹450 payment on someone finding a photo of their college ID loses
+ * registrations for no benefit — the documents are checked at the gate either
+ * way, and an unverified payer is far easier to chase than an abandoned one.
+ */
 
-const STEPS = ['Voyager', 'Identity', 'Pass & payment'] as const
+const STEPS = ['Your details', 'Registration & payment'] as const
 
-type Errors = Record<string, string>
+type Phase =
+  | { name: 'form' }
+  | { name: 'paying' }
+  /** Payment taken; waiting for the webhook to issue the pass. */
+  | { name: 'confirming'; orderId: string }
+  | { name: 'done'; publicCode: string; tierName: string }
+  /** Paid, but the webhook hasn't landed within the polling window. */
+  | { name: 'slow'; publicCode: string }
 
-export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) => void }) {
+const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`
+
+export default function DelegateForm() {
   const reduce = useReducedMotion()
   const [step, setStep] = useState(0)
-  const [errors, setErrors] = useState<Errors>({})
-  const [busy, setBusy] = useState(false)
+  const [phase, setPhase] = useState<Phase>({ name: 'form' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [fatal, setFatal] = useState<string | null>(null)
-  const [issued, setIssued] = useState<Delegate | null>(null)
+  const [emailFix, setEmailFix] = useState<string | null>(null)
 
-  const [form, setForm] = useState({
+  const [products, setProducts] = useState<Product[]>([])
+  const [wantsDelegate, setWantsDelegate] = useState(false)
+
+  const [form, setForm] = useState<RegistrationInput>({
     name: '',
     email: '',
     phone: '',
     gender: '',
-    category: '' as DelegateCategory | '',
     college: '',
     city: '',
     course: '',
@@ -41,115 +59,170 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
     emergencyName: '',
     emergencyPhone: '',
   })
-  const [docs, setDocs] = useState<Partial<Record<DocumentKind, DocumentRef>>>({})
-  const [consent, setConsent] = useState(false)
-  const [passId, setPassId] = useState(DELEGATE_PASSES.find((p) => p.featured)?.id ?? DELEGATE_PASSES[0].id)
 
-  const set = (k: keyof typeof form, v: string) => {
+  // One key per attempt, so a retry after a network wobble is recognised as the
+  // same request rather than becoming a second registration.
+  const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey)
+
+  useEffect(() => {
+    api.products().then(setProducts).catch(() => setProducts([]))
+  }, [])
+
+  const basic = products.find((p) => p.id === 'basic')
+  const delegate = products.find((p) => p.id === 'delegate')
+
+  const totalPaise = useMemo(
+    () => (basic?.amountPaise ?? 0) + (wantsDelegate ? (delegate?.amountPaise ?? 0) : 0),
+    [basic, delegate, wantsDelegate],
+  )
+
+  const set = (k: keyof RegistrationInput, v: string) => {
     setForm((f) => ({ ...f, [k]: v }))
     setErrors((e) => (e[k] ? { ...e, [k]: '' } : e))
   }
 
-  const pass = DELEGATE_PASSES.find((p) => p.id === passId)!
-
-  /* ---------- validation ---------- */
-
-  const validateStep0 = () => {
-    const e: Errors = {}
-    if (form.name.trim().length < 2) e.name = 'Tell us your name, voyager.'
-    if (!emailRe.test(form.email.trim())) e.email = 'A valid email keeps you on the manifest.'
-    if (!phoneRe.test(form.phone.replace(/\D/g, ''))) e.phone = 'A 10-digit Indian mobile number.'
-    if (!form.category) e.category = 'Pick your delegate type.'
-    if (form.college.trim().length < 2) e.college = 'Which port do you sail from?'
-    if (form.city.trim().length < 2) e.city = 'Your city.'
-    if (form.course.trim().length < 2) e.course = 'e.g. MBBS, BSc Nursing.'
-    if (!form.year) e.year = 'Which year?'
-    if (form.emergencyName.trim().length < 2) e.emergencyName = 'An emergency contact name.'
-    if (!phoneRe.test(form.emergencyPhone.replace(/\D/g, ''))) e.emergencyPhone = 'A 10-digit number.'
-    if (form.emergencyPhone.replace(/\D/g, '') === form.phone.replace(/\D/g, '') && form.phone)
-      e.emergencyPhone = 'Use someone other than yourself.'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const validateStep1 = () => {
-    const e: Errors = {}
-    if (!docs.aadhaar) e.aadhaar = 'Upload your Aadhaar to continue.'
-    if (!docs.studentId) e.studentId = 'Upload your student / institute ID.'
-    if (!consent) e.consent = 'We need your consent to store these documents.'
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const next = () => {
-    if (step === 0 && validateStep0()) setStep(1)
-    else if (step === 1 && validateStep1()) setStep(2)
-  }
-
-  /* ---------- submit + pay ---------- */
+  /* ---------- submit ---------- */
 
   const submit = async () => {
-    setBusy(true)
     setFatal(null)
+    setErrors({})
+    setPhase({ name: 'paying' })
+
+    let created
     try {
-      const { delegate, order } = await api.createDelegate({
-        ...form,
-        category: form.category as DelegateCategory,
-        phone: form.phone.replace(/\D/g, ''),
-        emergencyPhone: form.emergencyPhone.replace(/\D/g, ''),
-        passId,
-        documents: docs,
-        consent,
-      })
-      const payment = await payWithRazorpay(order, {
-        name: form.name,
-        email: form.email,
-        contact: form.phone,
-      })
-      const confirmed = await api.confirmDelegatePayment(delegate.delegateId, payment)
-      setIssued(confirmed)
-      onIssued?.(confirmed)
-    } catch (err) {
-      setFatal(
-        err instanceof RegistrationError
-          ? err.message
-          : 'Something went wrong on the crossing. Please try again.',
+      created = await api.register(
+        { ...form, products: wantsDelegate ? ['basic', 'delegate'] : ['basic'] },
+        idempotencyKey,
       )
-    } finally {
-      setBusy(false)
+    } catch (err) {
+      setPhase({ name: 'form' })
+
+      if (err instanceof ApiError) {
+        if (err.fields) {
+          setErrors(err.fields)
+          setEmailFix((err.extra.emailSuggestion as string) ?? null)
+          setStep(0)
+          return
+        }
+        if (err.code === 'already_registered') {
+          setFatal(err.message)
+          return
+        }
+        setFatal(err.message)
+        return
+      }
+      setFatal('Something went wrong. Please try again.')
+      return
+    }
+
+    try {
+      const result = await openCheckout(created.checkout)
+
+      // Makes the success screen instant. It grants nothing — the webhook does.
+      await api.verifyCheckout(result).catch(() => {})
+
+      setPhase({ name: 'confirming', orderId: created.orderId })
+
+      const confirmed = await waitForConfirmation(created.orderId)
+      if (confirmed) {
+        setPhase({
+          name: 'done',
+          publicCode: created.publicCode ?? '',
+          tierName: wantsDelegate ? 'Delegate Card' : 'Basic Registration',
+        })
+      } else {
+        setPhase({ name: 'slow', publicCode: created.publicCode ?? '' })
+      }
+    } catch (err) {
+      setPhase({ name: 'form' })
+      setStep(1)
+
+      if (err instanceof PaymentCancelled) {
+        // Not an error worth alarming them about. The order stays unpaid and
+        // they can try again with the same key — no duplicate registration.
+        setFatal('Payment was cancelled. Your details are saved — try again when ready.')
+        return
+      }
+      setFatal(err instanceof Error ? err.message : 'The payment could not be completed.')
+      // A genuinely failed attempt gets a fresh key so a retry is a new order.
+      setIdempotencyKey(newIdempotencyKey())
     }
   }
 
-  /* ---------- issued pass ---------- */
+  /* ---------- terminal states ---------- */
 
-  if (issued) {
+  if (phase.name === 'done') {
     return (
       <motion.div
         initial={reduce ? false : { opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="py-2"
+        className="py-4 text-center"
       >
-        <div className="mb-6 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep">
-            <Check size={26} className="text-abyss" />
-          </div>
-          <h3 className="mt-4 font-display text-2xl text-foil">You're aboard, {issued.name.split(' ')[0]}.</h3>
-          <p className="mx-auto mt-2 max-w-sm text-[0.9rem] text-parchment/70">
-            Your delegate pass is issued. Use pass number{' '}
-            <span className="text-gold-bright">{issued.delegateId}</span> when you enter individual
-            events.
-          </p>
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep">
+          <Check size={26} className="text-abyss" />
         </div>
-        <DelegatePass delegate={issued} />
+        <h3 className="mt-4 font-display text-2xl text-foil">
+          You're aboard, {form.name.split(' ')[0]}.
+        </h3>
+        <p className="mx-auto mt-2 max-w-sm text-[0.9rem] leading-relaxed text-parchment/70">
+          Your {phase.tierName} is confirmed. We've emailed your pass to{' '}
+          <span className="text-gold-bright">{form.email}</span> — the link in that email signs you
+          in, so keep it.
+        </p>
+
+        <div className="mx-auto mt-6 max-w-xs rounded-xl border border-gold/25 bg-ocean/50 p-4">
+          <div className="font-log text-[0.6rem] uppercase tracking-cinema text-parchment/50">
+            Your registration number
+          </div>
+          <div className="mt-1.5 font-display text-2xl tracking-wide text-gold-bright">
+            {phase.publicCode}
+          </div>
+        </div>
+
+        <a
+          href={`${import.meta.env.BASE_URL}pass`}
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
+        >
+          <Ticket size={14} /> View my pass
+        </a>
       </motion.div>
     )
   }
 
-  /* ---------- form ---------- */
+  if (phase.name === 'slow') {
+    return (
+      <div className="py-6 text-center">
+        <Loader2 size={26} className="mx-auto animate-spin text-gold/70" />
+        <h3 className="mt-4 font-display text-xl text-offwhite">Your payment went through</h3>
+        <p className="mx-auto mt-2 max-w-sm text-[0.88rem] leading-relaxed text-parchment/70">
+          It's taking a moment to confirm. Nothing is lost — your registration number is{' '}
+          <span className="text-gold-bright">{phase.publicCode}</span>, and the confirmation email
+          will arrive shortly. You can close this window.
+        </p>
+      </div>
+    )
+  }
+
+  if (phase.name === 'paying' || phase.name === 'confirming') {
+    return (
+      <div className="py-10 text-center">
+        <Loader2 size={26} className="mx-auto animate-spin text-gold/70" />
+        <p className="mt-4 font-display text-lg text-offwhite">
+          {phase.name === 'paying' ? 'Opening checkout…' : 'Confirming your payment…'}
+        </p>
+        <p className="mx-auto mt-2 max-w-xs text-[0.84rem] text-parchment/60">
+          {phase.name === 'paying'
+            ? 'The payment window will appear in a moment.'
+            : 'This usually takes a second or two. Please don’t close this window.'}
+        </p>
+      </div>
+    )
+  }
+
+  /* ---------- the form ---------- */
 
   return (
     <div>
-      {/* step rail */}
       <ol className="mb-7 flex items-center gap-2">
         {STEPS.map((label, i) => (
           <li key={label} className="flex flex-1 items-center gap-2">
@@ -184,7 +257,6 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
           exit={reduce ? undefined : { opacity: 0, x: -18 }}
           transition={{ duration: 0.28 }}
         >
-          {/* ---------------- step 0 : who you are ---------------- */}
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -198,16 +270,33 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
                   />
                 </Field>
               </div>
+
               <Field label="Email" required error={errors.email}>
                 <TextInput
                   value={form.email}
-                  onChange={(v) => set('email', v)}
+                  onChange={(v) => {
+                    set('email', v)
+                    setEmailFix(null)
+                  }}
                   invalid={!!errors.email}
                   type="email"
                   placeholder="you@college.edu"
                   autoComplete="email"
                 />
+                {emailFix && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      set('email', emailFix)
+                      setEmailFix(null)
+                    }}
+                    className="mt-1.5 text-left text-[0.78rem] text-ember hover:text-gold-bright"
+                  >
+                    Did you mean <span className="underline">{emailFix}</span>?
+                  </button>
+                )}
               </Field>
+
               <Field label="Mobile" required error={errors.phone}>
                 <TextInput
                   value={form.phone}
@@ -221,15 +310,15 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
                 />
               </Field>
 
-              <div className="sm:col-span-2">
-                <Field label="Delegate type" required error={errors.category}>
-                  <ChipGroup
-                    value={form.category}
-                    onChange={(v) => set('category', v)}
-                    options={DELEGATE_CATEGORIES}
-                  />
-                </Field>
-              </div>
+              <Field label="Gender" hint="Used for accommodation allocation." error={errors.gender}>
+                <Select
+                  value={form.gender}
+                  onChange={(v) => set('gender', v)}
+                  invalid={!!errors.gender}
+                  options={['Female', 'Male', 'Other', 'Prefer not to say']}
+                />
+              </Field>
+              <div className="hidden sm:block" />
 
               <Field label="College / institution" required error={errors.college}>
                 <TextInput
@@ -263,14 +352,6 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
                   options={['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate', 'Not a student']}
                 />
               </Field>
-              <Field label="Gender" hint="Used for accommodation allocation.">
-                <Select
-                  value={form.gender}
-                  onChange={(v) => set('gender', v)}
-                  options={['Female', 'Male', 'Other', 'Prefer not to say']}
-                />
-              </Field>
-              <div className="hidden sm:block" />
 
               <Field label="Emergency contact name" required error={errors.emergencyName}>
                 <TextInput
@@ -294,169 +375,127 @@ export default function DelegateForm({ onIssued }: { onIssued?: (d: Delegate) =>
             </div>
           )}
 
-          {/* ---------------- step 1 : identity ---------------- */}
           {step === 1 && (
             <div className="space-y-5">
               <div className="flex gap-3 rounded-lg border border-gold/25 bg-ocean/40 p-4">
-                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-gold-bright" />
-                <p className="text-[0.82rem] leading-relaxed text-parchment/75">
-                  These documents are checked once at the gate and are visible only to the core team.
-                  They are never shown on the site and never shared with sponsors.
+                <Star size={17} className="mt-0.5 shrink-0 text-gold-bright" />
+                <p className="text-[0.82rem] leading-relaxed text-parchment/80">
+                  Basic Registration is compulsory for everyone and lets you enter{' '}
+                  <strong className="text-parchment">any event</strong>. The Star Nights are the one
+                  exception — they need the Delegate Card.
                 </p>
               </div>
 
-              <DocumentUpload
-                kind="aadhaar"
-                label="Aadhaar card"
-                hint="Front side. JPG, PNG, WEBP or PDF, up to 8 MB."
-                value={docs.aadhaar}
-                error={errors.aadhaar}
-                onChange={(ref) => {
-                  setDocs((d) => ({ ...d, aadhaar: ref }))
-                  setErrors((e) => ({ ...e, aadhaar: '' }))
-                }}
-              />
-
-              <DocumentUpload
-                kind="studentId"
-                label="Student / institute ID"
-                hint="Must show your name, photo and institution."
-                value={docs.studentId}
-                error={errors.studentId}
-                onChange={(ref) => {
-                  setDocs((d) => ({ ...d, studentId: ref }))
-                  setErrors((e) => ({ ...e, studentId: '' }))
-                }}
-              />
-
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => {
-                    setConsent(e.target.checked)
-                    setErrors((x) => ({ ...x, consent: '' }))
-                  }}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#c89b3c]"
-                />
-                <span className="text-[0.82rem] leading-relaxed text-parchment/75">
-                  I consent to PYREXIA 2026, AIIMS Rishikesh storing these documents for the sole
-                  purpose of verifying my identity at the fest, and to their deletion afterwards.
-                </span>
-              </label>
-              {errors.consent && (
-                <span className="flex items-center gap-1 text-[0.72rem] text-coral">
-                  <AlertCircle size={12} /> {errors.consent}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* ---------------- step 2 : pass + payment ---------------- */}
-          {step === 2 && (
-            <div className="space-y-5">
-              {!PRICING_ANNOUNCED && (
-                <div className="flex gap-3 rounded-lg border border-ember/40 bg-ember/10 p-4">
-                  <AlertCircle size={17} className="mt-0.5 shrink-0 text-ember" />
-                  <p className="text-[0.82rem] leading-relaxed text-parchment/80">
-                    Fees below are <strong className="text-ember">provisional</strong> and will be
-                    confirmed before registrations open.
-                  </p>
+              <div className="rounded-xl border border-gold/70 bg-gold/10 p-4">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-display text-[1.05rem] leading-tight text-offwhite sm:text-lg">
+                    Basic Registration
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
+                    {rupees(basic?.amountPaise ?? 45000)}
+                  </span>
                 </div>
-              )}
-
-              <div className="grid gap-3">
-                {DELEGATE_PASSES.map((p) => {
-                  const on = p.id === passId
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPassId(p.id)}
-                      className={`rounded-xl border p-4 text-left transition-colors ${
-                        on ? 'border-gold/70 bg-gold/10' : 'border-gold/20 bg-ocean/40 hover:border-gold/45'
-                      }`}
-                    >
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="font-display text-lg text-offwhite">{p.name}</span>
-                        <span className="font-display text-lg text-gold-bright">₹{p.amount}</span>
-                      </div>
-                      <p className="mt-1 text-[0.82rem] text-parchment/65">{p.blurb}</p>
-                      <ul className="mt-2.5 grid gap-1">
-                        {p.includes.map((inc) => (
-                          <li key={inc} className="flex items-center gap-2 text-[0.78rem] text-parchment/70">
-                            <Check size={12} className="shrink-0 text-aqua" />
-                            {inc}
-                          </li>
-                        ))}
-                      </ul>
-                    </button>
-                  )
-                })}
+                <div className="mt-1 font-log text-[0.58rem] uppercase tracking-wide2 text-parchment/50">
+                  Required for everyone
+                </div>
+                <ul className="mt-2.5 grid gap-1">
+                  {['Entry to the fest, all five days', 'Register for and compete in any event', 'Delegate ID & kit'].map(
+                    (t) => (
+                      <li key={t} className="flex items-center gap-2 text-[0.78rem] text-parchment/70">
+                        <Check size={12} className="shrink-0 text-aqua" />
+                        {t}
+                      </li>
+                    ),
+                  )}
+                  <li className="flex items-center gap-2 text-[0.78rem] text-parchment/45">
+                    <X size={12} className="shrink-0 text-coral/70" />
+                    Star Nights — those need the Delegate Card
+                  </li>
+                </ul>
               </div>
 
-              <div className="rounded-xl border border-gold/25 bg-ocean/50 p-4">
-                <div className="flex items-center justify-between font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
-                  <span>{pass.name}</span>
-                  <span>₹{pass.amount}</span>
+              <button
+                type="button"
+                onClick={() => setWantsDelegate((v) => !v)}
+                aria-pressed={wantsDelegate}
+                className={`w-full rounded-xl border p-4 text-left transition-colors ${
+                  wantsDelegate
+                    ? 'border-gold/70 bg-gold/10'
+                    : 'border-gold/20 bg-ocean/40 hover:border-gold/45'
+                }`}
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-display text-[1.05rem] leading-tight text-offwhite sm:text-lg">
+                    Add the Delegate Card
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
+                    +{rupees(delegate?.amountPaise ?? 225000)}
+                  </span>
                 </div>
+                <p className="mt-1 text-[0.82rem] text-parchment/65">
+                  The only way into all five Star Nights. You can also add this later — it costs
+                  exactly the same.
+                </p>
+              </button>
+
+              <div className="rounded-xl border border-gold/25 bg-ocean/50 p-4">
+                <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
+                  <span>Basic Registration</span>
+                  <span>{rupees(basic?.amountPaise ?? 45000)}</span>
+                </div>
+                {wantsDelegate && (
+                  <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
+                    <span>Delegate Card · Star Nights</span>
+                    <span>{rupees(delegate?.amountPaise ?? 225000)}</span>
+                  </div>
+                )}
                 <div className="my-3 rule-gold" />
                 <div className="flex items-center justify-between">
                   <span className="font-log text-[0.8rem] uppercase tracking-wide2 text-parchment/80">
                     Total
                   </span>
-                  <span className="font-display text-2xl text-foil">₹{pass.amount}</span>
+                  <span className="font-display text-2xl text-foil">{rupees(totalPaise)}</span>
                 </div>
               </div>
 
-              {!paymentsAreLive && (
-                <p className="text-[0.75rem] leading-relaxed text-parchment/50">
-                  No payment gateway is connected yet, so this checkout is{' '}
-                  <strong className="text-parchment/70">simulated</strong> — no money moves
-                  {IS_MOCK_BACKEND && ', and the record is kept only in this browser'}.
-                </p>
-              )}
-
-              {fatal && (
-                <div className="flex items-start gap-2 rounded-lg border border-coral/50 bg-coral/10 p-3 text-[0.82rem] text-coral">
-                  <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                  {fatal}
-                </div>
-              )}
+              <p className="text-[0.75rem] leading-relaxed text-parchment/50">
+                You'll upload your college ID after payment, from your pass page. Registration fees
+                are non-refundable.
+              </p>
             </div>
           )}
         </motion.div>
       </AnimatePresence>
 
-      {/* nav */}
+      {fatal && (
+        <div className="mt-5 flex items-start gap-2 rounded-lg border border-coral/50 bg-coral/10 p-3 text-[0.82rem] text-coral">
+          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+          {fatal}
+        </div>
+      )}
+
       <div className="mt-7 flex items-center gap-3">
         {step > 0 && (
           <button
             type="button"
-            onClick={() => setStep((s) => s - 1)}
-            disabled={busy}
-            className="flex items-center gap-1.5 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 disabled:opacity-40"
+            onClick={() => setStep(0)}
+            className="flex items-center gap-1.5 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80"
           >
             <ArrowLeft size={13} /> Back
           </button>
         )}
         <button
           type="button"
-          onClick={step === 2 ? submit : next}
-          disabled={busy}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
+          onClick={() => (step === 0 ? setStep(1) : submit())}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01]"
         >
-          {busy ? (
+          {step === 0 ? (
             <>
-              <Loader2 size={15} className="animate-spin" /> Processing…
-            </>
-          ) : step === 2 ? (
-            <>
-              <Ticket size={15} /> Pay ₹{pass.amount} & get my pass
+              Continue <ArrowRight size={14} />
             </>
           ) : (
             <>
-              Continue <ArrowRight size={14} />
+              <Ticket size={15} /> Pay {rupees(totalPaise)}
             </>
           )}
         </button>

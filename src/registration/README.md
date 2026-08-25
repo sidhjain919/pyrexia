@@ -1,3 +1,8 @@
+> **Superseded in part.** Registration and payment now run against the real API
+> in `src/api/client.ts` — see `api/README.md`. The mock adapter below is still
+> used by `EventForm`, which stays behind the `EVENT_REGISTRATION_OPEN` flag
+> until event entries open. The pass itself now lives at `src/pages/Pass.tsx`.
+
 # Registration
 
 Two separate journeys, deliberately not merged:
@@ -22,7 +27,6 @@ each supply their own pass number too.
 | `types.ts` | wire types shared by the forms and the adapter |
 | `razorpay.ts` | checkout launcher; simulates a capture when no key is configured |
 | `DelegateForm.tsx` | 3-step pass purchase |
-| `DelegatePass.tsx` | the issued pass, QR rendered from `delegate.qrPayload` |
 | `EventForm.tsx` | pass gate → event-specific entry |
 | `fields.tsx` | inputs, chip group, document uploader |
 | `context.tsx` | which flow is open, and for which event |
@@ -67,9 +71,17 @@ frontend — the key secret must never reach the bundle.
 
 ### 4. Fees
 
-`PRICING_ANNOUNCED` in `../data/registration.ts` is `false` and the amounts in
-`DELEGATE_PASSES` are **placeholders**. Replace them with the real fee card and flip the
-flag; the "provisional" notice disappears on its own.
+`BASIC_AMOUNT` (₹450) and `DELEGATE_ADDON` (₹2250) in `../data/registration.ts` are the
+single source of truth; `DELEGATE_PASSES` derives both tiers and their line-item
+breakdown from them, and the whole site reads those constants. The mock backend also
+prices from `DELEGATE_PASSES` — a real backend must price server-side and never trust the
+`passId` amount the client sends.
+
+### 5. Event entries
+
+`EVENT_REGISTRATION_OPEN` is `false`, so every per-event form renders a "Coming Soon"
+panel that routes visitors to Basic Registration instead. Flip it to `true` when entries
+open; nothing else needs to change.
 
 ## Adding or changing an event's form
 
