@@ -7,12 +7,20 @@ import {
   Check,
   Loader2,
   Plus,
+  Hourglass,
   Search,
   Ticket,
   Trash2,
   UserCheck,
 } from 'lucide-react'
-import { allowsTeam, requiresTeam, resolveEvent, type ExtraField } from '../data/registration'
+import {
+  allowsTeam,
+  BASIC_AMOUNT,
+  EVENT_REGISTRATION_OPEN,
+  requiresTeam,
+  resolveEvent,
+  type ExtraField,
+} from '../data/registration'
 import { Icon } from '../lib/icons'
 import { api } from './api'
 import { RegistrationError, type Delegate, type EventEntry, type TeamMember } from './types'
@@ -28,7 +36,7 @@ export default function EventForm({
   onNeedDelegate,
 }: {
   eventName: string
-  /** Called when the visitor has no pass and must buy one first. */
+  /** Called when the visitor has no registration yet and must complete one first. */
   onNeedDelegate: () => void
 }) {
   const reduce = useReducedMotion()
@@ -75,6 +83,54 @@ export default function EventForm({
 
   const { territory } = resolved
 
+  /* ---------- entries not open yet ---------- */
+
+  if (!EVENT_REGISTRATION_OPEN) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center gap-3">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: `${territory.accent}22`, border: `1px solid ${territory.accent}66` }}
+          >
+            <Icon name={territory.icon} size={20} style={{ color: territory.accent }} />
+          </span>
+          <div className="min-w-0">
+            <div className="font-log text-[0.66rem] uppercase tracking-cinema text-gold/70">
+              {territory.code} · {territory.territory}
+            </div>
+            <div className="truncate font-display text-[1.05rem] leading-tight text-offwhite">
+              {resolved.tag}
+            </div>
+          </div>
+        </div>
+
+        <div className="glass flex flex-col items-center gap-3 rounded-xl px-6 py-12 text-center">
+          <Hourglass size={22} className="text-gold/60" />
+          <p className="font-display text-2xl text-offwhite">Coming Soon</p>
+          <p className="max-w-sm text-[0.86rem] leading-relaxed text-parchment/65">
+            Entries for {eventName} aren't open yet. The crew is still finalising the rules and
+            slots — the form lands here well before the fest.
+          </p>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-dashed border-gold/30 p-5 text-center">
+          <p className="text-[0.86rem] leading-relaxed text-parchment/70">
+            Get your Basic Registration (₹{BASIC_AMOUNT}) done now — it's compulsory for everyone,
+            and event entries open only to registered voyagers.
+          </p>
+          <button
+            type="button"
+            onClick={onNeedDelegate}
+            className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
+          >
+            <Ticket size={14} /> Do my Basic Registration
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   /* ---------- gate ---------- */
 
   const checkPass = async () => {
@@ -94,11 +150,13 @@ export default function EventForm({
             : { delegateId: q },
       )
       if (!found) {
-        setGateError('No delegate pass matches that. You need a pass before entering any event.')
+        setGateError(
+          'No registration matches that. Basic Registration comes first — it is your entry to every event.',
+        )
         return
       }
       if (found.status !== 'confirmed') {
-        setGateError('That pass exists but the payment never completed. Finish the delegate payment first.')
+        setGateError('That registration exists but the payment never completed. Finish it first.')
         return
       }
       const entries = await api.listEntries(found.delegateId)
@@ -240,10 +298,10 @@ export default function EventForm({
           <div className="flex items-start gap-3">
             <UserCheck size={18} className="mt-0.5 shrink-0 text-gold-bright" />
             <div>
-              <div className="font-display text-[0.9rem] text-offwhite">Delegates only</div>
+              <div className="font-display text-[0.9rem] text-offwhite">Registered voyagers only</div>
               <p className="mt-1 text-[0.84rem] leading-relaxed text-parchment/70">
-                Every event entry is tied to a paid delegate pass. Enter your pass number, or the
-                email or mobile you registered with.
+                Every event entry is tied to a completed Basic Registration. Enter your registration
+                number, or the email or mobile you registered with.
               </p>
             </div>
           </div>
@@ -284,13 +342,13 @@ export default function EventForm({
         </div>
 
         <div className="mt-5 rounded-xl border border-dashed border-gold/30 p-5 text-center">
-          <p className="text-[0.86rem] text-parchment/70">Don't have a pass yet?</p>
+          <p className="text-[0.86rem] text-parchment/70">Not registered yet?</p>
           <button
             type="button"
             onClick={onNeedDelegate}
             className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
           >
-            <Ticket size={14} /> Get your delegate pass first
+            <Ticket size={14} /> Do your Basic Registration first
           </button>
         </div>
       </div>
@@ -326,7 +384,7 @@ export default function EventForm({
       <div className="mb-5 flex items-center gap-2 rounded-lg border border-aqua/35 bg-aqua/10 px-3.5 py-2.5">
         <Check size={14} className="shrink-0 text-aqua" />
         <span className="text-[0.82rem] text-parchment/80">
-          Pass verified — {delegate.name} · {delegate.delegateId}
+          Registration verified — {delegate.name} · {delegate.delegateId}
         </span>
       </div>
 
@@ -388,7 +446,7 @@ export default function EventForm({
               </div>
 
               <p className="mt-1 text-[0.72rem] text-parchment/45">
-                Every team-mate needs their own delegate pass — enter their pass number.
+                Every team-mate needs their own Basic Registration — enter their number.
               </p>
 
               <div className="mt-3 space-y-3">

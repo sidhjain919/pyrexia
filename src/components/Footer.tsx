@@ -1,4 +1,5 @@
 import { NAV, SITE, SOCIAL } from '../data/site'
+import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import { Icon } from '../lib/icons'
 import { Compass } from './primitives'
 import { asset } from '../lib/asset'
@@ -24,7 +25,7 @@ export default function Footer() {
         <div className="mb-14 text-center">
           <p className="font-display text-3xl text-foil sm:text-4xl">The voyage doesn't end here.</p>
           <p className="mt-3 font-log text-[0.62rem] uppercase tracking-cinema text-parchment/62">
-            {SITE.theme} · {SITE.window}
+            {SITE.theme} · {SITE.dates}
           </p>
         </div>
 
@@ -78,7 +79,8 @@ export default function Footer() {
           <div>
             <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
-              Delegate cards & event registration on the official PYREXIA website.
+              Basic Registration (₹{BASIC_AMOUNT}) and the Delegate Card (+₹{DELEGATE_ADDON} for the
+              Star Nights) — both on the official PYREXIA website.
             </p>
             <button
               onClick={() => openRegister()}

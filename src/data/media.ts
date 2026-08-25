@@ -48,5 +48,4 @@ export const sectionPhoto = {
   eventsHero: p(22),
   scheduleHero: p(35), // fairy-light tunnel
   artistsHero: p(41), // blue-hour headline
-  sponsorsHero: p(43),
 } as const

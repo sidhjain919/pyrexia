@@ -2,6 +2,7 @@ import { pastLegends, mysterySlots } from '../data/artists'
 import { Reveal, SectionTitle } from './primitives'
 import { Star, Lock } from 'lucide-react'
 import { asset } from '../lib/asset'
+import { SITE } from '../data/site'
 
 export default function Artists() {
   return (
@@ -16,22 +17,33 @@ export default function Artists() {
           eyebrow="The Crew · Legends"
           title="Starlight Summit"
           meaning="Lineup"
-          kicker="The peak of every voyage. A glimpse of the legends who have lit the PYREXIA sky — and the names still charted in secret."
+          kicker={`Five nights, five reveals — one for every day of the voyage, ${SITE.dates}. A glimpse of the legends who have lit the PYREXIA sky, and the names still charted in secret.`}
         />
 
-        {/* 2026 mystery slots */}
-        <div className="mt-14 grid gap-4 sm:grid-cols-3">
+        {/* 2026 mystery slots — one per night of the fest */}
+        <div className="mt-14 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
           {mysterySlots.map((m, i) => (
-            <Reveal key={m.label} delay={i * 0.08}>
-              <div className="glass group relative flex h-44 flex-col items-center justify-center overflow-hidden rounded-xl text-center">
+            <Reveal
+              key={m.label}
+              delay={i * 0.08}
+              /* Five cards over a three-column tablet grid leave a gap on the
+                 last row — the final card spans it so the block stays even. */
+              className={i === mysterySlots.length - 1 ? 'col-span-2 sm:col-span-1' : undefined}
+            >
+              <div className="glass group relative flex h-44 flex-col items-center justify-center overflow-hidden rounded-xl px-3 text-center">
                 <div className="absolute inset-0 map-grid opacity-30" />
-                <Lock size={20} className="text-gold/60 transition-transform group-hover:-translate-y-1" />
-                <div className="mt-3 font-display text-xl text-offwhite">{m.label}</div>
-                <div className="mt-1 max-w-[80%] font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65">
+                <Lock size={18} className="text-gold/60 transition-transform group-hover:-translate-y-1" />
+                <div className="mt-2.5 font-display text-lg leading-none text-offwhite">{m.label}</div>
+                <div className="mt-1.5 font-log text-[0.62rem] uppercase tracking-cinema text-gold-bright">
+                  {m.date} 2026
+                </div>
+                {/* Reserve two lines so the "reveal soon" pill lands on the same
+                    baseline across all five cards, short hint or long. */}
+                <div className="mt-2 flex min-h-[3.25em] items-start font-log text-[0.58rem] uppercase leading-relaxed tracking-wide2 text-parchment/60">
                   {m.hint}
                 </div>
-                <div className="mt-3 rounded-full bg-gold/10 px-3 py-1 font-log text-[0.7rem] uppercase tracking-cinema text-gold-bright">
-                  2026 · Reveal soon
+                <div className="mt-2.5 rounded-full bg-gold/10 px-3 py-1 font-log text-[0.6rem] uppercase tracking-wide2 text-gold-bright">
+                  Reveal soon
                 </div>
               </div>
             </Reveal>

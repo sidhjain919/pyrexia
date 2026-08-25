@@ -22,12 +22,24 @@ export type FAQ = { q: string; a: string }
 
 export const faqs: FAQ[] = [
   {
+    q: 'When is PYREXIA 2026?',
+    a: "Five days on the island — 12 to 16 October 2026, at AIIMS Rishikesh. The hour-by-hour Captain's Log drops closer to the fest.",
+  },
+  {
     q: 'How do I join the crew?',
-    a: 'Registrations for delegate cards and every event happen entirely on the official PYREXIA website. A basic (delegate) registration is your boarding pass to the island.',
+    a: 'Everything happens on this website. Start with Basic Registration (BR) — ₹450 — which is your boarding pass to the island. Event entry forms open a little later in the season.',
+  },
+  {
+    q: 'What is the difference between BR and the Delegate Card?',
+    a: 'Basic Registration (₹450) is compulsory for everyone entering the fest, and it lets you register for and compete in any event. The Delegate Card is an add-on of ₹2250 on top of BR (₹2700 in all) and it is what opens the Star Nights.',
+  },
+  {
+    q: 'Can I attend the Star Nights with only BR?',
+    a: 'No. Star Nights are the one thing BR does not cover — you need the Delegate Card, purchased as an additional ₹2250 on top of your Basic Registration.',
   },
   {
     q: 'Is basic registration mandatory?',
-    a: 'Yes. To take part in any event or sport, you must complete your basic registration first — it is your entry to everything on the island.',
+    a: 'Yes. To take part in any event or sport, or simply to enter the fest, you must complete your Basic Registration first — it is your entry to everything on the island.',
   },
   {
     q: 'How do I reach the island (Rishikesh)?',
@@ -39,6 +51,6 @@ export const faqs: FAQ[] = [
   },
   {
     q: 'When is the star lineup announced?',
-    a: "That's the island's best-kept secret. When the curtain lifts, the stars will blow your mind — trust us, it is worth the wait.",
+    a: "That's the island's best-kept secret. Five nights, five reveals — when the curtain lifts, the stars will blow your mind.",
   },
 ]

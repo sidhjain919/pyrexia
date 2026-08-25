@@ -2,7 +2,8 @@
  * PYREXIA 2026 — registration configuration.
  *
  * Two separate things live here:
- *  1. the delegate pass catalogue (what you buy to get onto the island), and
+ *  1. the registration tiers (Basic Registration, and the Delegate Card
+ *     add-on that opens the Star Nights), and
  *  2. the per-event entry forms (what you fill in once you're aboard).
  *
  * Event forms are derived: each territory has a default shape, and only the
@@ -13,73 +14,79 @@
 import { territories, type Territory } from './events'
 
 /* ------------------------------------------------------------------ *
- * Delegate passes
+ * Registration tiers
  * ------------------------------------------------------------------ */
 
 /**
- * FLIP TO `true` ONCE THE CORE TEAM SIGNS OFF ON THE FEE CARD.
- * While it's false the pass step shows a "provisional" notice so nobody
- * treats these numbers as final.
+ * Event entry forms open later in the season. While this is false every
+ * per-event form is replaced by a "coming soon" panel — Basic Registration
+ * itself stays open, since that is what gets you onto the island.
  */
-export const PRICING_ANNOUNCED = false
+export const EVENT_REGISTRATION_OPEN = false
+
+/** Rupees. Basic Registration is mandatory for everyone who enters the fest. */
+export const BASIC_AMOUNT = 450
+/** Rupees, charged *on top of* Basic Registration. Unlocks the Star Nights. */
+export const DELEGATE_ADDON = 2250
+
+/** One line on the payment summary. */
+export type PassLine = { label: string; amount: number }
 
 export type PassTier = {
   id: string
   name: string
-  /** Rupees. PLACEHOLDER until PRICING_ANNOUNCED flips — replace with the real fee card. */
+  /** Compact label for tight surfaces (the pass card, chips). */
+  short: string
+  /** Rupees actually charged for this tier — the sum of `lines`. */
   amount: number
   blurb: string
   includes: string[]
+  /** What this tier deliberately does not cover. */
+  excludes?: string[]
+  /** Itemised breakdown, so the delegate add-on never looks like a second full price. */
+  lines: PassLine[]
   /** Shown as the recommended card. */
   featured?: boolean
 }
 
+/**
+ * Two tiers, and the second contains the first:
+ *  - Basic Registration (BR) — mandatory entry, any event except the Star Nights.
+ *  - Delegate Card — BR plus a ₹2250 add-on that opens the Star Nights.
+ * Nobody buys the Delegate Card alone, so its `amount` is the full BR + add-on.
+ */
 export const DELEGATE_PASSES: PassTier[] = [
   {
-    id: 'voyager',
-    name: 'Voyager Pass',
-    amount: 1499,
-    blurb: 'The full five-day voyage — every territory, every night.',
+    id: 'basic',
+    name: 'Basic Registration',
+    short: 'BR',
+    amount: BASIC_AMOUNT,
+    blurb: 'Your boarding pass. Every voyager needs one to set foot on the island.',
     includes: [
-      'Entry to all five days',
-      'Entry to every competitive event',
-      'All star nights',
-      'Delegate kit & ID',
+      'Entry to the fest, all five days',
+      'Register for and compete in any event',
+      'Delegate ID & kit',
+    ],
+    excludes: ['Star Nights — those need the Delegate Card'],
+    lines: [{ label: 'Basic Registration', amount: BASIC_AMOUNT }],
+  },
+  {
+    id: 'delegate',
+    name: 'Delegate Card',
+    short: 'BR + Delegate',
+    amount: BASIC_AMOUNT + DELEGATE_ADDON,
+    blurb: `Basic Registration plus the summit — add ₹${DELEGATE_ADDON} and the Star Nights are yours.`,
+    includes: [
+      'Everything in Basic Registration',
+      'Entry to all five Star Nights',
+      'Delegate card, ID & kit',
+    ],
+    lines: [
+      { label: 'Basic Registration', amount: BASIC_AMOUNT },
+      { label: 'Delegate Card · Star Nights', amount: DELEGATE_ADDON },
     ],
     featured: true,
   },
-  {
-    id: 'daysail',
-    name: 'Day Sail',
-    amount: 599,
-    blurb: 'One day on the island, chosen at check-in.',
-    includes: ['Entry for a single day', 'Events running that day', 'Delegate ID'],
-  },
-  {
-    id: 'crew',
-    name: 'Crew Pass',
-    amount: 999,
-    blurb: 'For AIIMS Rishikesh students sailing with the home crew.',
-    includes: [
-      'Entry to all five days',
-      'Entry to every competitive event',
-      'All star nights',
-      'Requires an AIIMS Rishikesh student ID',
-    ],
-  },
-]
-
-export type DelegateCategory =
-  | 'AIIMS Rishikesh Student'
-  | 'Outstation Delegate'
-  | 'Faculty'
-  | 'Guest'
-
-export const DELEGATE_CATEGORIES: DelegateCategory[] = [
-  'AIIMS Rishikesh Student',
-  'Outstation Delegate',
-  'Faculty',
-  'Guest',
 ]
 
 /* ------------------------------------------------------------------ *

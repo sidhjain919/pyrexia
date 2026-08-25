@@ -1,6 +1,7 @@
 import { useRef } from 'react'
-import { ArrowLeft, ArrowRight, Ticket } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Hourglass, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
+import { EVENT_REGISTRATION_OPEN } from '../data/registration'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { Icon } from '../lib/icons'
 import { Reveal, SectionTitle } from './primitives'
@@ -106,10 +107,18 @@ export default function FeaturedEvents() {
                   <div className="mt-auto flex items-center gap-2 pt-5">
                     <button
                       onClick={() => openRegister(p.event)}
-                      data-cursor="REGISTER"
+                      data-cursor={EVENT_REGISTRATION_OPEN ? 'REGISTER' : 'SOON'}
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.66rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      <Ticket size={13} /> Register
+                      {EVENT_REGISTRATION_OPEN ? (
+                        <>
+                          <Ticket size={13} /> Register
+                        </>
+                      ) : (
+                        <>
+                          <Hourglass size={13} /> Coming Soon
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={() => navTo('/#island')}

@@ -11,7 +11,7 @@ export default function Navigator() {
     <section id="contact" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <SectionTitle
-          index="08"
+          index="07"
           eyebrow="The Navigator's Desk"
           title="Charts & Queries"
           meaning="Contact & FAQ"
@@ -81,8 +81,9 @@ export default function Navigator() {
               </ul>
               <div className="mt-6 rounded-lg bg-ocean/50 p-4">
                 <p className="text-[0.85rem] leading-relaxed text-parchment/70">
-                  Registrations for delegate cards and every event happen entirely on the official
-                  PYREXIA website. Reach the PR crew for any query — the island keeps its gates open.
+                  Basic Registration, the Delegate Card and every event entry happen entirely on the
+                  official PYREXIA website. Reach the PR crew for any query — the island keeps its
+                  gates open.
                 </p>
               </div>
             </div>

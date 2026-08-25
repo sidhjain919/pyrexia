@@ -1,12 +1,12 @@
 import { Reveal, SectionTitle } from './primitives'
-import { LEGEND_META, SITE } from '../data/site'
+import { SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
 
 const chapters = [
   {
     n: 'I',
     title: 'The Call',
-    body: 'Every October, a signal rises from AIIMS Rishikesh — a week-long fever that calls students from across India to the hills of the Ganga.',
+    body: 'Every October, a signal rises from AIIMS Rishikesh — five days of fever, from the 12th to the 16th, calling students from across India to the hills of the Ganga.',
   },
   {
     n: 'II',
@@ -63,7 +63,7 @@ export default function Legend() {
                 “The fever returns — the most epic edition yet.”
               </p>
               <p className="mt-5 text-[0.95rem] leading-relaxed text-wood/80">
-                A full week packed with everything you can dream of — dance, music, drama, sports,
+                Five days packed with everything you can dream of — dance, music, drama, sports,
                 art, literary battles, informal games, Mr.&nbsp;&amp; Ms.&nbsp;PYREXIA, and the much-awaited
                 star nights. From high-energy competitions to crazy fun nights, there's something for
                 every voyager.
@@ -77,7 +77,7 @@ export default function Legend() {
                   P
                 </span>
                 <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-wood/70">
-                  {SITE.window} · Rishikesh
+                  {SITE.dates} · Rishikesh
                 </span>
               </div>
             </div>
@@ -109,17 +109,22 @@ export default function Legend() {
           </div>
         </div>
 
-        {/* Metadata chips */}
+        {/* Dates ribbon — closes the section with the one fact every visitor
+            scrolls looking for, and keeps the chapters column from ending flush
+            against the section padding. */}
         <Reveal delay={0.1}>
-          <div className="mt-16 flex flex-wrap justify-center gap-2.5">
-            {LEGEND_META.map((m) => (
-              <span
-                key={m}
-                className="glass-parchment rounded-full px-4 py-2 font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/80"
-              >
-                {m}
-              </span>
-            ))}
+          <div className="mt-16 flex flex-col items-center gap-3 text-center">
+            <span className="rule-gold w-full max-w-md" />
+            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
+              Mark the chart
+            </div>
+            <div className="font-display text-3xl leading-none text-foil sm:text-4xl">
+              {SITE.dates}
+            </div>
+            <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/60">
+              Five days · {SITE.institution} · {SITE.edition}
+            </div>
+            <span className="rule-gold w-full max-w-md" />
           </div>
         </Reveal>
       </div>

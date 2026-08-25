@@ -8,7 +8,6 @@ import PhotoMarquee from '../components/PhotoMarquee'
 import CaptainsLog from '../components/CaptainsLog'
 import Artists from '../components/Artists'
 import Gallery from '../components/Gallery'
-import Sponsors from '../components/Sponsors'
 import CTA from '../components/CTA'
 import Navigator from '../components/Navigator'
 
@@ -29,7 +28,6 @@ export default function Home() {
       <CaptainsLog />
       <Artists />
       <Gallery />
-      <Sponsors />
       <CTA />
       <Navigator />
     </>

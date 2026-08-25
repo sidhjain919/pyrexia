@@ -29,7 +29,7 @@
   /* Fonts */
   --font-display: 'Cinzel', ui-serif, Georgia, serif;
   --font-deco: 'Cinzel Decorative', 'Cinzel', serif;
-  --font-body: 'Jost', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'EB Garamond', 'Cinzel', ui-serif, Georgia, 'Times New Roman', serif;
   --font-log: 'Special Elite', 'Courier New', monospace;
   --font-accent: 'Rye', 'Cinzel', cursive, serif;
 
@@ -70,6 +70,11 @@ body {
   background-attachment: fixed;
   color: var(--color-offwhite);
   font-family: var(--font-body);
+  /* EB Garamond sets a much smaller x-height than the sans it replaced, so every
+     rem-sized string read a size too small. Normalising to Jost's ~0.5 aspect
+     ratio restores the optical size the layout was tuned for. Browsers without
+     `font-size-adjust` simply keep the raw size — nothing breaks. */
+  font-size-adjust: 0.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -115,10 +120,13 @@ body {
  * Utilities
  * ------------------------------------------------------------------ */
 @layer utilities {
-  .font-display { font-family: var(--font-display); }
-  .font-deco { font-family: var(--font-deco); }
-  .font-log { font-family: var(--font-log); }
-  .font-accent { font-family: var(--font-accent); }
+  /* Only the body face is re-scaled above; these were drawn to sit right at
+     their nominal size, so they opt out of the adjustment. */
+  .font-display { font-family: var(--font-display); font-size-adjust: none; }
+  .font-deco { font-family: var(--font-deco); font-size-adjust: none; }
+  .font-log { font-family: var(--font-log); font-size-adjust: none; }
+  .font-accent { font-family: var(--font-accent); font-size-adjust: none; }
+  .font-body { font-family: var(--font-body); font-size-adjust: 0.5; }
 
   .tracking-cinema { letter-spacing: 0.28em; }
   .tracking-wide2 { letter-spacing: 0.16em; }

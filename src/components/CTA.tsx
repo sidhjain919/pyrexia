@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { Compass, StaggerWords } from './primitives'
 import { SITE } from '../data/site'
+import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import { sectionPhoto } from '../data/media'
 import { useRegistration } from '../registration/context'
 import { useNavTo } from './routing'
@@ -50,23 +51,51 @@ export default function CTA() {
           transition={{ delay: 0.2, duration: 0.8 }}
           className="mx-auto mt-6 max-w-lg text-[1rem] leading-relaxed text-parchment/70"
         >
-          The island awaits. Grab your delegate card, choose your crew, and set sail into the most
-          epic edition of PYREXIA yet. The treasure is real — come claim it.
+          The island awaits from {SITE.dates}. Complete your Basic Registration, choose your crew,
+          and set sail into the most epic edition of PYREXIA yet. The treasure is real — come claim
+          it.
         </motion.p>
 
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ delay: 0.26, duration: 0.8 }}
+          className="mx-auto mt-9 grid max-w-lg gap-3 text-left sm:grid-cols-2"
+        >
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-display text-[1.05rem] text-offwhite">Basic Registration</span>
+              <span className="font-display text-lg text-gold-bright">₹{BASIC_AMOUNT}</span>
+            </div>
+            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
+              Compulsory for everyone. Enter the fest and compete in any event.
+            </p>
+          </div>
+          <div className="glass rounded-xl border-gold/40 p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-display text-[1.05rem] text-offwhite">Delegate Card</span>
+              <span className="font-display text-lg text-gold-bright">+₹{DELEGATE_ADDON}</span>
+            </div>
+            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
+              On top of BR. The only way into the five Star Nights.
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ delay: 0.32, duration: 0.8 }}
-          className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+          className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
           <button
             onClick={() => openRegister()}
             data-cursor="JOIN"
             className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
           >
-            Join the Crew
+            Register Now
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </button>
           <button
@@ -79,7 +108,7 @@ export default function CTA() {
         </motion.div>
 
         <p className="mt-8 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/45">
-          {SITE.window} · {SITE.institution}
+          {SITE.dates} · {SITE.institution}
         </p>
       </div>
     </section>

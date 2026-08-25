@@ -1,5 +1,3 @@
-import type { DelegateCategory } from '../data/registration'
-
 /** A file the delegate uploaded, as the backend refers to it. */
 export type DocumentRef = {
   /** Storage key. In the mock adapter this is a local id, never a public URL. */
@@ -24,12 +22,11 @@ export type DelegateInput = {
   name: string
   email: string
   phone: string
-  category: DelegateCategory
+  gender: string
   college: string
   city: string
   course: string
   year: string
-  gender: string
   emergencyName: string
   emergencyPhone: string
   passId: string
@@ -39,7 +36,7 @@ export type DelegateInput = {
 }
 
 export type Delegate = DelegateInput & {
-  /** Human-readable pass number, e.g. `PYX26-4KD9TQ`. Printed on the pass and encoded in the QR. */
+  /** Human-readable registration number, e.g. `PYX26-4KD9TQ`. Printed on the pass and encoded in the QR. */
   delegateId: string
   status: DelegateStatus
   createdAt: string

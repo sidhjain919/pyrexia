@@ -33,7 +33,7 @@ export default function CaptainsLog() {
           index="04"
           eyebrow="The Schedule"
           title="Captain's Log"
-          kicker={`Five days on the island. The hour-by-hour log for ${SITE.window} is still being charted — check back closer to the fest.`}
+          kicker={`Five days on the island, ${SITE.dates}. The hour-by-hour log is still being charted — check back closer to the fest.`}
         />
 
         {/* day tabs */}
@@ -44,13 +44,20 @@ export default function CaptainsLog() {
                 key={d.day}
                 onClick={() => setDay(i)}
                 data-cursor="LOG"
-                className={`font-accent shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 transition-all duration-300 ${
+                className={`shrink-0 whitespace-nowrap rounded-2xl px-5 py-2 text-center uppercase transition-all duration-300 ${
                   i === day
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                     : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'
                 }`}
               >
-                {d.day}
+                <span className="font-accent block text-[0.82rem] tracking-wide2">{d.day}</span>
+                <span
+                  className={`font-log block text-[0.58rem] tracking-wide2 ${
+                    i === day ? 'text-abyss/70' : 'text-parchment/55'
+                  }`}
+                >
+                  {d.date}
+                </span>
               </button>
             ))}
           </div>
@@ -67,6 +74,9 @@ export default function CaptainsLog() {
             >
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                 <h3 className="font-display text-3xl text-foil">{active.title}</h3>
+                <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-gold-bright">
+                  {active.date} 2026
+                </span>
                 <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/65">
                   {active.subtitle}
                 </span>
@@ -112,8 +122,8 @@ export default function CaptainsLog() {
                   <Hourglass size={22} className="text-gold/60" />
                   <p className="font-display text-2xl text-offwhite">Coming Soon</p>
                   <p className="max-w-sm text-[0.85rem] leading-relaxed text-parchment/60">
-                    The crew is still charting {active.title}'s hour-by-hour log. It'll drop here
-                    closer to {SITE.window}.
+                    The crew is still charting {active.title}'s hour-by-hour log for{' '}
+                    {active.date} 2026. It'll drop here closer to the fest.
                   </p>
                 </div>
               )}

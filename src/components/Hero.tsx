@@ -173,13 +173,15 @@ export default function Hero() {
         variants={rise}
         initial="hidden"
         animate="show"
-        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 font-log text-[0.72rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:text-sm"
+        /* The dates are longer than the old "October 2026", so mobile tracking
+           tightens to keep the strip on a single line. */
+        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 font-log text-[0.7rem] uppercase tracking-[0.16em] text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:gap-x-6 sm:px-6 sm:text-sm sm:tracking-cinema"
       >
-        <span>{SITE.window}</span>
+        <span className="whitespace-nowrap text-gold-bright">{SITE.dates}</span>
         <span className="h-4 w-px bg-gold/40" />
         <span className="hidden sm:inline">30°06′N&nbsp;·&nbsp;78°16′E</span>
         <span className="hidden h-4 w-px bg-gold/40 sm:block" />
-        <span>{SITE.edition}</span>
+        <span className="whitespace-nowrap">{SITE.edition}</span>
       </motion.div>
 
       {/* scroll cue */}

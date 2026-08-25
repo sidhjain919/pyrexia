@@ -4,7 +4,7 @@ The official festival website for **PYREXIA 2026**, the annual socio-cultural & 
 **AIIMS Rishikesh**. A cinematic, immersive single-page experience themed around a lost pirate island.
 
 Built with **React + TypeScript + Vite**, **React Router**, **Tailwind CSS v4**, **Framer Motion**,
-and self-hosted fonts (Cinzel / Cinzel Decorative / Space Grotesk / Special Elite).
+and self-hosted fonts (Cinzel / Cinzel Decorative / EB Garamond / Special Elite / Rye).
 
 ## Pages
 
@@ -12,22 +12,31 @@ Multi-page app with cinematic route transitions:
 
 | Route | Page |
 |-------|------|
-| `/` | Immersive landing (hero → legend → island → featured → schedule → artists → gallery → sponsors → CTA → contact) |
+| `/` | Immersive landing (hero → legend → island → featured → schedule → artists → gallery → CTA → contact) |
 | `/events` | Territory map + searchable/filterable event discovery grid with per-event registration |
 | `/schedule` | Full Captain's Log |
 | `/artists` | Starlight Summit lineup |
 | `/gallery` | Full filterable photo gallery + lightbox |
-| `/sponsors` | Allies + Navigator's Desk |
 | `/register` | Delegate registration page |
 
 ## Registration
 
-A global 2-step form (details → pick events) opens as a **modal** from any "Register Now" / "Join
-the Crew" button, and as a full page at `/register`. Individual events are registerable from the
-events grid, the island-map panel chips, and the marquee cards (each pre-selects that event).
+Two tiers, and the second contains the first:
 
-> Submissions currently save to `localStorage` as a demo capture. **Wire a real backend or Google
-> Form** in `src/registration/RegisterForm.tsx` (`submit()`) to collect live entries.
+| Tier | Price | What it covers |
+|------|-------|----------------|
+| **Basic Registration (BR)** | ₹450 | Compulsory for everyone. Entry to the fest and to every event **except** the Star Nights. |
+| **Delegate Card** | +₹2250 (₹2700 total) | BR plus entry to all five Star Nights. |
+
+Both live in `DELEGATE_PASSES` in `src/data/registration.ts`; `BASIC_AMOUNT` and `DELEGATE_ADDON`
+are the single source of truth for the numbers shown across the site.
+
+Per-event entry forms are gated behind `EVENT_REGISTRATION_OPEN` in the same file. While it is
+`false` every event form renders a "Coming Soon" panel that points visitors at Basic Registration —
+**flip it to `true` when event entries open.**
+
+> Submissions currently save to `localStorage` via the mock adapter in `src/registration/api.ts`.
+> See `src/registration/README.md` for the swap to a real backend.
 
 ## Run it
 
@@ -43,7 +52,7 @@ npm run preview  # preview the production build
 A branded loading sequence → cinematic hero → **The Legend** (story) → previous-voyage stats →
 **Eleven Territories** (interactive island map — the signature) → marquee treasure cards →
 **Captain's Log** (schedule) → **Starlight Summit** (artists) → **Memories from the Sea** (gallery
-+ lightbox) → **Allies of the Voyage** (sponsors) → registration CTA → **Navigator's Desk**
++ lightbox) → registration CTA → **Navigator's Desk**
 (FAQ + ARSWA committee) → footer.
 
 Plus: custom desktop cursor, magnetic buttons, scroll reveals, word-by-word titles, film grain,
@@ -55,17 +64,17 @@ All copy and data live in `src/data/` — edit these, the components follow:
 
 | File | Contains |
 |------|----------|
-| `site.ts` | Fest name, dates window, nav, socials, legend chips, stats |
+| `site.ts` | Fest name, dates (12–16 Oct 2026), nav, socials, stats |
 | `events.ts` | The 11 territories/verticals, sub-events, coordinator contacts |
-| `schedule.ts` | Captain's Log — day-wise timeline (indicative; swap for the official one) |
-| `artists.ts` | Past star lineups + 2026 mystery slots |
+| `schedule.ts` | Captain's Log — the five days and their dates (hour-by-hour log still to come) |
+| `artists.ts` | Past star lineups + the five 2026 night reveals |
 | `gallery.ts` | Photo captions & categories (files in `public/photos/`) |
-| `sponsors.ts` | Ally tiers (placeholder — set `logo` to swap wax seals for real logos) |
 | `crew.ts` | ARSWA office bearers + FAQs |
+| `registration.ts` | Pricing tiers, the event-entry open flag, per-event form shapes |
 | `media.ts` | Maps photos to territories & section backdrops (swap imagery here) |
 
 > Content is real, sourced from the **PYREXIA 5.0 (2025) brochure**. Items that the fest keeps
-> secret until closer to the dates (exact schedule, 2026 star lineup, sponsors) are clearly marked
+> secret until closer to the dates (hour-by-hour schedule, 2026 star lineup) are clearly marked
 > as tentative/placeholder — replace them as information is confirmed.
 
 ## Replacing assets
@@ -75,8 +84,6 @@ All copy and data live in `src/data/` — edit these, the components follow:
 - **PYREXIA / AIIMS logo** — the wordmark is currently type-set (Cinzel Decorative). To use an
   image logo, replace the `<Compass/> + wordmark` block in `src/components/Navbar.tsx` and
   `Footer.tsx`.
-- **Sponsor logos** — set `logo` in `src/data/sponsors.ts` (currently `null` → renders a wax-seal
-  monogram) and render it inside `WaxSeal` in `src/components/Sponsors.tsx`.
 
 ## Project structure
 
@@ -84,8 +91,8 @@ All copy and data live in `src/data/` — edit these, the components follow:
 src/
   components/   Loader, Navbar, Cursor, Hero, OceanScene, Legend, Stats,
                 IslandMap, FeaturedEvents, CaptainsLog, Artists, Gallery,
-                Sponsors, CTA, Navigator, Footer, primitives
-  data/         events, schedule, artists, gallery, sponsors, crew, site
+                CTA, Navigator, Footer, primitives
+  data/         events, schedule, artists, gallery, registration, crew, site
   lib/          icons (lucide + inline brand glyphs)
   index.css     design tokens (@theme), textures, keyframes
 public/photos/  festival photography

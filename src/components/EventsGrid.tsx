@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Search, ArrowUpRight, Ticket } from 'lucide-react'
+import { Search, ArrowUpRight, Hourglass, MoveHorizontal, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
+import { EVENT_REGISTRATION_OPEN } from '../data/registration'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { Icon } from '../lib/icons'
 import { SectionTitle } from './primitives'
@@ -88,14 +89,25 @@ export default function EventsGrid() {
             </div>
           )}
 
-          <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/62">
-            {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
-            {searching ? ' found' : ` in ${cat}`}
+          <div className="flex items-center justify-between gap-4 font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/62">
+            <span>
+              {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
+              {searching ? ' found' : ` in ${cat}`}
+            </span>
+            {filtered.length > 1 && (
+              <span className="flex items-center gap-1.5 text-parchment/45 sm:hidden">
+                Swipe <MoveHorizontal size={12} />
+              </span>
+            )}
           </div>
         </div>
 
-        {/* grid */}
-        <motion.div layout className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* On mobile the cards ride a swipeable rail — a 60-event column is an
+            endless scroll otherwise. From sm up it goes back to a grid. */}
+        <motion.div
+          layout
+          className="-mx-6 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-6 px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+        >
           <AnimatePresence mode="popLayout">
             {filtered.map((r, i) => (
               <motion.article
@@ -105,7 +117,7 @@ export default function EventsGrid() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.4, delay: Math.min(i * 0.02, 0.25) }}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-gold/12 bg-navy/50"
+                className="group relative flex w-[78vw] max-w-[320px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-gold/12 bg-navy/50 sm:w-auto sm:max-w-none sm:shrink"
               >
                 {/* photo */}
                 <div className="relative aspect-[16/10] overflow-hidden">
@@ -134,11 +146,20 @@ export default function EventsGrid() {
                   <div className="mt-4 flex items-center gap-2 pt-1">
                     <button
                       onClick={() => openRegister(r.name)}
-                      data-cursor="REGISTER"
+                      data-cursor={EVENT_REGISTRATION_OPEN ? 'REGISTER' : 'SOON'}
                       className="group/btn flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      <Ticket size={13} />
-                      Register
+                      {EVENT_REGISTRATION_OPEN ? (
+                        <>
+                          <Ticket size={13} />
+                          Register
+                        </>
+                      ) : (
+                        <>
+                          <Hourglass size={13} />
+                          Coming Soon
+                        </>
+                      )}
                     </button>
                     <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
                       <ArrowUpRight size={12} />

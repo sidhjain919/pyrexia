@@ -71,7 +71,7 @@ export default function OceanScene() {
       */}
       <div
         data-depth="10"
-        className="parallax-layer absolute bottom-[27%] left-0 h-[36%] w-full sm:bottom-[26%] sm:h-[42%]"
+        className="parallax-layer absolute bottom-[23%] left-0 h-[36%] w-full sm:bottom-[26%] sm:h-[42%]"
         style={{
           maskImage: 'linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%)',
@@ -124,12 +124,12 @@ export default function OceanScene() {
       {/* Fog band behind ship */}
       <div
         data-depth="8"
-        className="parallax-layer absolute bottom-[30%] left-0 h-40 w-full"
+        className="parallax-layer absolute bottom-[26%] left-0 h-40 w-full sm:bottom-[30%]"
         style={{ background: 'linear-gradient(180deg, transparent, rgba(23,74,82,0.28) 45%, transparent)' }}
       />
 
       {/* Ship silhouette */}
-      <div data-depth="16" className="parallax-layer absolute bottom-[30%] left-[14%] w-40 sm:w-52">
+      <div data-depth="16" className="parallax-layer absolute bottom-[26%] left-[14%] w-40 sm:bottom-[30%] sm:w-52">
         <div className="anim-sway">
           <svg viewBox="0 0 260 220" className="w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]">
             <g fill="#020c10">
@@ -150,8 +150,10 @@ export default function OceanScene() {
         </div>
       </div>
 
-      {/* Ocean */}
-      <div className="absolute bottom-0 left-0 h-[34%] w-full overflow-hidden">
+      {/* Ocean. The waterline sits lower on phones — the hero copy is centred in
+          a much shorter box there, and at 34% the horizon sliced through the
+          tagline. The island, fog and ship drop with it so the scene holds. */}
+      <div className="absolute bottom-0 left-0 h-[30%] w-full overflow-hidden sm:h-[34%]">
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(180deg, #06222b 0%, #051820 55%, #030f14 100%)' }}

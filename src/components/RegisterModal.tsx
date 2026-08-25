@@ -44,7 +44,7 @@ export default function RegisterModal() {
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label={isEvent ? `Register for ${eventName}` : 'Delegate registration'}
+            aria-label={isEvent ? `Register for ${eventName}` : 'Fest registration'}
             initial={{ opacity: 0, y: 30, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -71,7 +71,7 @@ export default function RegisterModal() {
                   {isEvent ? 'Event Entry' : 'Join the Voyage'}
                 </div>
                 <h2 className="truncate font-display text-[1.3rem] text-offwhite sm:text-3xl">
-                  {isEvent ? eventName : 'Delegate Registration'}
+                  {isEvent ? eventName : 'Fest Registration'}
                 </h2>
               </div>
             </div>
@@ -92,8 +92,8 @@ export default function RegisterModal() {
 
               {!isEvent && returnTo && (
                 <p className="mt-6 text-center text-[0.8rem] text-parchment/60">
-                  Once your pass is issued, head back to{' '}
-                  <span className="text-gold-bright">{returnTo}</span> to enter.
+                  Once your registration is confirmed, head back to{' '}
+                  <span className="text-gold-bright">{returnTo}</span>.
                 </p>
               )}
             </div>
