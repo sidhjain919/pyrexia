@@ -28,7 +28,7 @@ function siteUrl(env: Env): string {
  * carries a working sign-in, so the common path never involves typing anything.
  */
 async function deepLink(env: Env, registrationId: string, path: string): Promise<string> {
-  const token = await createLoginToken(env, registrationId, 'magic_link')
+  const token = await createLoginToken(env, registrationId, 'pass_link')
   return `${siteUrl(env)}/enter?token=${encodeURIComponent(token)}&next=${encodeURIComponent(path)}`
 }
 

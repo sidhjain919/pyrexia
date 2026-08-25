@@ -19,8 +19,19 @@ import type { Env } from '../types.ts'
 import { newSecretToken, sha256Hex } from './ids.ts'
 import { ApiError } from './http.ts'
 
-/** A magic link is short-lived on purpose — it travels through email. */
+/** A recovery link is short-lived on purpose — it is a password reset. */
 const LINK_TTL_MINUTES = 30
+/**
+ * The link inside the confirmation email is a different animal. That email says
+ * "keep this" and people open it in December. Thirty minutes and one use would
+ * make it dead on arrival for anyone who didn't tap immediately, so it lives as
+ * long as a session and can be reopened.
+ *
+ * The trade is that it becomes a bearer credential sitting in an inbox — which
+ * is the same bargain every ticket email makes, and why buying an upgrade
+ * re-checks rather than trusting the session alone.
+ */
+const PASS_LINK_TTL_DAYS = 120
 /** Sessions last a season, so most people sign in exactly once. */
 const SESSION_TTL_DAYS = 90
 /** Someone guessing at codes gets a handful of tries, not unlimited. */
@@ -43,18 +54,22 @@ export type Session = {
  * Returns the raw token, which is the *only* time it exists in readable form —
  * it goes straight into an email and we keep nothing but its hash.
  */
+export type TokenPurpose = 'magic_link' | 'otp' | 'pass_link'
+
 export async function createLoginToken(
   env: Env,
   registrationId: string,
-  purpose: 'magic_link' | 'otp' = 'magic_link',
+  purpose: TokenPurpose = 'magic_link',
 ): Promise<string> {
   const token = purpose === 'otp' ? sixDigitCode() : newSecretToken()
+  const ttl =
+    purpose === 'pass_link' ? `+${PASS_LINK_TTL_DAYS} days` : `+${LINK_TTL_MINUTES} minutes`
 
   await env.DB.prepare(
     `INSERT INTO login_tokens (token_hash, registration_id, purpose, expires_at)
      VALUES (?, ?, ?, datetime('now', ?))`,
   )
-    .bind(await sha256Hex(token), registrationId, purpose, `+${LINK_TTL_MINUTES} minutes`)
+    .bind(await sha256Hex(token), registrationId, purpose, ttl)
     .run()
 
   return token
@@ -82,30 +97,44 @@ export async function consumeLoginToken(env: Env, token: string): Promise<string
   const hash = await sha256Hex(token)
 
   const row = await env.DB.prepare(
-    `SELECT registration_id, expires_at, used_at, attempts
+    `SELECT registration_id, purpose, expires_at, used_at, attempts
        FROM login_tokens WHERE token_hash = ?`,
   )
     .bind(hash)
-    .first<{ registration_id: string; expires_at: string; used_at: string | null; attempts: number }>()
+    .first<{
+      registration_id: string
+      purpose: string
+      expires_at: string
+      used_at: string | null
+      attempts: number
+    }>()
 
   if (!row) {
     throw new ApiError('unauthorised', 'That link is not valid. Ask for a new one.')
-  }
-  if (row.used_at) {
-    throw new ApiError('unauthorised', 'That link has already been used. Ask for a new one.')
   }
   if (row.attempts >= MAX_ATTEMPTS) {
     throw new ApiError('unauthorised', 'Too many attempts. Ask for a new link.')
   }
 
+  const reusable = row.purpose === 'pass_link'
+
+  if (!reusable && row.used_at) {
+    throw new ApiError('unauthorised', 'That link has already been used. Ask for a new one.')
+  }
+
+  // A pass link records when it was last opened but is not spent by opening;
+  // a recovery link is consumed by the same statement that checks it, so two
+  // simultaneous clicks cannot both succeed.
   const spent = await env.DB.prepare(
-    `UPDATE login_tokens SET used_at = datetime('now')
-      WHERE token_hash = ? AND used_at IS NULL AND expires_at > datetime('now')`,
+    reusable
+      ? `UPDATE login_tokens SET used_at = datetime('now')
+          WHERE token_hash = ? AND expires_at > datetime('now')`
+      : `UPDATE login_tokens SET used_at = datetime('now')
+          WHERE token_hash = ? AND used_at IS NULL AND expires_at > datetime('now')`,
   )
     .bind(hash)
     .run()
 
-  // Zero rows changed means it expired, or another request won the race.
   if (!spent.meta.changes) {
     throw new ApiError('unauthorised', 'That link has expired. Ask for a new one.')
   }

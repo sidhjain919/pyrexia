@@ -7,6 +7,7 @@ import { Compass } from './primitives'
 import { asset } from '../lib/asset'
 import { useNavTo, useActiveSection } from './routing'
 import { useRegistration } from '../registration/context'
+import { isSignedIn } from '../api/client'
 
 const SECTION_IDS = NAV.map((n) => n.to.split('#')[1])
 
@@ -17,6 +18,9 @@ export default function Navbar() {
   const navTo = useNavTo()
   const { openRegister } = useRegistration()
   const activeId = useActiveSection(SECTION_IDS)
+  // Read once per mount rather than per render; signing in or out navigates,
+  // which remounts this anyway.
+  const [signedIn] = useState(isSignedIn)
 
   useEffect(() => {
     let last = window.scrollY
@@ -86,13 +90,32 @@ export default function Navbar() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => openRegister()}
-              data-cursor="JOIN"
-              className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
-            >
-              Register Now
-            </button>
+            {signedIn ? (
+              <Link
+                to="/pass"
+                data-cursor="PASS"
+                className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+              >
+                My Pass
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/sign-in"
+                  data-cursor="SIGN IN"
+                  className="hidden whitespace-nowrap font-display text-[0.84rem] text-parchment/75 transition-colors hover:text-gold-bright sm:inline-block"
+                >
+                  Sign in
+                </Link>
+                <button
+                  onClick={() => openRegister()}
+                  data-cursor="JOIN"
+                  className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+                >
+                  Register Now
+                </button>
+              </>
+            )}
             <button
               onClick={() => setOpen(true)}
               aria-label="Open menu"
@@ -184,16 +207,35 @@ export default function Navbar() {
               })}
             </nav>
 
-            <div className="relative px-8 pb-10">
-              <button
-                onClick={() => {
-                  setOpen(false)
-                  openRegister()
-                }}
-                className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
-              >
-                Join the Crew →
-              </button>
+            <div className="relative space-y-3 px-8 pb-10">
+              {signedIn ? (
+                <Link
+                  to="/pass"
+                  onClick={() => setOpen(false)}
+                  className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
+                >
+                  My Pass →
+                </Link>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setOpen(false)
+                      openRegister()
+                    }}
+                    className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
+                  >
+                    Join the Crew →
+                  </button>
+                  <Link
+                    to="/sign-in"
+                    onClick={() => setOpen(false)}
+                    className="block w-full rounded-full py-3.5 text-center font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40"
+                  >
+                    Already registered? Sign in
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

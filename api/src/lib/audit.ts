@@ -31,6 +31,8 @@ export type AuditAction =
   | 'admin.login'
   | 'auth.link_requested'
   | 'auth.signed_in'
+  | 'event.enter'
+  | 'event.withdraw'
 
 export type AuditEntry = {
   action: AuditAction

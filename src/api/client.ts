@@ -227,6 +227,24 @@ export type RegistrationInput = {
  * Endpoints
  * ------------------------------------------------------------------ */
 
+export type EventInfo = {
+  name: string
+  tag: string
+  territory: { code: string; name: string }
+  open: boolean
+  form: {
+    participation: string
+    teamSize: { min: number; max: number } | null
+    fields: { id: string; label: string; type: string; required?: boolean; options?: string[]; placeholder?: string; help?: string }[]
+    note: string | null
+    allowsTeam: boolean
+    requiresTeam: boolean
+  }
+  signedIn: boolean
+  eligible: boolean
+  entered: boolean
+}
+
 export const api = {
   products: () => request<{ products: Product[] }>('/api/products').then((r) => r.products),
 
@@ -283,6 +301,25 @@ export const api = {
   me: () => request<Me>('/api/me', { auth: true }),
 
   pass: () => request<PassView>('/api/me/pass', { auth: true }),
+
+  event: (name: string) =>
+    request<EventInfo>(`/api/events/${encodeURIComponent(name)}`, { auth: true }),
+
+  enterEvent: (payload: {
+    eventName: string
+    participation: 'solo' | 'team'
+    teamName?: string
+    answers: Record<string, string>
+  }) => request<{ entryId: string; eventName: string }>('/api/me/events', {
+    method: 'POST',
+    body: payload,
+    auth: true,
+  }),
+}
+
+/** True when a session token is stored. Cheap enough to call on every render. */
+export function isSignedIn(): boolean {
+  return !!getSession()
 }
 
 /**

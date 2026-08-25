@@ -14,7 +14,7 @@ import { Hono } from 'hono'
 import type { Env } from '../types.ts'
 import { ApiError } from '../lib/http.ts'
 import { importSigningKey } from '../lib/keys.ts'
-import { nowInMinutes, signPass, PASS_VERSION, type Tier } from '../lib/pass.ts'
+import { signPass, PASS_VERSION, type Tier } from '../lib/pass.ts'
 import { loadProducts, ownedProducts } from '../lib/pricing.ts'
 import { readToken, resolveSession, type Session } from '../lib/session.ts'
 
@@ -114,21 +114,24 @@ me.get('/me', async (c) => {
 /**
  * The pass.
  *
- * The token is signed fresh on every request rather than stored. That costs a
- * millisecond and buys two things: the signing key only ever exists in memory
- * during a request, and a pass that has just been revoked stops being handed
- * out immediately rather than after a cache expires.
+ * The token is signed on every request rather than stored, so the signing key
+ * only ever exists in memory during a request and a just-revoked pass stops
+ * being handed out immediately.
  *
- * Note the tier baked in is the tier *right now*. Someone who upgrades and
- * re-opens their pass page gets a QR that already says Delegate — while the
- * copy they printed in September still works, because the gate takes whichever
- * of the two is higher.
+ * But it is signed from *fixed* inputs — the pass id and its original issue
+ * time — so the result is byte-for-byte identical every time. A QR someone
+ * downloaded in September matches the one on screen in October exactly.
+ *
+ * The one thing that does change it is an upgrade: the tier byte flips, so the
+ * code differs before and after. Both still work, because the gate takes
+ * whichever tier is higher between the signed floor and its synced list.
  */
 me.get('/me/pass', async (c) => {
   const session = c.get('session')
 
   const row = await c.env.DB.prepare(
     `SELECT p.id, p.key_id, p.tier_floor, p.revoked_at, p.revoked_reason,
+            CAST(strftime('%s', p.issued_at) AS INTEGER) / 60 AS issued_minute,
             r.name, r.college, r.public_code, t.tier
        FROM passes p
        JOIN registrations r ON r.id = p.registration_id
@@ -141,6 +144,7 @@ me.get('/me/pass', async (c) => {
       id: string
       key_id: number
       tier_floor: number
+      issued_minute: number
       revoked_at: string | null
       revoked_reason: string | null
       name: string
@@ -172,7 +176,12 @@ me.get('/me/pass', async (c) => {
       // Sign the *current* tier so a freshly-fetched QR reflects an upgrade
       // straight away, without waiting for a gate to sync its manifest.
       tierFloor: Math.max(row.tier_floor, row.tier) as Tier,
-      issuedAt: nowInMinutes(),
+      // The pass's own issue time, never "now". Stamping the current minute
+      // made the QR image different on every open — same meaning, but a
+      // downloaded copy no longer matched what the screen showed, which reads
+      // as one of them being wrong. Now the code is byte-identical every time
+      // and changes only when the tier genuinely changes.
+      issuedAt: row.issued_minute,
     },
     signingKey,
   )

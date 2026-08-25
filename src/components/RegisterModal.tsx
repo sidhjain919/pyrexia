@@ -81,7 +81,7 @@ export default function RegisterModal() {
                 <EventForm
                   key={eventName}
                   eventName={eventName!}
-                  onNeedDelegate={() => {
+                  onNeedRegistration={() => {
                     setReturnTo(eventName)
                     openDelegate()
                   }}
