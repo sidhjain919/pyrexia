@@ -1,0 +1,77 @@
+# PYREXIA 2026 API — Cloudflare Workers
+#
+# Fill account_id and database_id once the fest Cloudflare account exists:
+#   wrangler login                       # browser OAuth, nothing to paste anywhere
+#   wrangler d1 create pyrexia           # prints the database_id to paste below
+#
+# Secrets are NEVER written here. Locally they live in .dev.vars (gitignored);
+# in production they are set with `wrangler secret put NAME`.
+
+name = "pyrexia-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "b6452bda3212f32c46d28a0dff0c50f4"
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pyrexia"
+database_id = "e87f74b2-ac70-49d4-b47e-f18e73d4bc5a"
+migrations_dir = "migrations"
+
+# Identity documents and notice attachments. Private bucket — no public access,
+# ever. Objects are reachable only through short-lived signed URLs minted by a
+# Worker that has already checked the verifier role and written an audit row.
+#
+# COMMENTED OUT until R2 is enabled on the account (Dashboard → R2 → Enable).
+# Nothing uses it yet; document upload is still to be built.
+# [[r2_buckets]]
+# binding = "DOCS"
+# bucket_name = "pyrexia-docs"
+
+# Feature flags, rate-limit counters, the hot noticeboard payload.
+[[kv_namespaces]]
+binding = "KV"
+id = "1f6f18053da4423787825d119d09564f"
+
+# Anything slow: email, pass PDFs, CSV exports. Nothing that can take seconds
+# belongs inside a request the student is waiting on.
+[[queues.producers]]
+binding = "JOBS"
+queue = "pyrexia-jobs"
+
+[[queues.consumers]]
+queue = "pyrexia-jobs"
+max_batch_size = 10
+max_retries = 5
+dead_letter_queue = "pyrexia-jobs-dlq"
+
+# Reconciliation sweep: any order left unresolved for 30 minutes is checked
+# against Razorpay and settled or expired. This is what rescues the student
+# whose browser died after paying.
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+ENVIRONMENT = "development"
+PASS_KEY_ID = "1"
+SITE_URL = "https://sidhjain919.github.io/pyrexia"
+# Flip to "brevo" once BREVO_API_KEY is set. Until then every email is written
+# to the log instead of sent, which is enough to test the whole flow.
+MAIL_PROVIDER = "console"
+MAIL_FROM_EMAIL = "pyrexia@aiimsrishikesh.edu.in"
+MAIL_FROM_NAME = "PYREXIA 2026"
+MAIL_REPLY_TO = "pyrexia@aiimsrishikesh.edu.in"
+
+# Secrets set with `wrangler secret put`:
+#   RAZORPAY_KEY_ID
+#   RAZORPAY_KEY_SECRET
+#   RAZORPAY_WEBHOOK_SECRET
+#   PASS_SIGNING_KEY_V1     — Ed25519 private key, base64url PKCS#8
+#   SESSION_SECRET
+#   DOC_ENCRYPTION_KEY      — envelope key for identity documents at rest
+#   BREVO_API_KEY

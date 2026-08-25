@@ -1,0 +1,26 @@
+{
+  "name": "pyrexia-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 migrations apply pyrexia --local",
+    "db:remote": "wrangler d1 migrations apply pyrexia --remote",
+    "typecheck": "tsc --noEmit",
+    "e2e": "node scripts/e2e.mjs",
+    "keys": "node scripts/generate-keys.mjs",
+    "pubkey": "node scripts/derive-public-key.mjs",
+    "verify-pass": "node --experimental-strip-types scripts/verify-live-pass.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.13.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260823.1",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.125.0"
+  }
+}

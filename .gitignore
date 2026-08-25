@@ -20,3 +20,8 @@ npm-debug.log*
 .shots/
 .shot*.mjs
 .devserver.log
+
+# api workspace
+api/node_modules
+api/.wrangler
+api/.dev.vars
