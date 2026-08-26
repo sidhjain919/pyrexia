@@ -14,7 +14,9 @@ import { secureHeaders } from 'hono/secure-headers'
 
 import type { Env, Job } from './types.ts'
 import { ApiError } from './lib/http.ts'
+import { admin } from './routes/admin.ts'
 import { auth } from './routes/auth.ts'
+import { exports_ } from './routes/exports.ts'
 import { events } from './routes/events.ts'
 import { me } from './routes/me.ts'
 import { registrations } from './routes/registrations.ts'
@@ -77,6 +79,8 @@ app.route('/api', registrations)
 app.route('/api', auth)
 app.route('/api', me)
 app.route('/api', events)
+app.route('/api', admin)
+app.route('/api', exports_)
 
 // Razorpay posts here from its own servers, so this sits outside /api and
 // outside CORS entirely. It authenticates by signature, not by origin.

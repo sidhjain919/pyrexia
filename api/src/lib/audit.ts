@@ -36,6 +36,9 @@ export type AuditAction =
   | 'auth.password_reset'
   | 'event.enter'
   | 'event.withdraw'
+  | 'registration.email_changed'
+  | 'registration.email_resent'
+  | 'export.download'
 
 export type AuditEntry = {
   action: AuditAction

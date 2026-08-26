@@ -2,12 +2,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { mailer, type Message } from './mail.ts'
+import type { Env } from '../types.ts'
 
-const base = {
+const base: Record<string, string> = {
   ENVIRONMENT: 'test',
   MAIL_FROM_EMAIL: 'no-reply@pyrexiaaiims.com',
   MAIL_FROM_NAME: 'PYREXIA 2026',
-} as never
+}
 
 const msg: Message = {
   to: 'aarav@example.edu',
@@ -31,7 +32,7 @@ async function capture(env: object, respond: () => Response) {
     return respond()
   }) as typeof fetch
   try {
-    const result = await mailer(env as never).send(msg)
+    const result = await mailer(env as unknown as Env).send(msg)
     return { seen: seen as unknown as { url: string; body: any; auth: string | null }, result }
   } finally {
     globalThis.fetch = original
@@ -46,7 +47,7 @@ test('with no key configured, nothing is sent', async () => {
     return new Response('{}')
   }) as typeof fetch
   try {
-    const provider = mailer({ ...base, MAIL_PROVIDER: 'resend' } as never)
+    const provider = mailer({ ...base, MAIL_PROVIDER: 'resend' } as unknown as Env)
     assert.equal(provider.name, 'console', 'a missing key must fall back, not throw')
     assert.equal((await provider.send(msg)).ok, true)
     assert.equal(called, false, 'the console provider must not touch the network')
@@ -102,7 +103,7 @@ test('resend: a network failure is retried, not swallowed', async () => {
       ...base,
       MAIL_PROVIDER: 'resend',
       RESEND_API_KEY: 're_test_key',
-    } as never).send(msg)
+    } as unknown as Env).send(msg)
     assert.equal(result.ok, false)
     assert.equal(result.ok === false && result.retryable, true)
   } finally {

@@ -62,10 +62,11 @@ SITE_URL = "https://sidhjain919.github.io/pyrexia"
 # Flip to "resend" or "brevo" once the matching key is set. Until then every
 # email is written to the log instead of sent, which is enough to test the
 # whole flow end to end.
-MAIL_PROVIDER = "console"
-# Sending happens from the domain we control; replies go to the official
-# inbox, which is a mailbox that actually exists.
-MAIL_FROM_EMAIL = "no-reply@pyrexiaaiims.com"
+MAIL_PROVIDER = "resend"
+# TEMPORARY: Resend's shared sending address, because pyrexiaaiims.com is not
+# verified with them yet. Real mail works, it just doesn't come from our own
+# domain. Switch to no-reply@pyrexiaaiims.com the moment verification passes.
+MAIL_FROM_EMAIL = "onboarding@resend.dev"
 MAIL_FROM_NAME = "PYREXIA 2026"
 MAIL_REPLY_TO = "pyrexia@aiimsrishikesh.edu.in"
 
