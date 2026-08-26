@@ -1,143 +1,233 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { AlertCircle, Loader2, Mail, Send } from 'lucide-react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react'
 
-import { ApiError, api } from '../api/client'
+import { ApiError, api, setSession } from '../api/client'
+import { Field, TextInput } from '../registration/fields'
 
 /**
- * Signing back in.
+ * Sign in, create an account, or ask for a reset — one page, three modes.
  *
- * There is nothing to sign *up* for here — paying is what creates the account.
- * This page exists for the person who has already registered and no longer has
- * the confirmation email to hand.
+ * It is a plain email-and-password form on purpose. The previous version asked
+ * for an email and then said "check your inbox", which reads as a mailing-list
+ * signup rather than a way in, and left anyone who lost the mail with nowhere
+ * to go. Email is now only the recovery path, which is where people expect it.
  *
- * The reply is deliberately the same whether or not the account exists, so this
- * form can't be used to work out who has bought a pass.
+ * The wording is deliberate throughout: an account is never called a
+ * "registration". Registration is the ₹450 thing, and conflating them is how
+ * somebody turns up at a gate believing they have paid.
  */
+
+type Mode = 'signin' | 'signup' | 'forgot'
+
 export default function SignIn() {
-  const [identifier, setIdentifier] = useState('')
-  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
-  const [error, setError] = useState<string | null>(null)
-  const [devLink, setDevLink] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const [mode, setMode] = useState<Mode>(params.get('new') === '1' ? 'signup' : 'signin')
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!identifier.trim()) return
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [fatal, setFatal] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState<{ message: string; devToken?: string } | null>(null)
 
-    setState('sending')
-    setError(null)
+  /** Where to go once they're in — set when the event flow sends them here. */
+  const next = params.get('next')
+
+  const go = () => navigate(next && next.startsWith('/') ? next : '/pass', { replace: true })
+
+  const submit = async () => {
+    setBusy(true)
+    setErrors({})
+    setFatal(null)
     try {
-      const res = await api.requestSignIn(identifier.trim())
-      setState('sent')
-      // Only ever present outside production — lets the flow be walked through
-      // before the mailer is switched on.
-      if (res.devToken) {
-        setDevLink(
-          `${window.location.origin}${import.meta.env.BASE_URL}enter?token=${encodeURIComponent(res.devToken)}&next=%2Fpass`,
-        )
+      if (mode === 'forgot') {
+        const res = await api.forgotPassword(email)
+        setSent({ message: res.message, devToken: res.devToken })
+        return
       }
+
+      const res =
+        mode === 'signup'
+          ? await api.signUp(email, password)
+          : await api.signIn(email, password)
+
+      setSession(res.token)
+      go()
     } catch (err) {
-      setState('idle')
-      setError(err instanceof ApiError ? err.message : 'Could not send the link. Try again.')
+      if (err instanceof ApiError) {
+        if (err.fields) setErrors(err.fields)
+        else setFatal(err.message)
+      } else {
+        setFatal('Something went wrong. Please try again.')
+      }
+    } finally {
+      setBusy(false)
     }
   }
 
-  return (
-    <section className="flex min-h-[75svh] items-center justify-center px-6 py-24">
-      <div className="w-full max-w-sm">
-        <div className="text-center">
-          <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
-            Returning voyager
-          </div>
-          <h1 className="mt-3 font-display text-3xl text-offwhite">Find your pass</h1>
-          <p className="mt-2.5 text-[0.92rem] leading-relaxed text-parchment/65">
-            Enter the email or mobile you registered with and we'll send a link straight to your
-            inbox. No password to remember.
-          </p>
-        </div>
+  /* ---------- reset link sent ---------- */
 
-        {state === 'sent' ? (
-          <div className="mt-8">
-            <div className="glass flex flex-col items-center gap-3 rounded-xl px-6 py-8 text-center">
-              <Mail size={22} className="text-gold/70" />
-              <p className="font-display text-xl text-offwhite">Check your inbox</p>
-              <p className="max-w-xs text-[0.86rem] leading-relaxed text-parchment/65">
-                If that account exists, a sign-in link is on its way. It works once and expires in
-                30 minutes.
-              </p>
+  if (sent) {
+    return (
+      <Shell title="Check your email">
+        <p className="text-[0.94rem] leading-relaxed text-parchment/70">{sent.message}</p>
+
+        {sent.devToken && (
+          <div className="mt-5 rounded-lg border border-ember/40 bg-ember/10 p-4 text-left">
+            <div className="font-log text-[0.58rem] uppercase tracking-wide2 text-ember">
+              Development only · email is not switched on yet
             </div>
-
-            {devLink && (
-              <div className="mt-4 rounded-lg border border-ember/40 bg-ember/10 p-3">
-                <div className="font-log text-[0.56rem] uppercase tracking-wide2 text-ember">
-                  Development only — email is not switched on yet
-                </div>
-                <a href={devLink} className="mt-1.5 block break-all text-[0.78rem] text-gold-bright">
-                  {devLink}
-                </a>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                setState('idle')
-                setDevLink(null)
-              }}
-              className="mt-5 w-full text-center font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/45 hover:text-gold-bright"
+            <a
+              href={`${import.meta.env.BASE_URL}reset?token=${encodeURIComponent(sent.devToken)}`}
+              className="mt-2 block break-all text-[0.82rem] text-gold-bright underline"
             >
-              Use a different email
-            </button>
+              Open the reset link
+            </a>
           </div>
-        ) : (
-          <form onSubmit={submit} className="mt-8">
-            <label htmlFor="identifier" className="sr-only">
-              Email or mobile
-            </label>
-            <input
-              id="identifier"
-              value={identifier}
-              onChange={(e) => {
-                setIdentifier(e.target.value)
-                setError(null)
-              }}
-              placeholder="you@college.edu or 10-digit mobile"
-              autoComplete="email"
-              className={`w-full rounded-lg border bg-ocean/60 px-4 py-3 text-offwhite outline-none placeholder:text-parchment/35 focus:border-gold/70 ${
-                error ? 'border-coral/70' : 'border-gold/25'
-              }`}
-            />
-
-            {error && (
-              <div className="mt-2.5 flex items-start gap-2 text-[0.82rem] text-coral">
-                <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={state === 'sending'}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-abyss disabled:opacity-60"
-            >
-              {state === 'sending' ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Sending…
-                </>
-              ) : (
-                <>
-                  <Send size={14} /> Send me a link
-                </>
-              )}
-            </button>
-          </form>
         )}
 
-        <p className="mt-8 text-center text-[0.86rem] text-parchment/55">
-          Not registered yet?{' '}
-          <Link to="/#register" className="text-gold-bright hover:underline">
-            Start here
-          </Link>
+        <button
+          onClick={() => {
+            setSent(null)
+            setMode('signin')
+          }}
+          className="mt-6 font-log text-[0.64rem] uppercase tracking-wide2 text-parchment/50 hover:text-gold-bright"
+        >
+          Back to sign in
+        </button>
+      </Shell>
+    )
+  }
+
+  /* ---------- the form ---------- */
+
+  const title =
+    mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in'
+
+  const subtitle =
+    mode === 'signup'
+      ? 'An account lets you register for the fest and enter events. It takes two fields.'
+      : mode === 'forgot'
+        ? "Enter the email you signed up with and we'll send you a link."
+        : 'Welcome back, voyager.'
+
+  return (
+    <Shell title={title}>
+      <p className="mb-7 text-[0.92rem] leading-relaxed text-parchment/65">{subtitle}</p>
+
+      <div className="space-y-4 text-left">
+        <Field label="Email" required error={errors.email}>
+          <TextInput
+            value={email}
+            onChange={(v) => {
+              setEmail(v)
+              setErrors((e) => ({ ...e, email: '' }))
+            }}
+            invalid={!!errors.email}
+            type="email"
+            placeholder="you@college.edu"
+            autoComplete="email"
+          />
+        </Field>
+
+        {mode !== 'forgot' && (
+          <Field
+            label="Password"
+            required
+            error={errors.password}
+            hint={mode === 'signup' ? 'At least 8 characters.' : undefined}
+          >
+            <TextInput
+              value={password}
+              onChange={(v) => {
+                setPassword(v)
+                setErrors((e) => ({ ...e, password: '' }))
+              }}
+              invalid={!!errors.password}
+              type="password"
+              placeholder={mode === 'signup' ? 'Choose a password' : 'Your password'}
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            />
+          </Field>
+        )}
+      </div>
+
+      {fatal && (
+        <div className="mt-5 flex items-start gap-2 rounded-lg border border-coral/50 bg-coral/10 p-3 text-left text-[0.82rem] text-coral">
+          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+          {fatal}
+        </div>
+      )}
+
+      <button
+        onClick={() => void submit()}
+        disabled={busy}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-60"
+      >
+        {busy ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : mode === 'forgot' ? (
+          <Mail size={15} />
+        ) : (
+          <ArrowRight size={15} />
+        )}
+        {mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
+      </button>
+
+      <div className="mt-6 flex flex-col items-center gap-2.5 text-[0.84rem]">
+        {mode === 'signin' && (
+          <>
+            <button
+              onClick={() => setMode('forgot')}
+              className="text-parchment/55 transition-colors hover:text-gold-bright"
+            >
+              Forgot your password?
+            </button>
+            <button
+              onClick={() => setMode('signup')}
+              className="text-parchment/75 transition-colors hover:text-gold-bright"
+            >
+              New here? <span className="text-gold-bright">Create an account</span>
+            </button>
+          </>
+        )}
+        {mode !== 'signin' && (
+          <button
+            onClick={() => setMode('signin')}
+            className="text-parchment/75 transition-colors hover:text-gold-bright"
+          >
+            Already have an account? <span className="text-gold-bright">Sign in</span>
+          </button>
+        )}
+      </div>
+
+      {mode === 'signup' && (
+        <p className="mt-7 text-[0.78rem] leading-relaxed text-parchment/45">
+          Creating an account is free and is <strong className="text-parchment/70">not</strong> your
+          fest registration. Basic Registration is ₹450 and comes next.
         </p>
+      )}
+    </Shell>
+  )
+}
+
+function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="flex min-h-[80svh] items-center justify-center px-6 py-24">
+      <div className="w-full max-w-sm text-center">
+        <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
+          PYREXIA 2026
+        </div>
+        <h1 className="mt-3 font-display text-3xl text-offwhite sm:text-4xl">{title}</h1>
+        <div className="mt-7">{children}</div>
+        <Link
+          to="/"
+          className="mt-10 inline-block font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/40 hover:text-gold-bright"
+        >
+          ← Back to the island
+        </Link>
       </div>
     </section>
   )

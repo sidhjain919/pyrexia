@@ -31,6 +31,9 @@ export type AuditAction =
   | 'admin.login'
   | 'auth.link_requested'
   | 'auth.signed_in'
+  | 'account.created'
+  | 'auth.reset_requested'
+  | 'auth.password_reset'
   | 'event.enter'
   | 'event.withdraw'
 

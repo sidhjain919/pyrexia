@@ -7,12 +7,16 @@ import EventForm from '../registration/EventForm'
 import { Compass } from './primitives'
 import { sectionPhoto } from '../data/media'
 import { resolveEvent } from '../data/registration'
+import { isSignedIn } from '../api/client'
+import { Link } from 'react-router-dom'
+import { LogIn, Ticket } from 'lucide-react'
 
 export default function RegisterModal() {
   const { open, mode, eventName, openDelegate, closeRegister } = useRegistration()
   // The event flow can hand off to the delegate flow ("get a pass first") without
   // losing the event the visitor came from.
   const [returnTo, setReturnTo] = useState<string | null>(null)
+  const signedIn = isSignedIn()
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -86,8 +90,40 @@ export default function RegisterModal() {
                     openDelegate()
                   }}
                 />
-              ) : (
+              ) : signedIn ? (
                 <DelegateForm key={returnTo ?? 'delegate'} />
+              ) : (
+                /* Buying requires an account, so ask for one before the form
+                   rather than after — filling ten fields and then being told to
+                   sign in is the worst possible ordering. */
+                <div className="py-2">
+                  <p className="text-[0.94rem] leading-relaxed text-parchment/75">
+                    Basic Registration is tied to an account, so we know whose pass is whose and you
+                    can get back to it later. It takes two fields.
+                  </p>
+
+                  <div className="mt-6 flex flex-col gap-2.5">
+                    <Link
+                      to="/sign-in?new=1&next=%2Fregister"
+                      onClick={closeRegister}
+                      className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-abyss"
+                    >
+                      <Ticket size={15} /> Create an account
+                    </Link>
+                    <Link
+                      to="/sign-in?next=%2Fregister"
+                      onClick={closeRegister}
+                      className="flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-log text-[0.7rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
+                    >
+                      <LogIn size={15} /> I already have one
+                    </Link>
+                  </div>
+
+                  <p className="mt-6 text-[0.78rem] leading-relaxed text-parchment/45">
+                    Creating an account is free. Basic Registration is ₹450 and comes straight
+                    after.
+                  </p>
+                </div>
               )}
 
               {!isEvent && returnTo && (

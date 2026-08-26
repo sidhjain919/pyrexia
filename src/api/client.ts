@@ -190,6 +190,7 @@ export type Me = {
   owns: string[]
   available: { id: string; name: string; amountPaise: number }[]
   verification: { state: string; note: string | null }
+  hasRegistration: boolean
   hasPass: boolean
   entries: {
     eventName: string
@@ -212,7 +213,6 @@ export type PassView = {
 
 export type RegistrationInput = {
   name: string
-  email: string
   phone: string
   gender: string
   college: string
@@ -226,6 +226,17 @@ export type RegistrationInput = {
 /* ------------------------------------------------------------------ *
  * Endpoints
  * ------------------------------------------------------------------ */
+
+export type AuthResult = {
+  token: string
+  account: {
+    email: string
+    name: string | null
+    publicCode: string | null
+    /** An account is not a registration. This says whether the ₹450 is paid. */
+    hasRegistration: boolean
+  }
+}
 
 export type EventInfo = {
   name: string
@@ -255,8 +266,8 @@ export const api = {
       idempotencyKey,
     }),
 
-  upgrade: (registrationId: string, products: string[], idempotencyKey: string) =>
-    request<OrderCreated>(`/api/registrations/${registrationId}/upgrade`, {
+  upgrade: (_ignored: string, products: string[], idempotencyKey: string) =>
+    request<OrderCreated>('/api/me/upgrade', {
       method: 'POST',
       body: { products },
       auth: true,
@@ -284,17 +295,24 @@ export const api = {
       `/api/orders/${orderId}/status`,
     ),
 
-  requestSignIn: (identifier: string) =>
-    request<{ sent: boolean; message: string; devToken?: string }>('/api/auth/request', {
+  signUp: (email: string, password: string) =>
+    request<AuthResult>('/api/auth/signup', { method: 'POST', body: { email, password } }),
+
+  signIn: (email: string, password: string) =>
+    request<AuthResult>('/api/auth/login', { method: 'POST', body: { email, password } }),
+
+  forgotPassword: (email: string) =>
+    request<{ sent: boolean; message: string; devToken?: string }>('/api/auth/forgot', {
       method: 'POST',
-      body: { identifier },
+      body: { email },
     }),
 
+  resetPassword: (token: string, password: string) =>
+    request<AuthResult>('/api/auth/reset', { method: 'POST', body: { token, password } }),
+
+  /** The one-tap link from a confirmation email — a convenience, not the front door. */
   consumeSignIn: (token: string) =>
-    request<{ token: string; registrationId: string }>('/api/auth/consume', {
-      method: 'POST',
-      body: { token },
-    }),
+    request<AuthResult>('/api/auth/consume', { method: 'POST', body: { token } }),
 
   signOut: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST', auth: true }),
 

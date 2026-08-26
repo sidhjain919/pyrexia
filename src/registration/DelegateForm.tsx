@@ -42,14 +42,12 @@ export default function DelegateForm() {
   const [phase, setPhase] = useState<Phase>({ name: 'form' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [fatal, setFatal] = useState<string | null>(null)
-  const [emailFix, setEmailFix] = useState<string | null>(null)
 
   const [products, setProducts] = useState<Product[]>([])
   const [wantsDelegate, setWantsDelegate] = useState(false)
 
   const [form, setForm] = useState<RegistrationInput>({
     name: '',
-    email: '',
     phone: '',
     gender: '',
     college: '',
@@ -100,7 +98,6 @@ export default function DelegateForm() {
       if (err instanceof ApiError) {
         if (err.fields) {
           setErrors(err.fields)
-          setEmailFix((err.extra.emailSuggestion as string) ?? null)
           setStep(0)
           return
         }
@@ -165,9 +162,8 @@ export default function DelegateForm() {
           You're aboard, {form.name.split(' ')[0]}.
         </h3>
         <p className="mx-auto mt-2 max-w-sm text-[0.9rem] leading-relaxed text-parchment/70">
-          Your {phase.tierName} is confirmed. We've emailed your pass to{' '}
-          <span className="text-gold-bright">{form.email}</span> — the link in that email signs you
-          in, so keep it.
+          Your {phase.tierName} is confirmed, and we've emailed your pass. You're already signed
+          in — your pass is ready whenever you want it.
         </p>
 
         <div className="mx-auto mt-6 max-w-xs rounded-xl border border-gold/25 bg-ocean/50 p-4">
@@ -270,32 +266,6 @@ export default function DelegateForm() {
                   />
                 </Field>
               </div>
-
-              <Field label="Email" required error={errors.email}>
-                <TextInput
-                  value={form.email}
-                  onChange={(v) => {
-                    set('email', v)
-                    setEmailFix(null)
-                  }}
-                  invalid={!!errors.email}
-                  type="email"
-                  placeholder="you@college.edu"
-                  autoComplete="email"
-                />
-                {emailFix && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      set('email', emailFix)
-                      setEmailFix(null)
-                    }}
-                    className="mt-1.5 text-left text-[0.78rem] text-ember hover:text-gold-bright"
-                  >
-                    Did you mean <span className="underline">{emailFix}</span>?
-                  </button>
-                )}
-              </Field>
 
               <Field label="Mobile" required error={errors.phone}>
                 <TextInput

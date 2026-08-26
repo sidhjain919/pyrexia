@@ -106,6 +106,23 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
       return
     }
 
+    case 'email.reset_password': {
+      const row = await env.DB.prepare('SELECT name, email FROM registrations WHERE id = ?')
+        .bind(job.registrationId)
+        .first<{ name: string; email: string }>()
+
+      if (!row) return
+
+      const message = templates.resetPassword({
+        name: row.name,
+        url: `${siteUrl(env)}/reset?token=${encodeURIComponent(job.token)}`,
+        minutes: 30,
+      })
+
+      await deliver(env, send, row.email, row.name, message)
+      return
+    }
+
     case 'email.payment_failed': {
       const row = await env.DB.prepare(
         `SELECT r.name, r.email, o.amount_paise, o.failure_reason

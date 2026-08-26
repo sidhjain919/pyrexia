@@ -20,7 +20,7 @@ import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
 import { newId, newOrderId, newPublicCode } from '../lib/ids.ts'
 import { loadProducts, ownedProducts, quote } from '../lib/pricing.ts'
-import { validateRegistration, suggestEmailFix } from '../lib/validate.ts'
+import { validateRegistration } from '../lib/validate.ts'
 import * as idem from '../lib/idempotency.ts'
 import * as audit from '../lib/audit.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
@@ -75,22 +75,33 @@ registrations.get('/pass-keys', (c) =>
  * New registration
  * ------------------------------------------------------------------ */
 
+/**
+ * Buy Basic Registration (and optionally the Delegate Card with it).
+ *
+ * Requires an account. The row already exists — sign-up created it with the
+ * detail columns empty — so this fills them in and opens an order, rather than
+ * conjuring a person out of a form.
+ */
 registrations.post('/registrations', async (c) => {
   const endpoint = 'POST /registrations'
   const body = (await readJson(c)) as Record<string, unknown>
   const key = idem.requireKey(c.req.header('Idempotency-Key'))
+
+  const session = await resolveSession(c.env, readToken(c.req.raw.headers))
+  if (!session) {
+    throw new ApiError('unauthorised', 'Sign in or create an account to register.')
+  }
 
   const seen = await idem.check(c.env, { key, endpoint, body })
   if (seen.state === 'replay') {
     return c.json(seen.response.body as object, seen.response.statusCode as 200)
   }
 
-  const { ok, errors, value } = validateRegistration(body)
+  // The email comes from the account, never from this form — it is the login,
+  // and letting a checkout rewrite it is how someone locks themselves out.
+  const { ok, errors, value } = validateRegistration({ ...body, email: session.email })
   if (!ok) {
-    throw new ApiError('validation_failed', 'Some details need another look.', {
-      fields: errors,
-      extra: { emailSuggestion: suggestEmailFix(String(body.email ?? '')) },
-    })
+    throw new ApiError('validation_failed', 'Some details need another look.', { fields: errors })
   }
 
   const requested = Array.isArray(body.products) ? (body.products as string[]) : []
@@ -98,26 +109,32 @@ registrations.post('/registrations', async (c) => {
     throw new ApiError('bad_request', 'products must be a list of product ids.')
   }
 
-  // Someone already confirmed on this email or phone is upgrading, not
-  // registering again — send them down the right path rather than taking a
-  // second ₹450 off them.
-  const existing = await c.env.DB.prepare(
-    `SELECT id, public_code FROM registrations
-      WHERE status = 'confirmed' AND (lower(email) = ? OR phone = ?) LIMIT 1`,
-  )
-    .bind(value.email, value.phone)
-    .first<{ id: string; public_code: string }>()
-
-  if (existing) {
+  const owned = await ownedProducts(c.env, session.registrationId)
+  if (owned.has('basic')) {
     throw new ApiError(
       'already_registered',
-      'You have already registered with this email or mobile. Sign in to add the Delegate Card.',
-      { extra: { publicCode: existing.public_code } },
+      'Your Basic Registration is already complete. Add the Delegate Card from your pass instead.',
     )
   }
 
+  // A mobile number belongs to one human. Another confirmed registration
+  // holding it means a typo or a shared phone, and either way it should stop
+  // here rather than at the gate.
+  const phoneClash = await c.env.DB.prepare(
+    `SELECT public_code FROM registrations
+      WHERE status = 'confirmed' AND phone = ? AND id != ? LIMIT 1`,
+  )
+    .bind(value.phone, session.registrationId)
+    .first<{ public_code: string }>()
+
+  if (phoneClash) {
+    throw new ApiError('conflict', 'That mobile number is already on another registration.', {
+      fields: { phone: 'Already registered.' },
+    })
+  }
+
   const products = await loadProducts(c.env)
-  const priced = quote(requested, products)
+  const priced = quote(requested, products, owned)
   if (!priced.ok) {
     throw new ApiError('bad_request', describeQuoteFailure(priced.failure), {
       extra: { reason: priced.failure },
@@ -127,29 +144,24 @@ registrations.post('/registrations', async (c) => {
   await idem.claim(c.env, { key, endpoint, body })
 
   try {
-    const registrationId = newId()
+    const registrationId = session.registrationId
+    const publicCode = session.publicCode
     const orderId = newOrderId()
-    const publicCode = newPublicCode()
 
-    // The order is created with the amount *we* computed. Razorpay is told the
-    // total; the browser is told nothing it could have chosen.
     const rzpOrder = await createOrder(razorpayConfig(c.env), {
       amountPaise: priced.quote.totalPaise,
       receipt: orderId,
       notes: { registrationId, publicCode },
     })
 
-    const statements = [
+    await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO registrations
-           (id, public_code, name, email, phone, gender, college, city, course, year,
-            emergency_name, emergency_phone, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        `UPDATE registrations
+            SET name = ?, phone = ?, gender = ?, college = ?, city = ?, course = ?, year = ?,
+                emergency_name = ?, emergency_phone = ?, updated_at = datetime('now')
+          WHERE id = ?`,
       ).bind(
-        registrationId,
-        publicCode,
         value.name,
-        value.email,
         value.phone,
         value.gender || null,
         value.college,
@@ -158,6 +170,7 @@ registrations.post('/registrations', async (c) => {
         value.year,
         value.emergencyName,
         value.emergencyPhone,
+        registrationId,
       ),
       c.env.DB.prepare(
         `INSERT INTO orders (id, registration_id, amount_paise, razorpay_order_id, status)
@@ -168,9 +181,7 @@ registrations.post('/registrations', async (c) => {
           'INSERT INTO order_items (id, order_id, product_id, amount_paise) VALUES (?, ?, ?, ?)',
         ).bind(newId(), orderId, line.productId, line.amountPaise),
       ),
-    ]
-
-    await c.env.DB.batch(statements)
+    ])
 
     await audit.record(c.env, {
       action: 'registration.create',
@@ -185,13 +196,12 @@ registrations.post('/registrations', async (c) => {
       publicCode,
       orderId,
       checkout: {
-        // Only the *public* key id ever reaches a browser.
         keyId: c.env.RAZORPAY_KEY_ID,
         razorpayOrderId: rzpOrder.id,
         amountPaise: priced.quote.totalPaise,
         currency: 'INR',
         name: value.name,
-        email: value.email,
+        email: session.email,
         phone: value.phone,
       },
       lines: priced.quote.lines,
@@ -200,7 +210,6 @@ registrations.post('/registrations', async (c) => {
     await idem.remember(c.env, { key, endpoint, statusCode: 201, body: response })
     return c.json(response, 201)
   } catch (err) {
-    // Let the student retry with the same key rather than stranding it.
     await idem.release(c.env, { key, endpoint })
     throw err
   }

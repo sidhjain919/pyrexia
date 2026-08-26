@@ -34,6 +34,7 @@ export type Env = {
 export type Job =
   | { kind: 'email.registration_confirmed'; registrationId: string; orderId: string }
   | { kind: 'email.sign_in_link'; registrationId: string; token: string }
+  | { kind: 'email.reset_password'; registrationId: string; token: string }
   | { kind: 'email.payment_failed'; registrationId: string; orderId: string }
   | { kind: 'pass.render_pdf'; passId: string }
 

@@ -100,6 +100,8 @@ me.get('/me', async (c) => {
       state: registration.verification,
       note: registration.verification_note,
     },
+    // An account is not a registration. The UI leans on this to keep saying so.
+    hasRegistration: owned.has('basic'),
     hasPass: !!pass,
     entries: entries.map((e) => ({
       eventName: e.event_name,

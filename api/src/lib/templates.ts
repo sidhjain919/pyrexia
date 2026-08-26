@@ -251,3 +251,35 @@ PYREXIA 2026 · Pirates of the Lost Island
 
   return { subject: `Delegate Card confirmed — ${args.publicCode}`, html, text }
 }
+
+/* ------------------------------------------------------------------ *
+ * Password reset
+ * ------------------------------------------------------------------ */
+
+export function resetPassword(args: { name: string; url: string; minutes: number }) {
+  const first = args.name?.split(' ')[0] || 'there'
+
+  const html = shell(
+    h1('Set a new password') +
+      p(`Hello ${esc(first)} — use this to choose a new one.`) +
+      button(args.url, 'Choose a new password') +
+      p(
+        `This link works once and expires in ${args.minutes} minutes. ` +
+          `If you didn't ask for it, ignore this email — your password has not changed.`,
+      ),
+    'Reset your PYREXIA password',
+  )
+
+  const text = `Set a new password
+
+Hello ${first} — use this to choose a new one:
+
+${args.url}
+
+This link works once and expires in ${args.minutes} minutes.
+If you didn't ask for it, ignore this email. Your password has not changed.
+
+PYREXIA 2026 · AIIMS Rishikesh`
+
+  return { subject: 'Reset your PYREXIA password', html, text }
+}

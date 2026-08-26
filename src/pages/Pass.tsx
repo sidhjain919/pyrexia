@@ -14,6 +14,7 @@ import {
   type PassView,
 } from '../api/client'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
+import { useRegistration } from '../registration/context'
 
 /**
  * My Voyage — the pass, and the one thing left to buy.
@@ -25,6 +26,7 @@ import { openCheckout, PaymentCancelled } from '../registration/razorpay'
  */
 export default function Pass() {
   const navigate = useNavigate()
+  const { openRegister } = useRegistration()
   const [me, setMe] = useState<Me | null>(null)
   const [pass, setPass] = useState<PassView | null>(null)
   const [qr, setQr] = useState<string | null>(null)
@@ -146,14 +148,39 @@ export default function Pass() {
           <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
             My Voyage
           </div>
-          <h1 className="mt-3 font-display text-3xl text-offwhite sm:text-4xl">{me.name}</h1>
-          <p className="mt-1.5 text-[0.9rem] text-parchment/60">
-            {me.college} · {me.course}, {me.year}
-          </p>
+          <h1 className="mt-3 font-display text-3xl text-offwhite sm:text-4xl">
+            {me.name || me.email}
+          </h1>
+          {me.college && (
+            <p className="mt-1.5 text-[0.9rem] text-parchment/60">
+              {me.college} · {me.course}, {me.year}
+            </p>
+          )}
         </div>
 
+        {/* The whole design rests on "an account is not a registration", so an
+            account without one has to say so before anything else. */}
+        {!me.hasRegistration && (
+          <div className="mt-9 rounded-2xl border border-ember/50 bg-ember/10 p-6 text-center">
+            <AlertCircle size={22} className="mx-auto text-ember" />
+            <p className="mt-3 font-display text-xl text-offwhite">
+              You haven't registered for the fest yet
+            </p>
+            <p className="mx-auto mt-2 max-w-sm text-[0.88rem] leading-relaxed text-parchment/70">
+              Having an account isn't the same as being registered. Basic Registration is ₹450, it's
+              compulsory for everyone, and it covers every event.
+            </p>
+            <button
+              onClick={() => openRegister()}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-7 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
+            >
+              <Ticket size={14} /> Complete my registration · ₹450
+            </button>
+          </div>
+        )}
+
         {/* The pass */}
-        {pass && qr ? (
+        {me.hasRegistration && pass && qr ? (
           <div className="parchment mt-9 rounded-2xl p-6 shadow-cinema sm:p-8">
             {/* The date line gets its own row: sharing one with the tier badge
                 left both it and the name wrapping on a narrow phone. */}
@@ -191,7 +218,7 @@ export default function Pass() {
               day, and the guard sees your name.
             </p>
           </div>
-        ) : (
+        ) : me.hasRegistration ? (
           <div className="glass mt-9 rounded-2xl p-8 text-center">
             <Ticket size={22} className="mx-auto text-gold/60" />
             <p className="mt-3 font-display text-xl text-offwhite">No pass yet</p>
@@ -199,7 +226,7 @@ export default function Pass() {
               Your pass appears here as soon as your Basic Registration is confirmed.
             </p>
           </div>
-        )}
+        ) : null}
 
         {qr && (
           <a
@@ -212,7 +239,7 @@ export default function Pass() {
         )}
 
         {/* Upgrade */}
-        {!isDelegate && me.available.some((p) => p.id === 'delegate') && (
+        {me.hasRegistration && !isDelegate && me.available.some((p) => p.id === 'delegate') && (
           <div className="glass mt-6 rounded-2xl p-6">
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-display text-[1.05rem] leading-tight text-offwhite sm:text-lg">
