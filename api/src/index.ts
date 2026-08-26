@@ -38,7 +38,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:5199',
   'https://sidhjain919.github.io',
-  // The fest domain is added here once it exists.
+  'https://pyrexiaaiims.com',
+  'https://www.pyrexiaaiims.com',
 ]
 
 /**

@@ -26,12 +26,9 @@ migrations_dir = "migrations"
 # Identity documents and notice attachments. Private bucket — no public access,
 # ever. Objects are reachable only through short-lived signed URLs minted by a
 # Worker that has already checked the verifier role and written an audit row.
-#
-# COMMENTED OUT until R2 is enabled on the account (Dashboard → R2 → Enable).
-# Nothing uses it yet; document upload is still to be built.
-# [[r2_buckets]]
-# binding = "DOCS"
-# bucket_name = "pyrexia-docs"
+[[r2_buckets]]
+binding = "DOCS"
+bucket_name = "pyrexia-docs"
 
 # Feature flags, rate-limit counters, the hot noticeboard payload.
 [[kv_namespaces]]
@@ -59,11 +56,15 @@ crons = ["*/15 * * * *"]
 [vars]
 ENVIRONMENT = "development"
 PASS_KEY_ID = "1"
+# Kept on GitHub Pages until pyrexiaaiims.com is served from Cloudflare;
+# flip this the moment the domain points at Pages.
 SITE_URL = "https://sidhjain919.github.io/pyrexia"
 # Flip to "brevo" once BREVO_API_KEY is set. Until then every email is written
 # to the log instead of sent, which is enough to test the whole flow.
 MAIL_PROVIDER = "console"
-MAIL_FROM_EMAIL = "pyrexia@aiimsrishikesh.edu.in"
+# Sending happens from the domain we control; replies go to the official
+# inbox, which is a mailbox that actually exists.
+MAIL_FROM_EMAIL = "no-reply@pyrexiaaiims.com"
 MAIL_FROM_NAME = "PYREXIA 2026"
 MAIL_REPLY_TO = "pyrexia@aiimsrishikesh.edu.in"
 

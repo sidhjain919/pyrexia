@@ -1,8 +1,8 @@
 /** Worker bindings and secrets, as declared in wrangler.toml. */
 export type Env = {
   DB: D1Database
-  /** Not bound yet — R2 needs enabling on the account. Document upload is unbuilt. */
-  DOCS?: R2Bucket
+  /** Private bucket for identity documents and photos. No public access, ever. */
+  DOCS: R2Bucket
   KV: KVNamespace
   JOBS: Queue<Job>
 
