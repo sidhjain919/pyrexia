@@ -25,3 +25,4 @@ npm-debug.log*
 api/node_modules
 api/.wrangler
 api/.dev.vars
+api/*.py
