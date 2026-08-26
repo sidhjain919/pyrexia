@@ -1,13 +1,19 @@
 /**
  * Sending email.
  *
- * Two providers behind one interface:
+ * Providers behind one interface:
  *
  *   console — writes the message to the log instead of sending. The default,
  *             and what runs until a real key is configured, so the whole flow
  *             is exercisable before anyone signs up for anything.
- *   brevo   — real delivery. 300 free sends a day, which covers development
- *             and a slow first week; swap for SES when volume needs it.
+ *   resend  — 3,000/month free, $20/month for 50,000. Verifies a domain with
+ *             DKIM plus an MX record on a sending subdomain.
+ *   brevo   — 300 free sends a day. Verifies with TXT records only, which
+ *             matters when the registrar won't allow MX.
+ *
+ * Which one is right depends less on the API than on what DNS records the
+ * registrar will let you create. Keeping all three behind one interface means
+ * that decision can change without touching a single template or job.
  *
  * Nothing calls this directly from a request handler. Everything goes through
  * the queue, because a student tapping Register must never wait on an inbox —
@@ -109,9 +115,72 @@ class BrevoProvider implements MailProvider {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Resend
+ * ------------------------------------------------------------------ */
+
+class ResendProvider implements MailProvider {
+  readonly name = 'resend'
+
+  // Written out rather than as constructor parameter properties: the project
+  // compiles with `erasableSyntaxOnly`.
+  private readonly apiKey: string
+  private readonly from: string
+
+  constructor(apiKey: string, fromEmail: string, fromName: string) {
+    this.apiKey = apiKey
+    // Resend wants a single RFC-5322 string rather than separate fields.
+    this.from = fromName ? `${fromName} <${fromEmail}>` : fromEmail
+  }
+
+  async send(message: Message): Promise<SendResult> {
+    let res: Response
+    try {
+      res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: this.from,
+          to: [message.to],
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+          ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        }),
+      })
+    } catch (err) {
+      return { ok: false, error: String(err), retryable: true }
+    }
+
+    if (res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { id?: string }
+      return { ok: true, id: body.id }
+    }
+
+    const detail = await res.text().catch(() => '')
+
+    // 4xx means the message itself is wrong — an unverified domain, a bad
+    // address. Retrying sends the same broken thing again. 429 is the
+    // exception: rate limiting clears by itself.
+    const retryable = res.status >= 500 || res.status === 429
+
+    return { ok: false, error: `resend ${res.status}: ${detail.slice(0, 300)}`, retryable }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 
 export function mailer(env: Env): MailProvider {
+  if (env.MAIL_PROVIDER === 'resend' && env.RESEND_API_KEY) {
+    return new ResendProvider(
+      env.RESEND_API_KEY,
+      env.MAIL_FROM_EMAIL || 'no-reply@pyrexiaaiims.com',
+      env.MAIL_FROM_NAME || 'PYREXIA 2026',
+    )
+  }
   if (env.MAIL_PROVIDER === 'brevo' && env.BREVO_API_KEY) {
     return new BrevoProvider(
       env.BREVO_API_KEY,

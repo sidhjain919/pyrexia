@@ -9,13 +9,14 @@ export type Env = {
   ENVIRONMENT: string
   /** Where the site lives, for links inside emails. */
   SITE_URL: string
-  /** 'console' (log only) or 'brevo' (real delivery). */
+  /** 'console' (log only), 'resend', or 'brevo'. */
   MAIL_PROVIDER: string
   MAIL_FROM_EMAIL: string
   MAIL_FROM_NAME: string
   /** Replies land here, which is not where we send from. */
   MAIL_REPLY_TO: string
   BREVO_API_KEY: string
+  RESEND_API_KEY: string
   /** Which signing key new passes are minted with. */
   PASS_KEY_ID: string
 
