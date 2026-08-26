@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { Menu, X, ArrowRight, Ticket } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { NAV, SITE } from '../data/site'
 import { Compass } from './primitives'
@@ -91,11 +91,15 @@ export default function Navbar() {
 
           <div className="flex items-center gap-2">
             {signedIn ? (
+              /* Visible at every width, unlike the register button it replaces:
+                 someone signed in on a phone otherwise sees nothing at all in
+                 the header and has to go hunting in the menu. */
               <Link
                 to="/pass"
                 data-cursor="PASS"
-                className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+                className="font-accent inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2 text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:px-5 sm:py-2.5 sm:text-[0.82rem]"
               >
+                <Ticket size={13} />
                 My Pass
               </Link>
             ) : (
