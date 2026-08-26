@@ -10,6 +10,7 @@ import RegisterModal from './components/RegisterModal'
 import VoyageProgress from './components/VoyageProgress'
 import { ScrollManager } from './components/routing'
 import Home from './pages/Home'
+import Legal from './pages/Legal'
 import Reset from './pages/Reset'
 import Enter from './pages/Enter'
 import Pass from './pages/Pass'
@@ -45,6 +46,13 @@ export default function App() {
           <Route path="/pass" element={<Pass />} />
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/reset" element={<Reset />} />
+
+          {/* Razorpay checks for all four of these before activating live
+              payments, and rejects applications that are missing them. */}
+          <Route path="/terms" element={<Legal />} />
+          <Route path="/privacy" element={<Legal />} />
+          <Route path="/refunds" element={<Legal />} />
+          <Route path="/contact" element={<Legal />} />
           {/* Anything unrecognised is the fest, not a 404 page nobody wants. */}
           <Route path="*" element={<Home />} />
         </Routes>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { NAV, SITE, SOCIAL } from '../data/site'
 import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import { Icon } from '../lib/icons'
@@ -89,6 +90,21 @@ export default function Footer() {
               Register Now →
             </button>
           </div>
+        </div>
+
+        {/* Reachable from every page, which is how a payment provider's
+            reviewer expects to find them. */}
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-gold/10 py-6 font-log text-[0.66rem] uppercase tracking-wide2 sm:justify-start">
+          {[
+            ['/terms', 'Terms'],
+            ['/privacy', 'Privacy'],
+            ['/refunds', 'Refunds'],
+            ['/contact', 'Contact'],
+          ].map(([to, label]) => (
+            <Link key={to} to={to} className="text-parchment/50 transition-colors hover:text-gold-bright">
+              {label}
+            </Link>
+          ))}
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-gold/10 py-7 text-center sm:flex-row sm:text-left">
