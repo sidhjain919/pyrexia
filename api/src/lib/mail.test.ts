@@ -120,3 +120,72 @@ test('brevo still works — switching provider is a config change', async () => 
   assert.equal(seen.url, 'https://api.brevo.com/v3/smtp/email')
   assert.equal(seen.body.sender.email, 'no-reply@pyrexiaaiims.com', 'brevo splits name and address')
 })
+
+/* ------------------------------------------------------------------ *
+ * Amazon SES
+ *
+ * SES is here because Wix hosts our DNS and will not create the MX record
+ * most providers want. These check the request we build, not the signature —
+ * the signature has its own tests against AWS's published vector.
+ * ------------------------------------------------------------------ */
+
+const sesEnv = {
+  ...base,
+  MAIL_PROVIDER: 'ses',
+  SES_ACCESS_KEY_ID: 'AKIAIOSFODNN7EXAMPLE',
+  SES_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY',
+}
+
+test('ses: sends to the regional endpoint, signed', async () => {
+  const { seen, result } = await capture(
+    sesEnv,
+    () => new Response(JSON.stringify({ MessageId: 'ses_1' }), { status: 200 }),
+  )
+  assert.equal(result.ok, true)
+  assert.equal(result.ok === true && result.id, 'ses_1')
+  assert.equal(
+    seen.url,
+    'https://email.ap-south-1.amazonaws.com/v2/email/outbound-emails',
+    'defaults to Mumbai, closest to everyone receiving these',
+  )
+  assert.match(String(seen.auth), /^AWS4-HMAC-SHA256 Credential=/)
+  assert.equal(seen.body.Destination.ToAddresses[0], msg.to)
+  assert.equal(seen.body.Content.Simple.Subject.Data, msg.subject)
+  assert.equal(
+    seen.body.Content.Simple.Body.Text.Charset,
+    'UTF-8',
+    'a name with an accent in it must not arrive as mojibake',
+  )
+})
+
+test('ses: an unverified sender is not retried forever', async () => {
+  // What SES actually returns while the account is still in the sandbox.
+  const { result } = await capture(
+    sesEnv,
+    () =>
+      new Response(JSON.stringify({ message: 'Email address is not verified.' }), {
+        status: 400,
+      }),
+  )
+  assert.equal(result.ok, false)
+  assert.equal(
+    result.ok === false && result.retryable,
+    false,
+    'the same rejected message must not be re-queued',
+  )
+})
+
+test('ses: throttling is retried', async () => {
+  const { result } = await capture(sesEnv, () => new Response('slow down', { status: 429 }))
+  assert.equal(result.ok === false && result.retryable, true)
+})
+
+test('ses: half-configured credentials fall back to console, never crash', async () => {
+  // A deploy that sets the key id but forgets the secret must still boot.
+  const provider = mailer({
+    ...base,
+    MAIL_PROVIDER: 'ses',
+    SES_ACCESS_KEY_ID: 'AKIA...',
+  } as unknown as Env)
+  assert.equal(provider.name, 'console')
+})

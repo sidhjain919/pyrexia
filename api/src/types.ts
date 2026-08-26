@@ -17,6 +17,9 @@ export type Env = {
   MAIL_REPLY_TO: string
   BREVO_API_KEY: string
   RESEND_API_KEY: string
+  SES_ACCESS_KEY_ID: string
+  SES_SECRET_ACCESS_KEY: string
+  SES_REGION: string
   /** Which signing key new passes are minted with. */
   PASS_KEY_ID: string
 
