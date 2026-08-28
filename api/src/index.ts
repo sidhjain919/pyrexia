@@ -18,12 +18,14 @@ import { admin } from './routes/admin.ts'
 import { auth } from './routes/auth.ts'
 import { exports_ } from './routes/exports.ts'
 import { events } from './routes/events.ts'
+import { documents } from './routes/documents.ts'
 import { me } from './routes/me.ts'
 import { notices } from './routes/notices.ts'
 import { registrations } from './routes/registrations.ts'
 import { ses } from './routes/ses.ts'
 import { webhooks } from './routes/webhooks.ts'
 import { handleJob } from './jobs/mail.ts'
+import { purgeExpiredDocuments } from './jobs/purge.ts'
 import { reconcileOrders } from './jobs/reconcile.ts'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -84,6 +86,7 @@ app.route('/api', events)
 app.route('/api', admin)
 app.route('/api', exports_)
 app.route('/api', notices)
+app.route('/api', documents)
 
 // Razorpay posts here from its own servers, so this sits outside /api and
 // outside CORS entirely. It authenticates by signature, not by origin.
@@ -130,6 +133,9 @@ export default {
    */
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(reconcileOrders(env))
+    // The privacy page promises identity documents are deleted within thirty
+    // days of the fest. This is what makes that sentence true.
+    ctx.waitUntil(purgeExpiredDocuments(env))
   },
 
   /**

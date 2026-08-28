@@ -11,19 +11,27 @@ import {
   type RegistrationInput,
 } from '../api/client'
 import { openCheckout, PaymentCancelled } from './razorpay'
+import DocumentUpload from './DocumentUpload'
 import { Field, Select, TextInput } from './fields'
 
 /**
  * Registration.
  *
- * Two steps, not three. The identity-document step used to sit between details
- * and payment; it now happens *after* payment, from the pass page. Blocking a
- * ₹450 payment on someone finding a photo of their college ID loses
- * registrations for no benefit — the documents are checked at the gate either
- * way, and an unverified payer is far easier to chase than an abandoned one.
+ * Three steps, the middle one skippable.
+ *
+ * Identity documents were originally removed from this form entirely and left
+ * to the pass page, because blocking a ₹450 payment on someone finding a photo
+ * of their college ID loses registrations for no benefit — the desk checks the
+ * physical card either way. That reasoning still holds, so the step is here but
+ * has a Skip beside Continue, and the same upload remains on the pass page for
+ * anyone who passes it by.
+ *
+ * The result is that most people upload while they are already filling in
+ * forms, and nobody is stopped from paying because they are away from their
+ * documents.
  */
 
-const STEPS = ['Your details', 'Registration & payment'] as const
+const STEPS = ['Your details', 'Documents', 'Registration & payment'] as const
 
 type Phase =
   | { name: 'form' }
@@ -132,7 +140,9 @@ export default function DelegateForm() {
       }
     } catch (err) {
       setPhase({ name: 'form' })
-      setStep(1)
+      // Back to payment, not to documents — they cancelled a payment and that
+      // is the screen they need in front of them to try again.
+      setStep(2)
 
       if (err instanceof PaymentCancelled) {
         // Not an error worth alarming them about. The order stays unpaid and
@@ -347,6 +357,19 @@ export default function DelegateForm() {
 
           {step === 1 && (
             <div className="space-y-5">
+              <div>
+                <h3 className="font-display text-lg text-offwhite">Identity documents</h3>
+                <p className="mt-1.5 text-[0.85rem] text-parchment/55">
+                  Optional. Skip if you haven’t got them to hand — you can add
+                  them later from your pass.
+                </p>
+              </div>
+              <DocumentUpload />
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-5">
               <div className="flex gap-3 rounded-lg border border-gold/25 bg-ocean/40 p-4">
                 <Star size={17} className="mt-0.5 shrink-0 text-gold-bright" />
                 <p className="text-[0.82rem] leading-relaxed text-parchment/80">
@@ -448,24 +471,36 @@ export default function DelegateForm() {
         {step > 0 && (
           <button
             type="button"
-            onClick={() => setStep(0)}
+            onClick={() => setStep((n) => Math.max(0, n - 1))}
             className="flex items-center gap-1.5 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80"
           >
             <ArrowLeft size={13} /> Back
           </button>
         )}
+        {/* Skip sits beside Continue rather than hiding in small print: the
+            step is genuinely optional and pretending otherwise costs
+            registrations from people who are not near their documents. */}
+        {step === 1 && (
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/55 transition-colors hover:text-gold-bright"
+          >
+            Skip
+          </button>
+        )}
         <button
           type="button"
-          onClick={() => (step === 0 ? setStep(1) : submit())}
+          onClick={() => (step === 2 ? submit() : setStep((n) => n + 1))}
           className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01]"
         >
-          {step === 0 ? (
+          {step === 2 ? (
             <>
-              Continue <ArrowRight size={14} />
+              <Ticket size={15} /> Pay {rupees(totalPaise)}
             </>
           ) : (
             <>
-              <Ticket size={15} /> Pay {rupees(totalPaise)}
+              Continue <ArrowRight size={14} />
             </>
           )}
         </button>

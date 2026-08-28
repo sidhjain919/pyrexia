@@ -40,6 +40,14 @@ export type AdminStats = {
   topEvents: { event_name: string; n: number }[]
 }
 
+export type MyDocument = {
+  id: string
+  kind: 'aadhaar' | 'student_id' | 'photo'
+  mime: string
+  sizeBytes: number
+  uploadedAt: string
+}
+
 export type Notice = {
   id: string
   slug: string
@@ -404,6 +412,16 @@ export const api = {
   /** Published, unexpired notices. No session needed — this is the public board. */
   notices: () => request<{ notices: Notice[] }>('/api/notices'),
 
+  myDocuments: () =>
+    request<{
+      verification: 'unsubmitted' | 'pending' | 'approved' | 'rejected'
+      note: string | null
+      documents: MyDocument[]
+    }>('/api/me/documents', { auth: true }),
+
+  deleteDocument: (id: string) =>
+    request<{ ok: boolean }>(`/api/me/documents/${id}`, { method: 'DELETE', auth: true }),
+
   /** Everything including drafts. */
   adminNotices: () => request<{ notices: Notice[] }>('/api/admin/notices', { auth: true }),
 
@@ -526,4 +544,44 @@ export async function downloadCsv(path: string, filename: string): Promise<void>
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Upload one identity document.
+ *
+ * Sent as the raw body rather than multipart: there is exactly one file, the
+ * server needs its bytes and its type and nothing else, and a form boundary
+ * would only be something else to parse. The kind travels in the query string
+ * because the body is entirely the file.
+ */
+export async function uploadDocument(
+  kind: MyDocument['kind'],
+  file: File,
+): Promise<{ id: string }> {
+  const token = getSession()
+  const params = new URLSearchParams({ kind, filename: file.name.slice(0, 120) })
+
+  const res = await fetch(`${BASE}/api/me/documents?${params}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: file,
+  })
+
+  const body = (await res.json().catch(() => ({}))) as {
+    id?: string
+    error?: { code?: string; message?: string }
+  }
+
+  if (!res.ok) {
+    throw new ApiError(
+      body.error?.message ?? 'That upload failed.',
+      body.error?.code ?? 'internal',
+      res.status,
+    )
+  }
+
+  return { id: body.id ?? '' }
 }
