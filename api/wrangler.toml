@@ -74,6 +74,11 @@ SES_REGION = "ap-south-1"
 # topic whose signatures verify perfectly well against Amazon's certificate.
 SES_TOPIC_ARN = "arn:aws:sns:ap-south-1:895757147303:pyrexia-email-events"
 
+# Public by design — it ships inside every page that shows a Google button.
+# What keeps it useful is the origin allowlist in the Google console, not
+# secrecy, and the audience check when we verify the token.
+GOOGLE_CLIENT_ID = "422997955520-i6d1963hfip9gs9enp4lbf70onnfi754.apps.googleusercontent.com"
+
 # Secrets set with `wrangler secret put`:
 #   RAZORPAY_KEY_ID
 #   RAZORPAY_KEY_SECRET

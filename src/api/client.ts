@@ -295,8 +295,29 @@ export const api = {
       `/api/orders/${orderId}/status`,
     ),
 
+  /**
+   * Creates the account but does *not* sign anyone in — an address has to be
+   * proved before it can be paid from, because the pass arrives by email and a
+   * typo means someone pays and never receives what they bought.
+   */
   signUp: (email: string, password: string) =>
-    request<AuthResult>('/api/auth/signup', { method: 'POST', body: { email, password } }),
+    request<{ verificationRequired: true; email: string; expiresInMinutes: number }>(
+      '/api/auth/signup',
+      { method: 'POST', body: { email, password } },
+    ),
+
+  verifyEmail: (email: string, code: string) =>
+    request<AuthResult>('/api/auth/verify', { method: 'POST', body: { email, code } }),
+
+  resendCode: (email: string) =>
+    request<{ sent: boolean; expiresInMinutes: number }>('/api/auth/resend', {
+      method: 'POST',
+      body: { email },
+    }),
+
+  /** The ID token from Google's button. The server does every check on it. */
+  googleSignIn: (credential: string) =>
+    request<AuthResult>('/api/auth/google', { method: 'POST', body: { credential } }),
 
   signIn: (email: string, password: string) =>
     request<AuthResult>('/api/auth/login', { method: 'POST', body: { email, password } }),

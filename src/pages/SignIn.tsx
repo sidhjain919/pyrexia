@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react'
 
 import { ApiError, api, setSession } from '../api/client'
+import GoogleButton from '../auth/GoogleButton'
 import { Field, TextInput } from '../registration/fields'
 
 /**
@@ -16,9 +17,15 @@ import { Field, TextInput } from '../registration/fields'
  * The wording is deliberate throughout: an account is never called a
  * "registration". Registration is the ₹450 thing, and conflating them is how
  * somebody turns up at a gate believing they have paid.
+ *
+ * Signing up now ends on a code screen rather than straight inside. The pass
+ * is delivered by email, so an address nobody has proved means someone can pay
+ * ₹450 and never receive the thing they bought. Google skips that screen
+ * entirely — it has already checked the address, which is most of why it is
+ * offered first.
  */
 
-type Mode = 'signin' | 'signup' | 'forgot'
+type Mode = 'signin' | 'signup' | 'forgot' | 'verify'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -31,6 +38,11 @@ export default function SignIn() {
   const [fatal, setFatal] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState<{ message: string; devToken?: string } | null>(null)
+
+  /** Set once a code is on its way; also the address the code belongs to. */
+  const [pending, setPending] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [resentAt, setResentAt] = useState<number | null>(null)
 
   /** Where to go once they're in — set when the event flow sends them here. */
   const next = params.get('next')
@@ -48,20 +60,71 @@ export default function SignIn() {
         return
       }
 
-      const res =
-        mode === 'signup'
-          ? await api.signUp(email, password)
-          : await api.signIn(email, password)
+      if (mode === 'verify') {
+        const res = await api.verifyEmail(pending ?? email, code)
+        setSession(res.token)
+        go()
+        return
+      }
 
+      if (mode === 'signup') {
+        // No session here: sign-up ends with a code, not a way in.
+        const res = await api.signUp(email, password)
+        setPending(res.email)
+        setMode('verify')
+        return
+      }
+
+      const res = await api.signIn(email, password)
       setSession(res.token)
       go()
     } catch (err) {
       if (err instanceof ApiError) {
+        // An account made before the address was proved — or one that never
+        // finished. The server has already sent a fresh code.
+        if (err.code === 'verification_required') {
+          setPending(String(err.extra.email ?? email))
+          setCode('')
+          setMode('verify')
+          return
+        }
         if (err.fields) setErrors(err.fields)
         else setFatal(err.message)
       } else {
         setFatal('Something went wrong. Please try again.')
       }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const signInWithGoogle = async (credential: string) => {
+    setBusy(true)
+    setFatal(null)
+    try {
+      const res = await api.googleSignIn(credential)
+      setSession(res.token)
+      go()
+    } catch (err) {
+      setFatal(
+        err instanceof ApiError ? err.message : 'Google sign-in failed. Please try again.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resend = async () => {
+    if (!pending) return
+    setBusy(true)
+    setFatal(null)
+    setErrors({})
+    try {
+      await api.resendCode(pending)
+      setResentAt(Date.now())
+      setCode('')
+    } catch (err) {
+      setFatal(err instanceof ApiError ? err.message : 'Could not send another code.')
     } finally {
       setBusy(false)
     }
@@ -101,6 +164,88 @@ export default function SignIn() {
     )
   }
 
+  /* ---------- the code ---------- */
+
+  if (mode === 'verify') {
+    return (
+      <Shell title="Check your email">
+        <p className="text-[0.92rem] leading-relaxed text-parchment/65">
+          We sent a six-digit code to{' '}
+          <strong className="text-parchment/90">{pending ?? email}</strong>. It expires in ten
+          minutes.
+        </p>
+
+        <div className="mt-7 text-left">
+          <Field label="Verification code" required error={errors.code}>
+            <TextInput
+              value={code}
+              onChange={(v) => {
+                // Digits only, so a pasted "123 456" still works.
+                setCode(v.replace(/\D/g, '').slice(0, 6))
+                setErrors((e) => ({ ...e, code: '' }))
+                setFatal(null)
+              }}
+              invalid={!!errors.code}
+              type="text"
+              placeholder="123456"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+            />
+          </Field>
+        </div>
+
+        {fatal && (
+          <div className="mt-5 flex items-start gap-2 rounded-lg border border-coral/50 bg-coral/10 p-3 text-left text-[0.82rem] text-coral">
+            <AlertCircle size={15} className="mt-0.5 shrink-0" />
+            {fatal}
+          </div>
+        )}
+
+        {resentAt && !fatal && (
+          <p className="mt-5 rounded-lg border border-gold/25 bg-gold/10 p-3 text-[0.82rem] text-gold-bright">
+            A new code is on its way. The previous one no longer works.
+          </p>
+        )}
+
+        <button
+          onClick={() => void submit()}
+          disabled={busy || code.length !== 6}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-50"
+        >
+          {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
+          Confirm my email
+        </button>
+
+        <div className="mt-6 flex flex-col items-center gap-2.5 text-[0.84rem]">
+          <button
+            onClick={() => void resend()}
+            disabled={busy}
+            className="text-parchment/55 transition-colors hover:text-gold-bright disabled:opacity-50"
+          >
+            Didn't get it? <span className="text-gold-bright">Send another</span>
+          </button>
+          <button
+            onClick={() => {
+              setMode('signin')
+              setPending(null)
+              setCode('')
+              setResentAt(null)
+              setFatal(null)
+            }}
+            className="text-parchment/45 transition-colors hover:text-gold-bright"
+          >
+            Use a different email
+          </button>
+        </div>
+
+        <p className="mt-7 text-[0.78rem] leading-relaxed text-parchment/45">
+          Check your spam folder before asking for another — it is the usual
+          culprit.
+        </p>
+      </Shell>
+    )
+  }
+
   /* ---------- the form ---------- */
 
   const title =
@@ -116,6 +261,20 @@ export default function SignIn() {
   return (
     <Shell title={title}>
       <p className="mb-7 text-[0.92rem] leading-relaxed text-parchment/65">{subtitle}</p>
+
+      {mode !== 'forgot' && (
+        <div className="mb-7">
+          <GoogleButton onCredential={(c) => void signInWithGoogle(c)} disabled={busy} />
+
+          <div className="mt-7 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gold/15" />
+            <span className="font-log text-[0.58rem] uppercase tracking-wide2 text-parchment/35">
+              or with email
+            </span>
+            <div className="h-px flex-1 bg-gold/15" />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4 text-left">
         <Field label="Email" required error={errors.email}>
