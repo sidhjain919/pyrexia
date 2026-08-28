@@ -40,6 +40,28 @@ export type AdminStats = {
   topEvents: { event_name: string; n: number }[]
 }
 
+export type Notice = {
+  id: string
+  slug: string
+  title: string
+  body: string
+  category: 'announcement' | 'schedule' | 'result' | 'urgent'
+  pinned: boolean
+  publishAt: string
+  expiresAt: string | null
+  published: boolean
+  updatedAt: string
+}
+
+export type NoticeInput = {
+  title: string
+  body: string
+  category: Notice['category']
+  pinned: boolean
+  published: boolean
+  expiresAt?: string | null
+}
+
 export type AdminRow = {
   id: string
   publicCode: string
@@ -378,6 +400,25 @@ export const api = {
   adminMe: () => request<{ email: string; name: string | null }>('/api/admin/me', { auth: true }),
 
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
+
+  /** Published, unexpired notices. No session needed — this is the public board. */
+  notices: () => request<{ notices: Notice[] }>('/api/notices'),
+
+  /** Everything including drafts. */
+  adminNotices: () => request<{ notices: Notice[] }>('/api/admin/notices', { auth: true }),
+
+  createNotice: (input: NoticeInput) =>
+    request<{ id: string }>('/api/admin/notices', { method: 'POST', body: input, auth: true }),
+
+  updateNotice: (id: string, input: NoticeInput) =>
+    request<{ ok: boolean }>(`/api/admin/notices/${id}`, {
+      method: 'PATCH',
+      body: input,
+      auth: true,
+    }),
+
+  deleteNotice: (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/notices/${id}`, { method: 'DELETE', auth: true }),
 
   adminRegistrations: (query: { q?: string; limit?: number; offset?: number } = {}) => {
     const params = new URLSearchParams()

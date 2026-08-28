@@ -11,6 +11,7 @@ import {
 
 import { ApiError, api, downloadCsv, type AdminRow, type AdminStats } from '../api/client'
 import { DailyBars, MoneyPanel, RankedBars, StatTile } from '../admin/charts'
+import NoticeComposer from '../admin/NoticeComposer'
 
 /**
  * The admin dashboard.
@@ -264,6 +265,8 @@ export default function Admin() {
           ))}
         </div>
       </div>
+
+      <NoticeComposer onError={setError} />
 
       {/* ---------- people ---------- */}
 

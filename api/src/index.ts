@@ -19,6 +19,7 @@ import { auth } from './routes/auth.ts'
 import { exports_ } from './routes/exports.ts'
 import { events } from './routes/events.ts'
 import { me } from './routes/me.ts'
+import { notices } from './routes/notices.ts'
 import { registrations } from './routes/registrations.ts'
 import { ses } from './routes/ses.ts'
 import { webhooks } from './routes/webhooks.ts'
@@ -82,6 +83,7 @@ app.route('/api', me)
 app.route('/api', events)
 app.route('/api', admin)
 app.route('/api', exports_)
+app.route('/api', notices)
 
 // Razorpay posts here from its own servers, so this sits outside /api and
 // outside CORS entirely. It authenticates by signature, not by origin.

@@ -12,6 +12,7 @@ import { ScrollManager } from './components/routing'
 import Home from './pages/Home'
 import Admin from './pages/Admin'
 import Legal from './pages/Legal'
+import Notices from './pages/Notices'
 import Reset from './pages/Reset'
 import Enter from './pages/Enter'
 import Pass from './pages/Pass'
@@ -52,6 +53,7 @@ export default function App() {
               admins table itself. This just shows a sentence rather than a
               broken screen to anyone who isn't crew. */}
           <Route path="/admin" element={<Admin />} />
+          <Route path="/notices" element={<Notices />} />
 
           {/* Razorpay checks for all four of these before activating live
               payments, and rejects applications that are missing them. */}

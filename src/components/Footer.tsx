@@ -96,6 +96,9 @@ export default function Footer() {
             reviewer expects to find them. */}
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-gold/10 py-6 font-log text-[0.66rem] uppercase tracking-wide2 sm:justify-start">
           {[
+            // First, and deliberately: during the fest this is the page people
+            // need, and it is the only one here that changes day to day.
+            ['/notices', 'Noticeboard'],
             ['/terms', 'Terms'],
             ['/privacy', 'Privacy'],
             ['/refunds', 'Refunds'],
