@@ -30,6 +30,7 @@ export type AuditAction =
   | 'guard.issue_device'
   | 'admin.login'
   | 'auth.link_requested'
+  | 'account.email_verified'
   | 'auth.signed_in'
   | 'account.created'
   | 'auth.reset_requested'

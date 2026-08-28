@@ -13,6 +13,7 @@
 
 import type { Env, Job } from '../types.ts'
 import { mailer } from '../lib/mail.ts'
+import { OTP_TTL_MINUTES } from '../lib/otp.ts'
 import { createLoginToken } from '../lib/session.ts'
 import * as templates from '../lib/templates.ts'
 
@@ -103,6 +104,35 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
       })
 
       await deliver(env, send, row.email, row.name, message)
+      return
+    }
+
+    case 'email.verify_code': {
+      const row = await env.DB.prepare('SELECT name, email FROM registrations WHERE id = ?')
+        .bind(job.registrationId)
+        .first<{ name: string; email: string }>()
+
+      if (!row) return
+
+      const message = templates.verificationCode({ code: job.code, minutes: OTP_TTL_MINUTES })
+
+      // Deliberately not through deliver(): a verification code is how someone
+      // proves an address works, so refusing to send it because that address
+      // is on the suppression list would make a bounced typo permanent — they
+      // could never correct it by re-verifying.
+      const result = await send.send({
+        to: row.email,
+        toName: row.name || undefined,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        replyTo: env.MAIL_REPLY_TO || undefined,
+      })
+
+      if (!result.ok) {
+        console.error('mail failed', send.name, row.email, result.error)
+        if (result.retryable) throw new Error(result.error)
+      }
       return
     }
 

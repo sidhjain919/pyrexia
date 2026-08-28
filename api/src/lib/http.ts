@@ -18,6 +18,12 @@ export type ErrorCode =
   | 'payment_required'
   | 'unauthorised'
   | 'forbidden'
+  // The address hasn't been proved yet — the client should show the code
+  // screen rather than an error.
+  | 'verification_required'
+  | 'invalid_code'
+  | 'too_many_attempts'
+  | 'unavailable'
   | 'rate_limited'
   | 'idempotency_mismatch'
   | 'upstream_failed'
@@ -32,6 +38,10 @@ const STATUS: Record<ErrorCode, number> = {
   payment_required: 402,
   unauthorised: 401,
   forbidden: 403,
+  verification_required: 403,
+  invalid_code: 400,
+  too_many_attempts: 429,
+  unavailable: 503,
   rate_limited: 429,
   idempotency_mismatch: 409,
   upstream_failed: 502,

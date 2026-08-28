@@ -283,3 +283,35 @@ PYREXIA 2026 · AIIMS Rishikesh`
 
   return { subject: 'Reset your PYREXIA password', html, text }
 }
+
+/* ------------------------------------------------------------------ *
+ * Verification code
+ * ------------------------------------------------------------------ */
+
+export function verificationCode(args: { code: string; minutes: number }) {
+  const html = shell(
+    h1('Confirm your email') +
+      p('Enter this code on the sign-up page to finish creating your account.') +
+      codeBox('Your code', args.code) +
+      p(
+        `It expires in ${args.minutes} minutes. ` +
+          `If you didn't try to sign up, you can ignore this email — no account has been created.`,
+      ),
+    `Your PYREXIA verification code: ${args.code}`,
+  )
+
+  // The code appears on its own line in the plain-text part too, because
+  // phone mail apps offer to autofill from it.
+  const text = `Confirm your email
+
+Enter this code on the sign-up page to finish creating your account:
+
+${args.code}
+
+It expires in ${args.minutes} minutes.
+If you didn't try to sign up, ignore this email. No account has been created.
+
+PYREXIA 2026 · AIIMS Rishikesh`
+
+  return { subject: 'Your PYREXIA verification code', html, text }
+}

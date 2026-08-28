@@ -82,6 +82,24 @@ registrations.get('/pass-keys', (c) =>
  * detail columns empty — so this fills them in and opens an order, rather than
  * conjuring a person out of a form.
  */
+/**
+ * No paying from an address nobody has proved.
+ *
+ * The pass is delivered by email, so a typo here means someone pays and never
+ * receives the thing they paid for — and from our side that is indistinguishable
+ * from a person who just hasn't checked their inbox. Better to stop before the
+ * money moves than to refund afterwards.
+ */
+async function requireVerifiedEmail(env: Env, registrationId: string): Promise<void> {
+  const row = await env.DB.prepare('SELECT email_verified FROM registrations WHERE id = ?')
+    .bind(registrationId)
+    .first<{ email_verified: number }>()
+
+  if (!row?.email_verified) {
+    throw new ApiError('verification_required', 'Confirm your email address before paying.')
+  }
+}
+
 registrations.post('/registrations', async (c) => {
   const endpoint = 'POST /registrations'
   const body = (await readJson(c)) as Record<string, unknown>
@@ -91,6 +109,8 @@ registrations.post('/registrations', async (c) => {
   if (!session) {
     throw new ApiError('unauthorised', 'Sign in or create an account to register.')
   }
+
+  await requireVerifiedEmail(c.env, session.registrationId)
 
   const seen = await idem.check(c.env, { key, endpoint, body })
   if (seen.state === 'replay') {
@@ -244,6 +264,8 @@ const upgradeHandler = async (c: Context<{ Bindings: Env }>) => {
     throw new ApiError('forbidden', 'You can only upgrade your own registration.')
   }
   const registrationId = session.registrationId
+
+  await requireVerifiedEmail(c.env, registrationId)
 
   const seen = await idem.check(c.env, { key, endpoint, body })
   if (seen.state === 'replay') {
