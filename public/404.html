@@ -9,7 +9,7 @@
       Redirects deep links back to index.html so client-side routing works.
     -->
     <script type="text/javascript">
-      var pathSegmentsToKeep = 1 // keep "/pyrexia/" for project pages
+      var pathSegmentsToKeep = 0 // served from the root of our own domain
       var l = window.location
       l.replace(
         l.protocol +

@@ -19,7 +19,9 @@ import * as templates from '../lib/templates.ts'
 
 /** Where the site lives, for links inside emails. */
 function siteUrl(env: Env): string {
-  return (env.SITE_URL || 'https://sidhjain919.github.io/pyrexia').replace(/\/$/, '')
+  // The fallback is the real domain: a misconfigured deploy should send links
+  // that work rather than links to where the site used to live.
+  return (env.SITE_URL || 'https://pyrexiaaiims.com').replace(/\/$/, '')
 }
 
 /**

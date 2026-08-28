@@ -58,7 +58,7 @@ ENVIRONMENT = "development"
 PASS_KEY_ID = "1"
 # Kept on GitHub Pages until pyrexiaaiims.com is served from Cloudflare;
 # flip this the moment the domain points at Pages.
-SITE_URL = "https://sidhjain919.github.io/pyrexia"
+SITE_URL = "https://pyrexiaaiims.com"
 # Flip to "resend" or "brevo" once the matching key is set. Until then every
 # email is written to the log instead of sent, which is enough to test the
 # whole flow end to end.
