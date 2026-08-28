@@ -167,6 +167,25 @@ async function deliver(
   toName: string,
   message: { subject: string; html: string; text: string },
 ): Promise<void> {
+  // Has this address already told us to stop — by bouncing permanently, or by
+  // someone marking us as spam? Amazon judges a sender on how often they send
+  // to addresses that reject them, and one bad reputation delays every
+  // student's pass. So the question is asked before every single send, not
+  // just the bulk ones.
+  const suppressed = await env.DB.prepare(
+    'SELECT reason FROM email_suppressions WHERE email = ?',
+  )
+    .bind(to.toLowerCase())
+    .first<{ reason: string }>()
+
+  if (suppressed) {
+    // Not an error, and not retried: this is the system working. It is logged
+    // because someone whose pass never arrived will eventually ask why, and
+    // this is the answer.
+    console.warn('mail suppressed', suppressed.reason, to, message.subject)
+    return
+  }
+
   const result = await send.send({
     to,
     toName,

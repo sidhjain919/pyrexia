@@ -20,6 +20,7 @@ export type Env = {
   SES_ACCESS_KEY_ID: string
   SES_SECRET_ACCESS_KEY: string
   SES_REGION: string
+  SES_TOPIC_ARN: string
   /** Which signing key new passes are minted with. */
   PASS_KEY_ID: string
 
