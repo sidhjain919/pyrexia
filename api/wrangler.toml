@@ -54,7 +54,7 @@ dead_letter_queue = "pyrexia-jobs-dlq"
 crons = ["*/15 * * * *"]
 
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 PASS_KEY_ID = "1"
 # Kept on GitHub Pages until pyrexiaaiims.com is served from Cloudflare;
 # flip this the moment the domain points at Pages.
