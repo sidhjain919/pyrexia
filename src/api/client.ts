@@ -21,6 +21,43 @@ const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/
 const SESSION_KEY = 'pyrexia.session'
 
 /* ------------------------------------------------------------------ *
+ * Admin
+ * ------------------------------------------------------------------ */
+
+export type AdminStats = {
+  accounts: number
+  registered: number
+  basicOnly: number
+  delegates: number
+  eventEntries: number
+  passes: number
+  stuckPayments: number
+  collectedPaise: number
+  feesPaise: number
+  netPaise: number
+  daily: { day: string; n: number }[]
+  colleges: { college: string; n: number }[]
+  topEvents: { event_name: string; n: number }[]
+}
+
+export type AdminRow = {
+  id: string
+  publicCode: string
+  name: string | null
+  email: string
+  phone: string | null
+  college: string | null
+  course: string | null
+  year: string | null
+  status: string
+  verification: string
+  tier: 0 | 1
+  entries: number
+  paidPaise: number
+  createdAt: string
+}
+
+/* ------------------------------------------------------------------ *
  * Session
  * ------------------------------------------------------------------ */
 
@@ -337,6 +374,38 @@ export const api = {
 
   signOut: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST', auth: true }),
 
+  /** Answers 403 for anyone not in the admins table — the page uses it as the gate. */
+  adminMe: () => request<{ email: string; name: string | null }>('/api/admin/me', { auth: true }),
+
+  adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
+
+  adminRegistrations: (query: { q?: string; limit?: number; offset?: number } = {}) => {
+    const params = new URLSearchParams()
+    if (query.q) params.set('q', query.q)
+    params.set('limit', String(query.limit ?? 25))
+    params.set('offset', String(query.offset ?? 0))
+    return request<{ total: number; offset: number; limit: number; rows: AdminRow[] }>(
+      `/api/admin/registrations?${params}`,
+      { auth: true },
+    )
+  },
+
+  adminRegistration: (id: string) =>
+    request<Record<string, unknown>>(`/api/admin/registrations/${id}`, { auth: true }),
+
+  adminFixEmail: (id: string, email: string) =>
+    request<{ ok: boolean; email: string }>(`/api/admin/registrations/${id}/email`, {
+      method: 'POST',
+      body: { email },
+      auth: true,
+    }),
+
+  adminResend: (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/registrations/${id}/resend`, {
+      method: 'POST',
+      auth: true,
+    }),
+
   me: () => request<Me>('/api/me', { auth: true }),
 
   pass: () => request<PassView>('/api/me/pass', { auth: true }),
@@ -384,4 +453,36 @@ export async function waitForConfirmation(
     await new Promise((r) => setTimeout(r, intervalMs))
   }
   return false
+}
+
+/**
+ * Download one of the CSV sheets.
+ *
+ * A plain link cannot carry the session header, and the export routes are
+ * behind the admin check — so the file is fetched, then handed to the browser
+ * as a blob. The object URL is revoked straight after; without that, every
+ * download in a long admin session stays in memory until the tab closes.
+ */
+export async function downloadCsv(path: string, filename: string): Promise<void> {
+  const token = getSession()
+  const res = await fetch(`${BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status === 403 ? 'You do not have access to this.' : 'That export failed.',
+      res.status === 403 ? 'forbidden' : 'internal',
+      res.status,
+    )
+  }
+
+  const url = URL.createObjectURL(await res.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }

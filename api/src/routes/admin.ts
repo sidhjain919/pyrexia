@@ -86,10 +86,15 @@ admin.get('/admin/stats', async (c) => {
       GROUP BY day ORDER BY day`,
   ).all<{ day: string; n: number }>()
 
+  // Grouped case- and whitespace-insensitively. People type their own college
+  // name, so "AIIMS Rishikesh" and "AIIMS RISHIKESH" arrive as different
+  // strings and would otherwise appear as two colleges — which turns the
+  // ranking into nonsense once there are thousands of entries from dozens of
+  // institutions. `min()` picks one spelling to show, deterministically.
   const { results: colleges } = await c.env.DB.prepare(
-    `SELECT college, count(*) AS n FROM registrations
-      WHERE status = 'confirmed' AND college != ''
-      GROUP BY college ORDER BY n DESC LIMIT 8`,
+    `SELECT min(college) AS college, count(*) AS n FROM registrations
+      WHERE status = 'confirmed' AND trim(college) != ''
+      GROUP BY lower(trim(college)) ORDER BY n DESC LIMIT 8`,
   ).all<{ college: string; n: number }>()
 
   const { results: topEvents } = await c.env.DB.prepare(

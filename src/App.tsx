@@ -10,6 +10,7 @@ import RegisterModal from './components/RegisterModal'
 import VoyageProgress from './components/VoyageProgress'
 import { ScrollManager } from './components/routing'
 import Home from './pages/Home'
+import Admin from './pages/Admin'
 import Legal from './pages/Legal'
 import Reset from './pages/Reset'
 import Enter from './pages/Enter'
@@ -46,6 +47,11 @@ export default function App() {
           <Route path="/pass" element={<Pass />} />
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/reset" element={<Reset />} />
+
+          {/* Not the security boundary — every endpoint behind it checks the
+              admins table itself. This just shows a sentence rather than a
+              broken screen to anyone who isn't crew. */}
+          <Route path="/admin" element={<Admin />} />
 
           {/* Razorpay checks for all four of these before activating live
               payments, and rejects applications that are missing them. */}
