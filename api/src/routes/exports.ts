@@ -62,7 +62,7 @@ function csv(title: string, headers: string[], rows: unknown[][]): string {
   const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16)
   return [
     // A title row above the headers, so a printout is never anonymous.
-    cell(`${title} — generated ${stamp} UTC — PYREXIA 2026`),
+    cell(`${title}: generated ${stamp} UTC: PYREXIA 2026`),
     '',
     headers.map(cell).join(','),
     ...rows.map((r) => r.map(cell).join(',')),
@@ -119,7 +119,7 @@ exports_.get('/admin/export/registrations', async (c) => {
 })
 
 /* ------------------------------------------------------------------ *
- * Star Nights — who may come in
+ * Pro Nights: who may come in
  * ------------------------------------------------------------------ */
 
 exports_.get('/admin/export/delegates', async (c) => {
@@ -134,7 +134,7 @@ exports_.get('/admin/export/delegates', async (c) => {
 
   return download(
     csv(
-      'Star Nights — Delegate Card holders',
+      'Pro Nights: Festival Pass holders',
       ['Registration No', 'Name', 'College', 'Mobile', 'Checked in'],
       // A blank final column, because this sheet exists to be written on.
       results.map((r) => [r.public_code, r.name, r.college, r.phone, '']),
@@ -179,7 +179,7 @@ exports_.get('/admin/export/event', async (c) => {
 
   return download(
     csv(
-      `${name} — entries`,
+      `${name}: entries`,
       ['Registration No', 'Name', 'College', 'Mobile', 'Course', 'Year', 'Tier',
        'Solo/Team', 'Team Name', ...answerKeys, 'Present'],
       parsed.map(({ row, answers }) => [
@@ -228,7 +228,7 @@ exports_.get('/admin/export/payments', async (c) => {
   )
 })
 
-/** Which events have entries at all — so nobody prints sixty empty sheets. */
+/** Which events have entries at all: so nobody prints sixty empty sheets. */
 exports_.get('/admin/export/event-list', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT event_name, territory_code, count(*) AS entries

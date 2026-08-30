@@ -1,9 +1,9 @@
 /**
- * PYREXIA 2026 — registration configuration.
+ * PYREXIA 2026: registration configuration.
  *
  * Two separate things live here:
- *  1. the registration tiers (Basic Registration, and the Delegate Card
- *     add-on that opens the Star Nights), and
+ *  1. the registration tiers (Basic Registration, and the Festival Pass
+ *     add-on that opens the Pro Nights), and
  *  2. the per-event entry forms (what you fill in once you're aboard).
  *
  * Event forms are derived: each territory has a default shape, and only the
@@ -18,16 +18,30 @@ import { territories, type Territory } from './events'
  * ------------------------------------------------------------------ */
 
 /**
- * Event entry forms open later in the season. While this is false every
- * per-event form is replaced by a "coming soon" panel — Basic Registration
- * itself stays open, since that is what gets you onto the island.
+ * Which territories are taking event entries.
+ *
+ * A constant, on purpose. Opening entries is a decision with a rulebook, a fee
+ * and a set of coordinators behind it, and it should arrive the same way those
+ * do. `api/src/data/events.ts` holds the same set and is what actually decides;
+ * this copy is only so sixty cards can label themselves without a round trip.
  */
-export const EVENT_REGISTRATION_OPEN = false
+export const OPEN_TERRITORIES: ReadonlySet<string> = new Set(['alfresco'])
+
+export const isTerritoryOpen = (id: string) => OPEN_TERRITORIES.has(id)
 
 /** Rupees. Basic Registration is mandatory for everyone who enters the fest. */
-export const BASIC_AMOUNT = 450
-/** Rupees, charged *on top of* Basic Registration. Unlocks the Star Nights. */
-export const DELEGATE_ADDON = 2250
+export const BASIC_AMOUNT = 500
+/** Rupees, charged *on top of* Basic Registration. Unlocks the Pro Nights. */
+export const DELEGATE_ADDON = 2200
+
+/**
+ * The payment gateway's cut, added on top of every amount on this page.
+ *
+ * Razorpay takes 2% plus 18% GST on that fee. The server computes the exact
+ * paise (see `api/src/lib/pricing.ts`); this is only for saying so out loud
+ * before somebody reaches the checkout.
+ */
+export const CONVENIENCE_NOTE = 'Payment gateway charges (2.36%) are added at checkout.'
 
 /** One line on the payment summary. */
 export type PassLine = { label: string; amount: number }
@@ -37,7 +51,7 @@ export type PassTier = {
   name: string
   /** Compact label for tight surfaces (the pass card, chips). */
   short: string
-  /** Rupees actually charged for this tier — the sum of `lines`. */
+  /** Rupees actually charged for this tier: the sum of `lines`. */
   amount: number
   blurb: string
   includes: string[]
@@ -51,9 +65,9 @@ export type PassTier = {
 
 /**
  * Two tiers, and the second contains the first:
- *  - Basic Registration (BR) — mandatory entry, any event except the Star Nights.
- *  - Delegate Card — BR plus a ₹2250 add-on that opens the Star Nights.
- * Nobody buys the Delegate Card alone, so its `amount` is the full BR + add-on.
+ *  - Basic Registration (BR): mandatory entry, any event except the Pro Nights.
+ *  - Festival Pass: BR plus a ₹2200 add-on that opens the Pro Nights.
+ * Nobody buys the Festival Pass alone, so its `amount` is the full BR + add-on.
  */
 export const DELEGATE_PASSES: PassTier[] = [
   {
@@ -61,29 +75,29 @@ export const DELEGATE_PASSES: PassTier[] = [
     name: 'Basic Registration',
     short: 'BR',
     amount: BASIC_AMOUNT,
-    blurb: 'Your boarding pass. Every voyager needs one to set foot on the island.',
+    blurb: 'Campus entry. Every voyager needs one to set foot on the island.',
     includes: [
-      'Entry to the fest, all five days',
+      'Campus entry, all five days',
       'Register for and compete in any event',
       'Delegate ID & kit',
     ],
-    excludes: ['Star Nights — those need the Delegate Card'],
+    excludes: ['Pro Nights, which need the Festival Pass'],
     lines: [{ label: 'Basic Registration', amount: BASIC_AMOUNT }],
   },
   {
     id: 'delegate',
-    name: 'Delegate Card',
-    short: 'BR + Delegate',
+    name: 'Festival Pass',
+    short: 'BR + Festival Pass',
     amount: BASIC_AMOUNT + DELEGATE_ADDON,
-    blurb: `Basic Registration plus the summit — add ₹${DELEGATE_ADDON} and the Star Nights are yours.`,
+    blurb: `Basic Registration plus the summit, including the Pro Nights. Add ₹${DELEGATE_ADDON}.`,
     includes: [
       'Everything in Basic Registration',
-      'Entry to all five Star Nights',
-      'Delegate card, ID & kit',
+      'Including all five Pro Nights',
+      'Festival Pass, ID & kit',
     ],
     lines: [
       { label: 'Basic Registration', amount: BASIC_AMOUNT },
-      { label: 'Delegate Card · Star Nights', amount: DELEGATE_ADDON },
+      { label: 'Festival Pass · Pro Nights', amount: DELEGATE_ADDON },
     ],
     featured: true,
   },
@@ -109,7 +123,7 @@ export type Participation = 'solo' | 'duo' | 'team' | 'solo-or-team'
 
 export type EventForm = {
   participation: Participation
-  /** Inclusive bounds on the number of members *besides* nobody — the registrant counts as member 1. */
+  /** Inclusive bounds on the number of members *besides* nobody, the registrant counts as member 1. */
   teamSize?: { min: number; max: number }
   fields: ExtraField[]
   /** Rendered as a note above the form. */
@@ -183,7 +197,7 @@ const F = {
     id: 'experience',
     label: 'Prior experience',
     type: 'textarea',
-    placeholder: 'Competitions, years of practice — keep it short.',
+    placeholder: 'Competitions, years of practice. Keep it short.',
   },
   materials: {
     id: 'materials',
@@ -224,7 +238,7 @@ const territoryDefaults: Record<string, EventForm> = {
   chronos: {
     participation: 'solo',
     fields: [F.experience],
-    note: 'Shortlisting happens after this form — the crew will reach out with audition details.',
+    note: 'Shortlisting happens after this form; the crew will reach out with audition details.',
   },
   littmania: { participation: 'solo', fields: [F.language, F.topicPreference] },
   kalakriti: { participation: 'solo', fields: [F.materials] },
@@ -278,27 +292,37 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   Carrom: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [] },
   Chess: { participation: 'solo', teamSize: undefined, fields: [F.experience] },
 
-  /* Littmania */
-  'Bilingual Debate': {
+  /* Littmania. Team sizes are provisional until the rulebook lands. */
+  Oratio: {
     participation: 'duo',
     teamSize: { min: 2, max: 2 },
     fields: [F.language, F.topicPreference],
   },
   Taboo: { participation: 'duo', teamSize: { min: 2, max: 2 }, fields: [] },
-  'Literary Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
-  'Biocrux Jr & Sr': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Literary Escape Room': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
+  'Biocrux Jr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Biocrux Sr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
   Cognizzia: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  Cineholic: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Anime No Tatakae': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Hindi Gyan Utsav': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  Cineholics: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Anime no Tatakai': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
 
-  /* Alfresco */
+  /* Alfresco, straight from the 2026 informals rulebook. */
+  // Singles are paired by the organisers, so a solo entry is a real option.
+  'Evening Amore': { participation: 'solo-or-team', teamSize: { min: 2, max: 2 } },
+  'Capture and Conquer': { participation: 'solo-or-team', teamSize: { min: 2, max: 4 } },
+  'Grab O Mania': { participation: 'team', teamSize: { min: 4, max: 4 } },
+  'Squid Game': { participation: 'solo', teamSize: undefined },
+  Pictionary: { participation: 'team', teamSize: { min: 3, max: 5 } },
   'Paper Dance': { participation: 'duo', teamSize: { min: 2, max: 2 } },
-  'Evening Amore': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Balloon Burst': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 4 } },
+  'Songstra Vaganza': { participation: 'team', teamSize: { min: 2, max: 4 } },
+  Tambola: { participation: 'solo', teamSize: undefined },
+  'Musical Chairs': { participation: 'solo', teamSize: undefined },
   'Soul Sync': { participation: 'duo', teamSize: { min: 2, max: 2 } },
-  'Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 5 } },
-  'Squid Game': { participation: 'team', teamSize: { min: 2, max: 6 } },
-  'Capture and Conquer': { participation: 'solo-or-team', teamSize: { min: 2, max: 3 } },
+  'Drape It': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Dumb Charades': { participation: 'team', teamSize: { min: 3, max: 5 } },
+  'Swift Mingle': { participation: 'solo', teamSize: undefined },
 
   /* Thunderbolt */
   BGMI: { participation: 'team', teamSize: { min: 4, max: 5 } },
@@ -320,7 +344,7 @@ for (const t of territories) {
   for (const e of t.events) byName.set(e.name, { t, tag: e.tag })
 }
 
-/** Every event a delegate can actually enter (the opening ceremony and star nights aren't entries). */
+/** Every event a delegate can actually enter (the opening ceremony and pro nights aren't entries). */
 export const registerableEvents = territories
   .filter((t) => !t.noRegister)
   .flatMap((t) => t.events.map((e) => ({ name: e.name, tag: e.tag, territory: t })))

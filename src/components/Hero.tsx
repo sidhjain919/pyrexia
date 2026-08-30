@@ -62,14 +62,27 @@ export default function Hero() {
     <section
       id="home"
       ref={scope}
-      className="grain relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden pb-6 pt-24 sm:pb-0 sm:pt-0"
+      /* On a phone the content stacks from under the header rather than being
+         centred, which leaves the bottom of the frame to the ocean and the
+         ship instead of dropping the type on top of them. Desktop keeps the
+         centred composition, which has the height to spare. */
+      className="grain relative flex min-h-[100svh] flex-col items-center justify-start overflow-hidden pb-4 pt-[8.5rem] sm:justify-center sm:pb-0 sm:pt-0"
     >
       <OceanScene />
 
-      {/* faint compass, top-right — desktop only (crowds the title on mobile) */}
+      {/* faint compass, top-right: desktop only (crowds the title on mobile) */}
       <div className="parallax-layer pointer-events-none absolute right-10 top-32 hidden opacity-[0.12] sm:block lg:right-16" data-depth="3">
         <Compass size={168} />
       </div>
+
+      {/* Phone-only scrim behind the type. The island ridge runs straight
+          through this band at 390px wide, and letterforms over a silhouette
+          are the whole reason the mobile hero read as cluttered. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-[4] h-[74%] sm:hidden"
+        style={{ background: 'radial-gradient(120% 58% at 50% 40%, rgba(3,11,15,0.72) 30%, rgba(3,11,15,0.42) 62%, transparent 100%)' }}
+      />
 
       {/* vignette */}
       <div
@@ -77,12 +90,12 @@ export default function Hero() {
         style={{ background: 'radial-gradient(120% 80% at 50% 44%, transparent 40%, rgba(3,11,15,0.75) 100%)' }}
       />
 
-      {/* bottom scrim — the meta strip sits over the drifting wave rows, and the
+      {/* bottom scrim: the meta strip sits over the drifting wave rows, and the
           strokes cut straight through the type without it */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-36 sm:h-44"
-        style={{ background: 'linear-gradient(180deg, transparent 0%, rgba(3,11,15,0.55) 45%, rgba(3,11,15,0.9) 100%)' }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-16 sm:h-44"
+        style={{ background: 'linear-gradient(180deg, transparent 0%, rgba(3,11,15,0.45) 45%, rgba(3,11,15,0.85) 100%)' }}
       />
 
       {/* Title block */}
@@ -103,7 +116,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="relative mt-10 flex items-center justify-center sm:mt-8"
+          className="relative mt-5 flex items-center justify-center sm:mt-8"
         >
           {/* soft dark halo so the wordmark pops off the scene */}
           <div
@@ -114,7 +127,9 @@ export default function Hero() {
           <img
             src={asset('logo-full.webp')}
             alt="PYREXIA 2026"
-            className="anim-float relative w-[min(58vw,400px)]"
+            /* Capped by height as well as width: on a short phone the width
+               rule alone let the logo eat the room the tagline needed. */
+            className="anim-float relative w-[min(58vw,400px)] max-h-[20svh] object-contain sm:max-h-none"
             style={{ filter: 'drop-shadow(0 10px 26px rgba(0,0,0,0.5))' }}
           />
         </motion.div>
@@ -125,15 +140,18 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
+          className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:mt-6"
         >
           <span className="hidden h-px w-8 bg-gold/50 sm:block sm:w-14" />
-          <span className="font-display text-sm uppercase tracking-[0.24em] text-parchment/90 sm:tracking-[0.32em] sm:text-base">
+          {/* Tracking loosens only from sm up: at 390px the wide setting broke
+              this into two rows, and the second row was costing the ship the
+              band it needed at the bottom of the frame. */}
+          <span className="font-display whitespace-nowrap text-[0.72rem] uppercase tracking-[0.14em] text-parchment/90 [text-shadow:0_2px_12px_rgba(3,11,15,0.9)] sm:text-base sm:tracking-[0.32em]">
             Pirates of the Lost Island
           </span>
-          <span className="flex items-center gap-3">
+          <span className="flex items-center gap-2 sm:gap-3">
             <span className="text-gold-bright">·</span>
-            <span className="font-display text-sm tracking-[0.3em] text-gold-bright sm:text-base">2026</span>
+            <span className="font-display text-[0.72rem] tracking-[0.2em] text-gold-bright sm:text-base sm:tracking-[0.3em]">2026</span>
           </span>
           <span className="hidden h-px w-8 bg-gold/50 sm:block sm:w-14" />
         </motion.div>
@@ -143,7 +161,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-7 max-w-md text-[0.95rem] leading-relaxed text-parchment/70"
+          className="mt-3.5 max-w-md text-[0.86rem] leading-relaxed text-parchment/80 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:mt-7 sm:text-[0.95rem]"
         >
           The island has been lost. The treasure is waiting.
           <br className="hidden sm:block" /> Your voyage begins here.
@@ -154,7 +172,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
+          className="mt-5 flex w-full max-w-[17rem] flex-col items-center gap-2 sm:mt-9 sm:w-auto sm:max-w-none sm:flex-row sm:gap-3"
         >
           <MagneticButton onClick={() => openRegister()} dataCursor="JOIN">
             <Ticket size={16} />
@@ -167,15 +185,17 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* meta strip — in normal flow on mobile so it can't collide with the buttons above; floats at the true bottom from sm up */}
+      {/* meta strip: in normal flow on mobile so it can't collide with the buttons above; floats at the true bottom from sm up */}
       <motion.div
         custom={4}
         variants={rise}
         initial="hidden"
         animate="show"
-        /* The dates are longer than the old "October 2026", so mobile tracking
-           tightens to keep the strip on a single line. */
-        className="relative z-10 mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 font-log text-[0.7rem] uppercase tracking-[0.16em] text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:absolute sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:gap-x-6 sm:px-6 sm:text-sm sm:tracking-cinema"
+        /* Pinned to the bottom at every width. In normal flow on mobile it ate
+           the band the ship needs; down here the only thing under it is the
+           water it is printed on. The dates are longer than the old
+           "October 2026", so mobile tracking tightens to hold one line. */
+        className="absolute inset-x-0 bottom-4 z-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 px-4 font-log text-[0.6rem] uppercase tracking-[0.12em] text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:bottom-10 sm:gap-x-6 sm:px-6 sm:text-sm sm:tracking-cinema"
       >
         <span className="whitespace-nowrap text-gold-bright">{SITE.dates}</span>
         <span className="h-4 w-px bg-gold/40" />

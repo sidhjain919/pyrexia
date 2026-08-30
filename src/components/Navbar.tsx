@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Menu, X, ArrowRight, Ticket } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Menu, X, ArrowRight, LogOut, Megaphone, Ticket } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { NAV, SITE } from '../data/site'
 import { Compass } from './primitives'
 import { asset } from '../lib/asset'
 import { useNavTo, useActiveSection } from './routing'
 import { useRegistration } from '../registration/context'
-import { isSignedIn } from '../api/client'
+import { api, clearSession } from '../api/client'
+import { firstName, useAuth } from '../auth/useAuth'
+import Announcements from './Announcements'
 
 const SECTION_IDS = NAV.map((n) => n.to.split('#')[1])
 
@@ -16,11 +18,16 @@ export default function Navbar() {
   const [hidden, setHidden] = useState(false)
   const [open, setOpen] = useState(false)
   const navTo = useNavTo()
+  const navigate = useNavigate()
   const { openRegister } = useRegistration()
   const activeId = useActiveSection(SECTION_IDS)
-  // Read once per mount rather than per render; signing in or out navigates,
-  // which remounts this anyway.
-  const [signedIn] = useState(isSignedIn)
+
+  // Subscribed, not read once at mount. Signing out navigates rather than
+  // remounting the header, and the old version went on offering My Pass to
+  // somebody who no longer had a session.
+  const auth = useAuth()
+  const signedIn = auth.signedIn
+  const who = firstName(auth)
 
   useEffect(() => {
     let last = window.scrollY
@@ -43,21 +50,28 @@ export default function Navbar() {
 
   const isActive = (to: string) => to.split('#')[1] === activeId
 
+  const signOut = async () => {
+    setOpen(false)
+    await api.signOut().catch(() => {})
+    clearSession()
+    navigate('/', { replace: true })
+  }
+
   return (
     <>
       <motion.header
         initial={{ y: -80, opacity: 0 }}
-        animate={{ y: hidden ? -90 : 0, opacity: 1 }}
+        animate={{ y: hidden ? -140 : 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-x-0 top-0 z-[900] flex justify-center px-4 pt-4"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[900] flex flex-col items-center px-4 pt-4"
       >
         <nav
-          className={`flex w-full max-w-[78rem] items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-all duration-500 sm:px-5 ${
+          className={`pointer-events-auto flex w-full max-w-[78rem] items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-all duration-500 sm:gap-4 sm:px-5 ${
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
           {/* Wordmark reads directly on the dark bar */}
-          <Link to="/" data-cursor="TOP" className="flex items-center gap-2.5">
+          <Link to="/" data-cursor="TOP" className="flex shrink-0 items-center gap-2.5">
             <img src={asset('logo-wordmark.webp')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
             <span className="hidden whitespace-nowrap font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 lg:block">
               {SITE.year}
@@ -87,34 +101,67 @@ export default function Navbar() {
                 </button>
               </li>
             ))}
+            {/* A route, not a section, so it sits after the chart with a rule
+                between rather than pretending to be part of the scroll. */}
+            <li className="flex items-center gap-4 xl:gap-5">
+              <span className="h-4 w-px bg-gold/25" />
+              <Link
+                to="/notices"
+                data-cursor="NOTICES"
+                className="font-display flex items-center gap-1.5 whitespace-nowrap text-[0.82rem] text-parchment/80 transition-colors hover:text-gold-bright xl:text-[0.88rem]"
+              >
+                <Megaphone size={13} />
+                Notices
+              </Link>
+            </li>
           </ul>
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {signedIn ? (
-              /* Visible at every width, unlike the register button it replaces:
-                 someone signed in on a phone otherwise sees nothing at all in
-                 the header and has to go hunting in the menu. */
-              <Link
-                to="/pass"
-                data-cursor="PASS"
-                className="font-accent inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2 text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:px-5 sm:py-2.5 sm:text-[0.82rem]"
-              >
-                <Ticket size={13} />
-                My Pass
-              </Link>
+              <>
+                {/* The greeting is the whole point on a phone: without it the
+                    header looks identical signed in and signed out. It is the
+                    link to the pass at every width, and the gold button joins
+                    it only where there is room. */}
+                <Link
+                  to="/pass"
+                  data-cursor="PASS"
+                  className="flex min-w-0 items-center gap-2 rounded-full border border-gold/35 py-1 pl-1 pr-3 transition-colors hover:border-gold/70"
+                >
+                  <span className="font-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep text-[0.72rem] text-abyss">
+                    {(who ?? 'P').charAt(0).toUpperCase()}
+                  </span>
+                  <span className="truncate text-[0.78rem] text-parchment/85 sm:text-[0.84rem]">
+                    Hi,{' '}
+                    <span className="text-gold-bright">{who ?? 'voyager'}</span>
+                  </span>
+                </Link>
+
+                <Link
+                  to="/pass"
+                  data-cursor="PASS"
+                  className="font-accent hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex"
+                >
+                  <Ticket size={13} />
+                  My Pass
+                </Link>
+              </>
             ) : (
+              /* A matched pair: same height, same radius, one filled and one
+                 outlined. The old bare text link beside a gold pill read as an
+                 afterthought bolted onto the bar. */
               <>
                 <Link
                   to="/sign-in"
                   data-cursor="SIGN IN"
-                  className="hidden whitespace-nowrap font-display text-[0.84rem] text-parchment/75 transition-colors hover:text-gold-bright sm:inline-block"
+                  className="font-accent hidden shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-[0.78rem] uppercase tracking-wide2 text-parchment/85 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 sm:inline-block"
                 >
                   Sign in
                 </Link>
                 <button
                   onClick={() => openRegister()}
                   data-cursor="JOIN"
-                  className="font-accent hidden whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
+                  className="font-accent hidden shrink-0 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.78rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-block"
                 >
                   Register Now
                 </button>
@@ -124,12 +171,15 @@ export default function Navbar() {
               onClick={() => setOpen(true)}
               aria-label="Open menu"
               data-cursor="MAP"
-              className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright lg:hidden"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-gold/45 text-gold-bright lg:hidden"
             >
               <Menu size={18} />
             </button>
           </div>
         </nav>
+
+        {/* Notices and the early-bird offer, at the top where they are read. */}
+        <Announcements />
       </motion.header>
 
       {/* Mobile / tablet full-screen chart menu */}
@@ -162,6 +212,23 @@ export default function Navbar() {
                 <X size={18} />
               </button>
             </div>
+
+            {signedIn && (
+              <div className="relative mx-6 mt-4 flex items-center gap-3 rounded-xl border border-gold/25 bg-navy/40 px-4 py-3">
+                <span className="font-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep text-[0.8rem] text-abyss">
+                  {(who ?? 'P').charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <div className="font-display text-[1rem] text-offwhite">
+                    Hi, {who ?? 'voyager'}
+                  </div>
+                  <div className="truncate font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/45">
+                    {auth.account?.email ?? 'Signed in'}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="relative mx-6 mt-4 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
             <nav className="relative flex flex-1 flex-col justify-center gap-0.5 overflow-y-auto px-6 py-4">
@@ -209,17 +276,55 @@ export default function Navbar() {
                   </motion.button>
                 )
               })}
+
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.06 * NAV.length + 0.1, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Link
+                  to="/notices"
+                  onClick={() => setOpen(false)}
+                  className="group relative flex items-center gap-4 rounded-xl px-2 py-3 text-left transition-colors hover:bg-gold/5"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gold/65 ring-1 ring-gold/25">
+                    <Megaphone size={15} />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block font-display text-2xl leading-tight text-offwhite transition-colors group-hover:text-gold-bright sm:text-3xl">
+                      Noticeboard
+                    </span>
+                    <span className="mt-0.5 block font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/50">
+                      Announcements & results
+                    </span>
+                  </span>
+                  <ArrowRight
+                    size={16}
+                    className="shrink-0 text-gold/40 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-gold-bright"
+                  />
+                </Link>
+              </motion.div>
             </nav>
 
             <div className="relative space-y-3 px-8 pb-10">
               {signedIn ? (
-                <Link
-                  to="/pass"
-                  onClick={() => setOpen(false)}
-                  className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
-                >
-                  My Pass →
-                </Link>
+                <>
+                  <Link
+                    to="/pass"
+                    onClick={() => setOpen(false)}
+                    className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
+                  >
+                    My Pass →
+                  </Link>
+                  {/* Here as well as on the pass page: signing out should not
+                      require finding the page you are signing out of. */}
+                  <button
+                    onClick={() => void signOut()}
+                    className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-center font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-inset ring-gold/30 transition-colors hover:text-coral"
+                  >
+                    <LogOut size={13} /> Sign out
+                  </button>
+                </>
               ) : (
                 <>
                   <button

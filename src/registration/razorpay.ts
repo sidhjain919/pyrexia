@@ -1,7 +1,7 @@
 /**
  * Opening Razorpay Checkout.
  *
- * The key id and order id both come from our own server — never from anything
+ * The key id and order id both come from our own server, never from anything
  * in this file. A browser that could choose its own order could choose its own
  * price, so this module's only job is to open a window someone else specified.
  *
@@ -92,7 +92,7 @@ export async function openCheckout(checkout: Checkout): Promise<CheckoutResult> 
         }),
       modal: {
         // Someone closing the window is a normal thing to do, not an error
-        // worth alarming them about — the order simply stays unpaid, and the
+        // worth alarming them about: the order simply stays unpaid, and the
         // reconciliation sweep tidies it up a day later.
         ondismiss: () => reject(new PaymentCancelled()),
         escape: true,

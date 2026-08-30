@@ -3,7 +3,7 @@
  *
  * Design decisions worth stating, because they are easy to undo by accident:
  *
- * **One hue, not many.** Every chart here shows a single series — sign-ups per
+ * **One hue, not many.** Every chart here shows a single series, sign-ups per
  * day, entries per event. A single series needs no legend and no categorical
  * palette; the title names it. Gold carries magnitude, light for the peak and
  * dimmer below it, so the eye finds the biggest bar without reading a number.
@@ -20,7 +20,7 @@
  * rectangle would cost more than it saves.
  */
 
-/* Gold ramp, dark to bright — the scale magnitude is read from. */
+/* Gold ramp, dark to bright: the scale magnitude is read from. */
 const GOLD_DIM = '#9e7427'
 const GOLD_MID = '#c89b3c'
 const GOLD_TOP = '#e6c25e'
@@ -50,7 +50,7 @@ export function StatTile({
   hint?: string
   tone?: 'normal' | 'good' | 'warn' | 'bad'
 }) {
-  // Tone changes the rule above the number, never the number itself — a
+  // Tone changes the rule above the number, never the number itself, a
   // figure in alarm-red is hard to read and impossible for some people to
   // distinguish. The word in the hint carries the meaning.
   const rule =
@@ -94,7 +94,7 @@ export function MoneyPanel({
       <div className="font-log text-[0.58rem] uppercase tracking-wide2 text-parchment/45">
         Collected
       </div>
-      {/* A single headline number is a stat, not a chart — there is nothing
+      {/* A single headline number is a stat, not a chart, there is nothing
           here to compare it against. */}
       <div className="mt-2 font-display text-4xl tabular-nums text-gold-bright sm:text-5xl">
         {inr(collectedPaise)}
@@ -126,7 +126,7 @@ export function MoneyPanel({
 
 export function DailyBars({ daily }: { daily: { day: string; n: number }[] }) {
   // Days with no sign-ups have no row in the data, but a gap in a time series
-  // has to be visible as a gap — otherwise a quiet Tuesday silently vanishes
+  // has to be visible as a gap: otherwise a quiet Tuesday silently vanishes
   // and the shape of the fortnight is a lie.
   const days: { day: string; n: number }[] = []
   const today = new Date()
@@ -169,7 +169,7 @@ export function DailyBars({ daily }: { daily: { day: string; n: number }[] }) {
               >
                 <div className="absolute inset-x-0 bottom-0 top-0 flex items-end">
                   <div
-                    // Anchored to the baseline with a rounded top only — a
+                    // Anchored to the baseline with a rounded top only, a
                     // floating rounded pill misreads its own value.
                     className="w-full rounded-t transition-opacity group-hover:opacity-80"
                     style={{

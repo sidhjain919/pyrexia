@@ -1,4 +1,6 @@
 import { Reveal, SectionTitle } from './primitives'
+import WaxSeal from './WaxSeal'
+import { art } from '../lib/art'
 import { SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
 
@@ -6,27 +8,27 @@ const chapters = [
   {
     n: 'I',
     title: 'The Call',
-    body: 'Every October, a signal rises from AIIMS Rishikesh — five days of fever, from the 12th to the 16th, calling students from across India to the hills of the Ganga.',
+    body: 'Every October, a signal rises from AIIMS Rishikesh: five days of fever, from the 12th to the 16th, calling students from across India to the hills of the Ganga.',
   },
   {
     n: 'II',
     title: 'The Voyage',
-    body: 'For its sixth edition, PYREXIA sets sail as Pirates of the Lost Island — a socio-cultural and sports odyssey through music, dance, drama, art, sport and lore.',
+    body: 'For its sixth edition, PYREXIA sets sail as Pirates of the Lost Island, a socio-cultural and sports odyssey through music, dance, drama, art, sport and lore.',
   },
   {
     n: 'III',
     title: 'The Island',
-    body: 'Eleven territories rise from the mist. Rhythm Reef, Conquest Arena, Ink & Lore Lagoon — each one a world of its own to be discovered.',
+    body: 'Eleven territories rise from the mist. Rhythm Reef, Conquest Arena, Ink & Lore Lagoon. Each one a world of its own to be discovered.',
   },
   {
     n: 'IV',
     title: 'The Challenge',
-    body: 'Crews compete for glory across 60+ events — high-energy showdowns by day, comedy and theatre by dusk, the arena roaring till night.',
+    body: 'Crews compete for glory across 60+ events: high-energy showdowns by day, comedy and theatre by dusk, the arena roaring till night.',
   },
   {
     n: 'V',
     title: 'The Treasure',
-    body: 'And then the summit: the Star Nights. The biggest names light up the sky, and the island keeps its promise. Feel the fever.',
+    body: 'And then the summit: the Pro Nights. The biggest names light up the sky, and the island keeps its promise. Feel the fever.',
   },
 ]
 
@@ -52,20 +54,33 @@ export default function Legend() {
           kicker={`${SITE.institutionFull} · the annual socio-cultural & sports fest, now in its sixth voyage.`}
         />
 
-        <div className="mt-16 grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+        <div className="mt-12 grid items-start gap-10 sm:mt-16 lg:grid-cols-[0.92fr_1.08fr] lg:gap-14">
           {/* Parchment intro card */}
           <Reveal>
-            <div className="parchment clip-torn relative rounded-sm p-8 shadow-cinema sm:p-10">
+            {/* A photographed sheet rather than a gradient with a clipped edge. The
+                torn border, the foxing and the crease are in the image, so the
+                card is one element instead of a stack of fakes. */}
+            <div
+              className="relative px-9 py-10 sm:px-12 sm:py-12"
+              style={{
+                backgroundImage: `url(${art.parchment})`,
+                // Stretched rather than cropped: the torn edge is the frame, so
+                // it has to meet the box exactly however tall the copy runs.
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.55))',
+              }}
+            >
               <div className="font-log text-[0.6rem] uppercase tracking-cinema text-wood/60">
                 From the Captain's Log
               </div>
               <p className="mt-4 font-display text-2xl leading-snug text-wood sm:text-[1.7rem]">
-                “The fever returns — the most epic edition yet.”
+                “The fever returns. The most epic edition yet.”
               </p>
               <p className="mt-5 text-[0.95rem] leading-relaxed text-wood/80">
-                Five days packed with everything you can dream of — dance, music, drama, sports,
+                Five days packed with everything you can dream of: dance, music, drama, sports,
                 art, literary battles, informal games, Mr.&nbsp;&amp; Ms.&nbsp;PYREXIA, and the much-awaited
-                star nights. From high-energy competitions to crazy fun nights, there's something for
+                pro nights. From high-energy competitions to crazy fun nights, there's something for
                 every voyager.
               </p>
               <p className="mt-4 text-[0.95rem] leading-relaxed text-wood/80">
@@ -73,17 +88,33 @@ export default function Legend() {
                 medical fests. Are you ready to feel the fever?
               </p>
               <div className="mt-6 flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blood/90 font-display text-xs text-parchment shadow-inner">
-                  P
-                </span>
+                <WaxSeal size={54} />
                 <span className="font-log text-[0.7rem] uppercase tracking-wide2 text-wood/70">
                   {SITE.dates} · Rishikesh
                 </span>
               </div>
             </div>
+
+            {/* The dates, under the card rather than across the foot of the
+                section. The chapters opposite run a couple of hundred pixels
+                longer than the parchment, and that difference was showing as
+                dead space under the card. */}
+            <div className="mt-8 flex flex-col items-center gap-3 text-center">
+              <span className="rule-gold w-full max-w-sm" />
+              <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
+                Mark the chart
+              </div>
+              <div className="font-display text-3xl leading-none text-foil sm:text-4xl">
+                {SITE.dates}
+              </div>
+              <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/60">
+                Five days · {SITE.institution} · {SITE.edition}
+              </div>
+              <span className="rule-gold w-full max-w-sm" />
+            </div>
           </Reveal>
 
-          {/* Chapters route — line runs through the circle centres, ending at V */}
+          {/* Chapters route: line runs through the circle centres, ending at V */}
           <div className="relative">
             <ul>
               {chapters.map((c, i) => {
@@ -109,24 +140,6 @@ export default function Legend() {
           </div>
         </div>
 
-        {/* Dates ribbon — closes the section with the one fact every visitor
-            scrolls looking for, and keeps the chapters column from ending flush
-            against the section padding. */}
-        <Reveal delay={0.1}>
-          <div className="mt-16 flex flex-col items-center gap-3 text-center">
-            <span className="rule-gold w-full max-w-md" />
-            <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
-              Mark the chart
-            </div>
-            <div className="font-display text-3xl leading-none text-foil sm:text-4xl">
-              {SITE.dates}
-            </div>
-            <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/60">
-              Five days · {SITE.institution} · {SITE.edition}
-            </div>
-            <span className="rule-gold w-full max-w-md" />
-          </div>
-        </Reveal>
       </div>
     </section>
   )

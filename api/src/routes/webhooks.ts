@@ -1,5 +1,5 @@
 /**
- * Razorpay webhooks — the source of truth for money.
+ * Razorpay webhooks: the source of truth for money.
  *
  * This is the only place in the codebase that grants an entitlement or issues a
  * pass. Everything else observes; this decides.
@@ -65,7 +65,7 @@ webhooks.post('/razorpay', async (c) => {
     }
   } catch (err) {
     // A 500 asks Razorpay to retry, which is what we want for a transient
-    // failure — better a duplicate delivery into idempotent code than a
+    // failure: better a duplicate delivery into idempotent code than a
     // payment that never becomes a pass.
     console.error('webhook handler failed', event.event, err)
     return c.json({ ok: false }, 500)
@@ -75,7 +75,7 @@ webhooks.post('/razorpay', async (c) => {
 })
 
 /* ------------------------------------------------------------------ *
- * payment.captured — the only path that grants anything
+ * payment.captured, the only path that grants anything
  * ------------------------------------------------------------------ */
 
 async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
@@ -83,10 +83,18 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
   if (!payment) return
 
   const order = await env.DB.prepare(
-    'SELECT id, registration_id, amount_paise, status FROM orders WHERE razorpay_order_id = ?',
+    `SELECT id, registration_id, amount_paise, status, kind, event_entry_id
+       FROM orders WHERE razorpay_order_id = ?`,
   )
     .bind(payment.order_id)
-    .first<{ id: string; registration_id: string; amount_paise: number; status: string }>()
+    .first<{
+      id: string
+      registration_id: string
+      amount_paise: number
+      status: string
+      kind: string
+      event_entry_id: string | null
+    }>()
 
   if (!order) {
     console.error('captured payment for an unknown order', payment.order_id)
@@ -98,7 +106,7 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
   if (order.status === 'paid') return
 
   // Guard against a captured amount that doesn't match what we asked for. This
-  // should be impossible — Razorpay charges what the order said — but if it
+  // should be impossible: Razorpay charges what the order said, but if it
   // ever isn't, we want it visible rather than silently granting a pass.
   if (payment.amount !== order.amount_paise) {
     await audit.record(env, {
@@ -121,6 +129,22 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
   )
     .bind(order.id)
     .all<{ product_id: string }>()
+
+  /*
+   * An entry order buys one place in one event. It has no line items, so it
+   * grants no entitlements; what it does is turn a pending entry into a
+   * confirmed one. Guarded by the status check so a repeat delivery of the
+   * same webhook is a no-op rather than a second confirmation.
+   */
+  const entryStatements: D1PreparedStatement[] =
+    order.kind === 'event' && order.event_entry_id
+      ? [
+          env.DB.prepare(
+            `UPDATE event_entries SET status = 'confirmed'
+              WHERE id = ? AND status = 'pending'`,
+          ).bind(order.event_entry_id),
+        ]
+      : []
 
   const statements: D1PreparedStatement[] = [
     // The unique index on razorpay_payment_id means a concurrent duplicate
@@ -159,11 +183,14 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
          VALUES (?, ?, ?, ?)`,
       ).bind(newId(), order.registration_id, item.product_id, order.id),
     ),
+
+    ...entryStatements,
   ]
 
   await env.DB.batch(statements)
 
-  await issuePassIfNeeded(env, order.registration_id)
+  // An event entry never issues a pass; the pass came with the registration.
+  if (order.kind !== 'event') await issuePassIfNeeded(env, order.registration_id)
 
   await audit.record(env, {
     action: 'order.paid',
@@ -172,7 +199,7 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
     after: {
       paymentId: payment.id,
       amountPaise: payment.amount,
-      // Recorded rather than assumed — after the first live payment this is how
+      // Recorded rather than assumed: after the first live payment this is how
       // we learn the real effective rate on this account.
       feePaise: payment.fee ?? null,
       taxPaise: payment.tax ?? null,
@@ -192,7 +219,7 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
  * Issue a pass, once, per registration.
  *
  * `tier_floor` records what they hold right now. If they upgrade later this row
- * is untouched — the gate reads the current tier from the synced manifest and
+ * is untouched: the gate reads the current tier from the synced manifest and
  * takes whichever is higher, so an already-printed QR keeps working.
  */
 async function issuePassIfNeeded(env: Env, registrationId: string): Promise<void> {
@@ -244,7 +271,7 @@ async function onPaymentFailed(env: Env, event: WebhookEvent): Promise<void> {
     .first<{ id: string; registration_id: string; status: string }>()
 
   if (!order) return
-  // A failed attempt after a successful one changes nothing — people retry, and
+  // A failed attempt after a successful one changes nothing, people retry, and
   // the first success is what counts.
   if (order.status === 'paid') return
 
@@ -290,7 +317,7 @@ async function onRefundProcessed(env: Env, event: WebhookEvent): Promise<void> {
   if (!order) return
 
   // Revoke what this order bought, and the pass with it. Note that Razorpay
-  // keeps its fee on a refund, so the fest is out of pocket by that much —
+  // keeps its fee on a refund, so the fest is out of pocket by that much -
   // which is why the refund policy has to be written down before launch.
   await env.DB.batch([
     env.DB.prepare(
@@ -303,7 +330,7 @@ async function onRefundProcessed(env: Env, event: WebhookEvent): Promise<void> {
     ).bind(order.id),
   ])
 
-  // Only kill the pass if nothing is left standing — a refunded Delegate
+  // Only kill the pass if nothing is left standing, a refunded Delegate
   // upgrade should leave a Basic holder still able to walk in.
   const remaining = await env.DB.prepare(
     'SELECT count(*) AS n FROM entitlements WHERE registration_id = ? AND revoked_at IS NULL',

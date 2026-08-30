@@ -9,10 +9,34 @@
 import { territories, type Territory } from './territories.ts'
 
 /**
- * Event entries open when this is true. Flipping it is a deploy — deliberately,
- * because opening entries is a decision, not a setting.
+ * Which territories are taking event entries.
+ *
+ * A constant, on purpose. Opening entries is a decision with a rulebook, a fee
+ * and a set of coordinators behind it, and it should arrive the same way those
+ * do: in a commit somebody reviewed. Alfresco is open for 2026; the rest are
+ * still being finalised.
+ *
+ * The site keeps its own copy in `src/data/registration.ts`, and this one is
+ * what actually decides: `POST /api/me/events` checks it before writing.
  */
-export const EVENT_REGISTRATION_OPEN = true
+export const OPEN_TERRITORIES: ReadonlySet<string> = new Set(['alfresco'])
+
+export function isTerritoryOpen(id: string): boolean {
+  return OPEN_TERRITORIES.has(id)
+}
+
+/** Every territory that could be opened, with its current state. */
+export function openTerritories() {
+  return territories
+    .filter((t) => !t.noRegister)
+    .map((t) => ({
+      id: t.id,
+      code: t.code,
+      name: t.territory,
+      events: t.events.length,
+      open: OPEN_TERRITORIES.has(t.id),
+    }))
+}
 
 export type FieldType = 'text' | 'textarea' | 'select' | 'number' | 'url'
 
@@ -30,7 +54,7 @@ export type Participation = 'solo' | 'duo' | 'team' | 'solo-or-team'
 
 export type EventForm = {
   participation: Participation
-  /** Inclusive bounds on the number of members *besides* nobody — the registrant counts as member 1. */
+  /** Inclusive bounds on the number of members *besides* nobody, the registrant counts as member 1. */
   teamSize?: { min: number; max: number }
   fields: ExtraField[]
   /** Rendered as a note above the form. */
@@ -104,7 +128,7 @@ const F = {
     id: 'experience',
     label: 'Prior experience',
     type: 'textarea',
-    placeholder: 'Competitions, years of practice — keep it short.',
+    placeholder: 'Competitions, years of practice, keep it short.',
   },
   materials: {
     id: 'materials',
@@ -145,7 +169,7 @@ const territoryDefaults: Record<string, EventForm> = {
   chronos: {
     participation: 'solo',
     fields: [F.experience],
-    note: 'Shortlisting happens after this form — the crew will reach out with audition details.',
+    note: 'Shortlisting happens after this form: the crew will reach out with audition details.',
   },
   littmania: { participation: 'solo', fields: [F.language, F.topicPreference] },
   kalakriti: { participation: 'solo', fields: [F.materials] },
@@ -199,27 +223,36 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   Carrom: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [] },
   Chess: { participation: 'solo', teamSize: undefined, fields: [F.experience] },
 
-  /* Littmania */
-  'Bilingual Debate': {
+  /* Littmania. Team sizes are provisional until the rulebook lands. */
+  Oratio: {
     participation: 'duo',
     teamSize: { min: 2, max: 2 },
     fields: [F.language, F.topicPreference],
   },
   Taboo: { participation: 'duo', teamSize: { min: 2, max: 2 }, fields: [] },
-  'Literary Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
-  'Biocrux Jr & Sr': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Literary Escape Room': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
+  'Biocrux Jr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Biocrux Sr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
   Cognizzia: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  Cineholic: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Anime No Tatakae': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Hindi Gyan Utsav': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  Cineholics: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
+  'Anime no Tatakai': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
 
-  /* Alfresco */
+  /* Alfresco, straight from the 2026 informals rulebook. */
+  'Evening Amore': { participation: 'solo-or-team', teamSize: { min: 2, max: 2 } },
+  'Capture and Conquer': { participation: 'solo-or-team', teamSize: { min: 2, max: 4 } },
+  'Grab O Mania': { participation: 'team', teamSize: { min: 4, max: 4 } },
+  'Squid Game': { participation: 'solo', teamSize: undefined },
+  Pictionary: { participation: 'team', teamSize: { min: 3, max: 5 } },
   'Paper Dance': { participation: 'duo', teamSize: { min: 2, max: 2 } },
-  'Evening Amore': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Balloon Burst': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 4 } },
+  'Songstra Vaganza': { participation: 'team', teamSize: { min: 2, max: 4 } },
+  Tambola: { participation: 'solo', teamSize: undefined },
+  'Musical Chairs': { participation: 'solo', teamSize: undefined },
   'Soul Sync': { participation: 'duo', teamSize: { min: 2, max: 2 } },
-  'Treasure Hunt': { participation: 'team', teamSize: { min: 2, max: 5 } },
-  'Squid Game': { participation: 'team', teamSize: { min: 2, max: 6 } },
-  'Capture and Conquer': { participation: 'solo-or-team', teamSize: { min: 2, max: 3 } },
+  'Drape It': { participation: 'duo', teamSize: { min: 2, max: 2 } },
+  'Dumb Charades': { participation: 'team', teamSize: { min: 3, max: 5 } },
+  'Swift Mingle': { participation: 'solo', teamSize: undefined },
 
   /* Thunderbolt */
   BGMI: { participation: 'team', teamSize: { min: 4, max: 5 } },
@@ -241,7 +274,7 @@ for (const t of territories) {
   for (const e of t.events) byName.set(e.name, { t, tag: e.tag })
 }
 
-/** Every event a delegate can actually enter (the opening ceremony and star nights aren't entries). */
+/** Every event a delegate can actually enter (the opening ceremony and pro nights aren't entries). */
 export const registerableEvents = territories
   .filter((t) => !t.noRegister)
   .flatMap((t) => t.events.map((e) => ({ name: e.name, tag: e.tag, territory: t })))

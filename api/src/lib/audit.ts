@@ -40,6 +40,7 @@ export type AuditAction =
   | 'registration.email_changed'
   | 'registration.email_resent'
   | 'export.download'
+  | 'settings.event_openings'
 
 export type AuditEntry = {
   action: AuditAction
@@ -53,7 +54,7 @@ export type AuditEntry = {
 }
 
 /**
- * Writing the log must never be the reason a request fails — a student's
+ * Writing the log must never be the reason a request fails, a student's
  * payment should not be lost because an INSERT into a log table timed out. It
  * is therefore fire-and-forget, and failures are surfaced to the platform logs
  * rather than raised.

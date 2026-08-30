@@ -13,7 +13,7 @@
 /**
  * Crockford-ish base32 with the vowels removed.
  *
- * No vowels means a code can never spell a word — which matters when six random
+ * No vowels means a code can never spell a word, which matters when six random
  * characters go out to ten thousand students. Dropping A, E, I, O and U also
  * removes the 0/O and 1/I confusions when someone reads a code down a bad line.
  */
@@ -48,7 +48,7 @@ export function newEntryId(): string {
 
 /**
  * SHA-256, hex. Used wherever a token must be storable without being replayable
- * — session cookies, magic links, guard device tokens.
+ *, session cookies, magic links, guard device tokens.
  */
 export async function sha256Hex(input: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))

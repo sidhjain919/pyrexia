@@ -6,8 +6,8 @@ import { ApiError, api, uploadDocument, type MyDocument } from '../api/client'
 /**
  * Uploading a government ID and a college ID.
  *
- * Used in two places — during registration, where it can be skipped, and from
- * the pass page afterwards — so it owns its own loading and error state rather
+ * Used in two places: during registration, where it can be skipped, and from
+ * the pass page afterwards: so it owns its own loading and error state rather
  * than expecting a parent to manage it.
  *
  * Two things it is careful about. It says plainly what happens to the file,
@@ -23,7 +23,7 @@ const SLOTS: { kind: Kind; label: string; hint: string }[] = [
     kind: 'aadhaar',
     label: 'Government photo ID',
     // Any government ID does the job. Naming Aadhaar first because it is what
-    // most students reach for, while not demanding it — there is no reason to
+    // most students reach for, while not demanding it, there is no reason to
     // insist on the one document people are most careful with.
     hint: 'Aadhaar, driving licence, passport or voter ID.',
   },
@@ -52,7 +52,7 @@ export default function DocumentUpload({ compact = false }: { compact?: boolean 
       setVerification(res.verification)
       setNote(res.note)
     } catch (err) {
-      // Not signed in, or offline. Neither is worth an alarming message here —
+      // Not signed in, or offline. Neither is worth an alarming message here -
       // this whole section is optional.
       if (err instanceof ApiError && err.status === 401) setDocs([])
       else setDocs([])
@@ -105,7 +105,7 @@ export default function DocumentUpload({ compact = false }: { compact?: boolean 
       {!compact && (
         <p className="text-[0.88rem] leading-relaxed text-parchment/60">
           So the registration desk can check that the pass belongs to you. Both
-          are optional — you can add them now or later from your pass, and you
+          are optional. You can add them now or later from your pass, and you
           can always bring the physical cards instead.
         </p>
       )}

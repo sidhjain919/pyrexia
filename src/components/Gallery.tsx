@@ -49,7 +49,7 @@ export default function Gallery() {
           eyebrow="Previous Voyages"
           title="Memories from the Sea"
           meaning="Gallery"
-          kicker="Real frames from past editions of PYREXIA at AIIMS Rishikesh — the fever, the crews, the roar."
+          kicker="Real frames from past editions of PYREXIA at AIIMS Rishikesh: the fever, the crews, the roar."
         />
 
         {/* filters */}
@@ -72,7 +72,7 @@ export default function Gallery() {
           </div>
         </Reveal>
 
-        {/* mosaic — dense grid fills gaps; wide/tall shots span extra cells */}
+        {/* mosaic: dense grid fills gaps; wide/tall shots span extra cells */}
         <motion.div
           layout
           className="mt-8 grid grid-flow-dense auto-rows-[116px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-3 lg:auto-rows-[168px] lg:grid-cols-4"

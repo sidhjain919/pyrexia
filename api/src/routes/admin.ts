@@ -7,7 +7,7 @@
  * build, one fewer to compromise, and revoking someone is deleting a row.
  *
  * Every route here is behind `requireAdmin`, and anything that changes the
- * world writes to the audit log. Reads don't — an append-only table filling up
+ * world writes to the audit log. Reads don't, an append-only table filling up
  * with "looked at a list" makes the entries that matter harder to find.
  */
 
@@ -43,7 +43,7 @@ admin.use('/admin/*', async (c, next) => {
   await next()
 })
 
-/** Who am I, and what may I do — drives which controls the UI renders. */
+/** Who am I, and what may I do: drives which controls the UI renders. */
 admin.get('/admin/me', (c) => {
   const me = c.get('admin')
   return c.json({
@@ -88,7 +88,7 @@ admin.get('/admin/stats', async (c) => {
 
   // Grouped case- and whitespace-insensitively. People type their own college
   // name, so "AIIMS Rishikesh" and "AIIMS RISHIKESH" arrive as different
-  // strings and would otherwise appear as two colleges — which turns the
+  // strings and would otherwise appear as two colleges, which turns the
   // ranking into nonsense once there are thousands of entries from dozens of
   // institutions. `min()` picks one spelling to show, deterministically.
   const { results: colleges } = await c.env.DB.prepare(
@@ -109,8 +109,8 @@ admin.get('/admin/stats', async (c) => {
     delegates: totals?.delegate ?? 0,
     eventEntries: totals?.entries ?? 0,
     passes: totals?.passes ?? 0,
-    // Payments started but never resolved. Should be near zero — the
-    // reconciliation sweep clears them — so anything here wants a look.
+    // Payments started but never resolved. Should be near zero, the
+    // reconciliation sweep clears them: so anything here wants a look.
     stuckPayments: totals?.stuck ?? 0,
     collectedPaise: totals?.collected_paise ?? 0,
     feesPaise: totals?.fees_paise ?? 0,
@@ -252,7 +252,7 @@ admin.get('/admin/registrations/:id', async (c) => {
  * Correct a mistyped email.
  *
  * The single most likely support request: someone registers with a typo, never
- * receives their pass, and cannot sign in to fix it themselves — because the
+ * receives their pass, and cannot sign in to fix it themselves, because the
  * email *is* the login.
  */
 admin.post('/admin/registrations/:id/email', async (c) => {
@@ -303,7 +303,7 @@ admin.post('/admin/registrations/:id/email', async (c) => {
   return c.json({ ok: true, email })
 })
 
-/** Send the confirmation and pass again — the second-most-common request. */
+/** Send the confirmation and pass again: the second-most-common request. */
 admin.post('/admin/registrations/:id/resend', async (c) => {
   const me = c.get('admin')
   const id = c.req.param('id')
@@ -315,7 +315,7 @@ admin.post('/admin/registrations/:id/resend', async (c) => {
     .bind(id)
     .first<{ id: string }>()
 
-  if (!order) throw new ApiError('conflict', 'Nothing to resend — no completed payment.')
+  if (!order) throw new ApiError('conflict', 'Nothing to resend, no completed payment.')
 
   await c.env.JOBS.send({
     kind: 'email.registration_confirmed',

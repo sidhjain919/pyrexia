@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Search, ArrowUpRight, Hourglass, MoveHorizontal, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
-import { EVENT_REGISTRATION_OPEN } from '../data/registration'
+import { isTerritoryOpen } from '../data/registration'
 import { territoryPhoto, territoryFocus } from '../data/media'
-import { Icon } from '../lib/icons'
+import { photoFor } from '../data/photos'
+import { TerritoryGlyph } from '../lib/art'
 import { SectionTitle } from './primitives'
 import { useRegistration } from '../registration/context'
 
@@ -17,6 +18,7 @@ type Row = {
   icon: string
   accent: string
   photo: string
+  ownPhoto: boolean
 }
 
 // The opening ceremony (Fahrenheit) isn't a competition to browse/register for.
@@ -31,7 +33,10 @@ const rows: Row[] = registerable.flatMap((t) =>
     territory: t.territory,
     icon: t.icon,
     accent: t.accent,
-    photo: territoryPhoto[t.id],
+    // Its own frame where we have one; the territory's otherwise. A card that
+    // shows the event you are about to enter beats sixty of the same crowd.
+    photo: photoFor(e.name) ?? territoryPhoto[t.id],
+    ownPhoto: !!photoFor(e.name),
   })),
 )
 
@@ -70,7 +75,7 @@ export default function EventsGrid() {
             />
           </div>
 
-          {/* territory tabs — a swipeable strip on mobile, wraps normally from sm up; hidden while searching */}
+          {/* territory tabs: a swipeable strip on mobile, wraps normally from sm up; hidden while searching */}
           {!searching && (
             <div className="-mx-6 flex flex-nowrap gap-2 overflow-x-auto px-6 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
               {cats.map((c) => (
@@ -102,7 +107,7 @@ export default function EventsGrid() {
           </div>
         </div>
 
-        {/* On mobile the cards ride a swipeable rail — a 60-event column is an
+        {/* On mobile the cards ride a swipeable rail, a 60-event column is an
             endless scroll otherwise. From sm up it goes back to a grid. */}
         <motion.div
           layout
@@ -125,16 +130,17 @@ export default function EventsGrid() {
                     src={r.photo}
                     alt=""
                     loading="lazy"
-                    style={{ objectPosition: territoryFocus[r.terrId] ?? '50% 28%' }}
+                    style={{ objectPosition: r.ownPhoto ? '50% 38%' : (territoryFocus[r.terrId] ?? '50% 28%') }}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
-                  <span
-                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur"
-                    style={{ background: `${r.accent}33`, border: `1px solid ${r.accent}77` }}
-                  >
-                    <Icon name={r.icon} size={15} style={{ color: '#fff' }} />
-                  </span>
+                  {/* The emblem sits on the photo without a chip: a drawn
+                      mark does not need a UI container to be legible. */}
+                  <TerritoryGlyph
+                    id={r.terrId}
+                    size={38}
+                    className="absolute right-2.5 top-2.5 drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]"
+                  />
                   <span className="absolute bottom-3 left-3 font-log text-[0.7rem] uppercase tracking-wide2" style={{ color: r.accent }}>
                     {r.terr}
                   </span>
@@ -146,10 +152,10 @@ export default function EventsGrid() {
                   <div className="mt-4 flex items-center gap-2 pt-1">
                     <button
                       onClick={() => openRegister(r.name)}
-                      data-cursor={EVENT_REGISTRATION_OPEN ? 'REGISTER' : 'SOON'}
+                      data-cursor={isTerritoryOpen(r.terrId) ? 'REGISTER' : 'SOON'}
                       className="group/btn flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      {EVENT_REGISTRATION_OPEN ? (
+                      {isTerritoryOpen(r.terrId) ? (
                         <>
                           <Ticket size={13} />
                           Register

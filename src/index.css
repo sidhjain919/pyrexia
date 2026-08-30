@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ------------------------------------------------------------------ *
- * PYREXIA 2026 — Pirates of the Lost Island
+ * PYREXIA 2026: Pirates of the Lost Island
  * Design tokens
  * ------------------------------------------------------------------ */
 @theme {
@@ -73,7 +73,7 @@ body {
   /* EB Garamond sets a much smaller x-height than the sans it replaced, so every
      rem-sized string read a size too small. Normalising to Jost's ~0.5 aspect
      ratio restores the optical size the layout was tuned for. Browsers without
-     `font-size-adjust` simply keep the raw size — nothing breaks. */
+     `font-size-adjust` simply keep the raw size: nothing breaks. */
   font-size-adjust: 0.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -151,6 +151,41 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /*
+   * Lettering printed on the chart.
+   *
+   * A cartographer inks island names straight onto the paper, so these are set
+   * in the display serif with wide tracking and a paper-coloured halo rather
+   * than sitting in a dark pill. The halo is four offset shadows instead of a
+   * stroke, which keeps the letterforms sharp at six pixels.
+   */
+  .map-label {
+    font-family: var(--font-display);
+    /* Tight enough that eleven island names fit a 390px chart, opening up from
+       sm where there is room to letter them properly. */
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    /* Eight offsets rather than four: the chart runs from pale sand to near
+       black, and a four-point halo leaves the corners of each glyph bleeding
+       into the dark islands. */
+    text-shadow:
+      0 1px 0 rgba(243, 226, 190, 0.98),
+      0 -1px 0 rgba(243, 226, 190, 0.98),
+      1px 0 0 rgba(243, 226, 190, 0.98),
+      -1px 0 0 rgba(243, 226, 190, 0.98),
+      1px 1px 0 rgba(243, 226, 190, 0.98),
+      -1px 1px 0 rgba(243, 226, 190, 0.98),
+      1px -1px 0 rgba(243, 226, 190, 0.98),
+      -1px -1px 0 rgba(243, 226, 190, 0.98),
+      0 2px 6px rgba(236, 214, 168, 0.95);
+  }
+
+  @media (min-width: 640px) {
+    .map-label {
+      letter-spacing: 0.12em;
+    }
   }
 
   /* Hairline dividers */

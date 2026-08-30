@@ -1,8 +1,12 @@
-import { asset } from '../lib/asset'
+import { gallery } from '../data/gallery'
 
-const pic = (n: number) => asset(`photos/p${String(n).padStart(2, '0')}.jpg`)
-const rowA = [1, 39, 18, 27, 32, 45, 12, 9].map(pic)
-const rowB = [24, 37, 28, 43, 15, 5, 26, 41].map(pic)
+/**
+ * Two rows drawn from opposite ends of the gallery, so the same frame never
+ * scrolls past twice at once.
+ */
+const wide = gallery.filter((s) => !s.tall).map((s) => s.src)
+const rowA = wide.filter((_, i) => i % 2 === 0).slice(0, 10)
+const rowB = wide.filter((_, i) => i % 2 === 1).slice(0, 10)
 
 function Row({ items, reverse = false }: { items: string[]; reverse?: boolean }) {
   const loop = [...items, ...items]

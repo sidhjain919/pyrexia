@@ -1,13 +1,13 @@
 /**
  * Signature Version 4, the way AWS wants requests signed.
  *
- * We need this for exactly one call — handing an email to SES — and pulling in
+ * We need this for exactly one call: handing an email to SES, and pulling in
  * the AWS SDK to make it would cost more than the whole rest of this Worker.
  * So it is written out: four hashes and a chain of HMACs.
  *
  * The shape below is AWS's, not ours, and every part of it is load-bearing.
- * A signature is over a *canonical* form of the request — headers lowercased
- * and sorted, whitespace collapsed — so that both sides derive the same string
+ * A signature is over a *canonical* form of the request, headers lowercased
+ * and sorted, whitespace collapsed: so that both sides derive the same string
  * from the same request. Get one byte wrong and AWS returns 403 with no clue
  * which byte, which is why each step here says what it is doing.
  */
@@ -38,7 +38,7 @@ async function hmac(key: ArrayBuffer | Uint8Array, data: string): Promise<ArrayB
  *
  * Exported only so the tests can check it against the derivation AWS publishes
  * a known answer for. If this is right, a 403 from SES is a permissions or
- * verification problem rather than a signing bug — which is worth being able
+ * verification problem rather than a signing bug, which is worth being able
  * to say with certainty.
  */
 export async function deriveSigningKey(
@@ -60,7 +60,7 @@ export type SignedRequest = { url: string; headers: Record<string, string>; body
  * Sign a POST.
  *
  * `now` is injectable because a signature is only valid within fifteen minutes
- * of its timestamp — which makes it untestable unless the clock can be pinned.
+ * of its timestamp: which makes it untestable unless the clock can be pinned.
  */
 export async function signRequest(opts: {
   accessKeyId: string
@@ -79,7 +79,7 @@ export async function signRequest(opts: {
     now = new Date(),
   } = opts
 
-  // 20260827T101530Z and 20260827 — AWS wants both, and derives the second
+  // 20260827T101530Z and 20260827: AWS wants both, and derives the second
   // from the first, so they must never be computed from two separate clocks.
   const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
   const dateStamp = amzDate.slice(0, 8)

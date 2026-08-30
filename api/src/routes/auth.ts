@@ -10,8 +10,8 @@
  *   POST /api/auth/reset     token + new password → signed in
  *   POST /api/auth/logout
  *
- * An account is only an email and a password. Everything else — name, college,
- * emergency contact — is collected when the pass is bought, so signing up is
+ * An account is only an email and a password. Everything else, name, college,
+ * emergency contact: is collected when the pass is bought, so signing up is
  * two fields rather than a second long form.
  *
  * Two things this deliberately does *not* do:
@@ -23,8 +23,8 @@
  *    Basic Registration is paid for, and every surface says so.
  *
  * An address has to be proved before it can be paid from. The pass is
- * delivered by email, so an unverified address means someone can pay ₹450 and
- * never receive what they bought — and we would have no way to tell that from
+ * delivered by email, so an unverified address means someone can pay ₹500 and
+ * never receive what they bought: and we would have no way to tell that from
  * a person who simply hasn't looked in their inbox yet. Two ways to prove it:
  * a six-digit code, or Google, which has already done it for us.
  */
@@ -135,8 +135,8 @@ auth.post('/auth/signup', async (c) => {
 
   if (existing) {
     // Someone who registered before passwords existed has a row but no
-    // password. Rather than telling them an account exists — which leaks who
-    // has paid — point everyone at the same recovery flow.
+    // password. Rather than telling them an account exists, which leaks who
+    // has paid: point everyone at the same recovery flow.
     throw new ApiError(
       'conflict',
       'There is already an account with that email. Sign in, or use "Forgot password".',
@@ -164,7 +164,7 @@ auth.post('/auth/signup', async (c) => {
   await issueCode(c.env, id)
 
   // No session yet. Signing someone in before they have proved the address
-  // would make the code decorative — they could simply ignore it.
+  // would make the code decorative: they could simply ignore it.
   return c.json(
     { verificationRequired: true, email, expiresInMinutes: OTP_TTL_MINUTES },
     201,
@@ -222,8 +222,8 @@ auth.post('/auth/verify', async (c) => {
   if (!account) throw wrong()
 
   // An address that is already confirmed gets sent to the normal sign-in, and
-  // emphatically *not* a session. Handing one out here — however tempting, to
-  // be forgiving about a double submit — would mean any address that has ever
+  // emphatically *not* a session. Handing one out here, however tempting, to
+  // be forgiving about a double submit: would mean any address that has ever
   // been verified could be signed into with any six digits at all, which is
   // every account on the site.
   if (account.email_verified) {
@@ -311,7 +311,7 @@ auth.post('/auth/google', async (c) => {
   if (!identity) throw new ApiError('unauthorised', 'That Google sign-in could not be verified.')
 
   // Match on `sub` first. Google's own guidance is that an address can move
-  // between accounts, while `sub` never changes — matching on email alone
+  // between accounts, while `sub` never changes: matching on email alone
   // would eventually hand someone another person's registration.
   let account = await c.env.DB.prepare('SELECT id FROM registrations WHERE google_sub = ?')
     .bind(identity.sub)
@@ -326,7 +326,7 @@ auth.post('/auth/google', async (c) => {
 
     if (byEmail && !byEmail.google_sub) {
       // Someone who signed up with a password is now using Google. Same
-      // address, same person, one account — link rather than duplicate.
+      // address, same person, one account: link rather than duplicate.
       await c.env.DB.prepare(
         'UPDATE registrations SET google_sub = ?, email_verified = 1 WHERE id = ?',
       )
@@ -400,8 +400,8 @@ auth.post('/auth/login', async (c) => {
   }
 
   // An account created before the address was proved gets a fresh code
-  // instead of a session. The alternative — signing them in and blocking them
-  // later at checkout — moves the dead end to the worst possible moment.
+  // instead of a session. The alternative, signing them in and blocking them
+  // later at checkout: moves the dead end to the worst possible moment.
   const state = await c.env.DB.prepare('SELECT email_verified FROM registrations WHERE id = ?')
     .bind(row.id)
     .first<{ email_verified: number }>()
@@ -528,7 +528,7 @@ auth.post('/auth/reset', async (c) => {
  * ------------------------------------------------------------------ */
 
 /**
- * The link in a confirmation email. Not the front door any more — just a
+ * The link in a confirmation email. Not the front door any more, just a
  * convenience for opening a pass on a phone that isn't signed in.
  */
 auth.post('/auth/consume', async (c) => {

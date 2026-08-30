@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
-import { faqs, arswa } from '../data/crew'
+import { Phone, Plus } from 'lucide-react'
+import { faqs, committee } from '../data/crew'
 import { Reveal, SectionTitle } from './primitives'
 
 export default function Navigator() {
@@ -63,26 +63,40 @@ export default function Navigator() {
             </div>
           </div>
 
-          {/* ARSWA crew */}
+          {/* The committee. Every row is a tappable phone number, because on a
+              phone that is the only thing anyone comes to this block for. */}
           <Reveal>
             <div className="glass rounded-xl p-7">
               <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
-                ARSWA · The Chief Coordinating Committee
+                Chief Organising Committee
               </div>
-              <ul className="mt-5 grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
-                {arswa.map((o) => (
-                  <li key={o.role} className="border-b border-gold/8 pb-2.5">
-                    <div className="font-log text-[0.7rem] uppercase tracking-wide2 text-gold/70">
-                      {o.role}
-                    </div>
-                    <div className="mt-0.5 text-[0.95rem] text-offwhite/90">{o.name}</div>
+              <ul className="mt-5 space-y-2.5">
+                {committee.map((o) => (
+                  <li key={o.name} className="border-b border-gold/8 pb-2.5 last:border-0">
+                    <a
+                      href={`tel:+91${o.phone}`}
+                      className="group flex items-center justify-between gap-4"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[0.95rem] text-offwhite/90 transition-colors group-hover:text-gold-bright">
+                          {o.name}
+                        </span>
+                        <span className="mt-0.5 block font-log text-[0.62rem] uppercase tracking-wide2 text-gold/70">
+                          {o.role}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1.5 font-log text-[0.7rem] tabular-nums text-parchment/60 transition-colors group-hover:text-gold-bright">
+                        <Phone size={11} className="shrink-0" />
+                        {o.phone}
+                      </span>
+                    </a>
                   </li>
                 ))}
               </ul>
               <div className="mt-6 rounded-lg bg-ocean/50 p-4">
                 <p className="text-[0.85rem] leading-relaxed text-parchment/70">
-                  Basic Registration, the Delegate Card and every event entry happen entirely on the
-                  official PYREXIA website. Reach the PR crew for any query — the island keeps its
+                  Basic Registration, the Festival Pass and every event entry happen entirely on the
+                  official PYREXIA website. Reach the crew for any query. The island keeps its
                   gates open.
                 </p>
               </div>

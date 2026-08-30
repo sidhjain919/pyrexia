@@ -19,6 +19,7 @@ const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/
   'https://pyrexia-api.pyrexia-api.workers.dev'
 
 const SESSION_KEY = 'pyrexia.session'
+const ACCOUNT_KEY = 'pyrexia.account'
 
 /* ------------------------------------------------------------------ *
  * Admin
@@ -95,26 +96,114 @@ export function getSession(): string | null {
   try {
     return localStorage.getItem(SESSION_KEY)
   } catch {
-    // Private browsing, or storage disabled. Not fatal — they just can't stay
+    // Private browsing, or storage disabled. Not fatal, they just can't stay
     // signed in between visits.
     return null
   }
 }
 
-export function setSession(token: string): void {
+/**
+ * Who is signed in, for display only.
+ *
+ * The server is still the authority on everything that matters; this is the
+ * name in the header and nothing else. Stored alongside the token so the
+ * header can greet someone on first paint rather than after a round trip.
+ */
+export type Account = {
+  email: string
+  name: string | null
+  publicCode: string | null
+  hasRegistration: boolean
+}
+
+export function getAccount(): Account | null {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY)
+    return raw ? (JSON.parse(raw) as Account) : null
+  } catch {
+    return null
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Auth as something you can subscribe to
+ * ------------------------------------------------------------------ *
+ *
+ * Reading the token once per mount was wrong in the one case that matters:
+ * signing out navigates, and navigating does not remount the header, so it
+ * went on offering My Pass to somebody who no longer had one. The state now
+ * lives in a tiny store every surface reads from, and every write to it tells
+ * the subscribers.
+ */
+
+export type AuthState = { signedIn: boolean; account: Account | null }
+
+let snapshot: AuthState = { signedIn: !!getSession(), account: getAccount() }
+const listeners = new Set<() => void>()
+
+function refresh(): void {
+  const signedIn = !!getSession()
+  const account = getAccount()
+  // A new object every time would make useSyncExternalStore loop forever.
+  if (
+    signedIn === snapshot.signedIn &&
+    account?.email === snapshot.account?.email &&
+    account?.name === snapshot.account?.name &&
+    account?.hasRegistration === snapshot.account?.hasRegistration
+  ) {
+    return
+  }
+  snapshot = { signedIn, account }
+  for (const listener of listeners) listener()
+}
+
+export function subscribeAuth(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export function authSnapshot(): AuthState {
+  return snapshot
+}
+
+// Signing out in one tab should sign out in the others.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === SESSION_KEY || e.key === ACCOUNT_KEY || e.key === null) refresh()
+  })
+}
+
+export function setSession(token: string, account?: Account | null): void {
   try {
     localStorage.setItem(SESSION_KEY, token)
+    if (account) localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account))
   } catch {
     /* ignore */
   }
+  refresh()
+}
+
+/** Update the cached display name without touching the session. */
+export function rememberAccount(account: Partial<Account>): void {
+  try {
+    const merged = { ...(getAccount() ?? {}), ...account } as Account
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(merged))
+  } catch {
+    /* ignore */
+  }
+  refresh()
 }
 
 export function clearSession(): void {
   try {
     localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(ACCOUNT_KEY)
   } catch {
     /* ignore */
   }
+  refresh()
 }
 
 /* ------------------------------------------------------------------ *
@@ -235,12 +324,30 @@ export type Checkout = {
   phone: string
 }
 
+export type EventEntryCreated = {
+  entryId: string
+  eventName: string
+  participation: 'solo' | 'team'
+  /** Present only when the event charges. */
+  orderId?: string
+  checkout: Checkout | null
+  subtotalPaise?: number
+  conveniencePaise?: number
+  totalPaise?: number
+  feeLabel?: string
+}
+
 export type OrderCreated = {
   registrationId: string
   publicCode?: string
   orderId: string
   checkout: Checkout
   lines: { productId: string; name: string; amountPaise: number }[]
+  /** The line items alone, before the gateway's cut. */
+  subtotalPaise: number
+  /** Added on top and charged to the payer. */
+  conveniencePaise: number
+  totalPaise: number
 }
 
 export type Me = {
@@ -296,20 +403,20 @@ export type RegistrationInput = {
 
 export type AuthResult = {
   token: string
-  account: {
-    email: string
-    name: string | null
-    publicCode: string | null
-    /** An account is not a registration. This says whether the ₹450 is paid. */
-    hasRegistration: boolean
-  }
+  /** An account is not a registration: `hasRegistration` says whether the ₹500 is paid. */
+  account: Account
 }
+
+/** One price band for an event. `standard` when everyone pays the same. */
+export type FeeVariant = { id: string; label: string; amountPaise: number }
 
 export type EventInfo = {
   name: string
   tag: string
   territory: { code: string; name: string }
   open: boolean
+  /** null when the event costs nothing to enter. */
+  fee: { unit: 'person' | 'team'; variants: FeeVariant[] } | null
   form: {
     participation: string
     teamSize: { min: number; max: number } | null
@@ -344,8 +451,8 @@ export const api = {
   /**
    * Tell the server the browser saw a successful payment.
    *
-   * This makes the success screen instant. It does not grant anything — the
-   * webhook does that — so the UI still polls `orderStatus` until confirmed.
+   * This makes the success screen instant. It does not grant anything, the
+   * webhook does that: so the UI still polls `orderStatus` until confirmed.
    */
   verifyCheckout: (payload: {
     razorpay_order_id: string
@@ -363,7 +470,7 @@ export const api = {
     ),
 
   /**
-   * Creates the account but does *not* sign anyone in — an address has to be
+   * Creates the account but does *not* sign anyone in, an address has to be
    * proved before it can be paid from, because the pass arrives by email and a
    * typo means someone pays and never receives what they bought.
    */
@@ -398,18 +505,18 @@ export const api = {
   resetPassword: (token: string, password: string) =>
     request<AuthResult>('/api/auth/reset', { method: 'POST', body: { token, password } }),
 
-  /** The one-tap link from a confirmation email — a convenience, not the front door. */
+  /** The one-tap link from a confirmation email: a convenience, not the front door. */
   consumeSignIn: (token: string) =>
     request<AuthResult>('/api/auth/consume', { method: 'POST', body: { token } }),
 
   signOut: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST', auth: true }),
 
-  /** Answers 403 for anyone not in the admins table — the page uses it as the gate. */
+  /** Answers 403 for anyone not in the admins table, the page uses it as the gate. */
   adminMe: () => request<{ email: string; name: string | null }>('/api/admin/me', { auth: true }),
 
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
 
-  /** Published, unexpired notices. No session needed — this is the public board. */
+  /** Published, unexpired notices. No session needed, this is the public board. */
   notices: () => request<{ notices: Notice[] }>('/api/notices'),
 
   myDocuments: () =>
@@ -472,16 +579,26 @@ export const api = {
   event: (name: string) =>
     request<EventInfo>(`/api/events/${encodeURIComponent(name)}`, { auth: true }),
 
+  /**
+   * Enter one event.
+   *
+   * A free event comes back with `checkout: null` and the entry is already
+   * made. A paid one comes back with a Razorpay order: the entry exists but is
+   * pending until the webhook lands, so the caller opens checkout and then
+   * waits on `orderStatus`.
+   */
   enterEvent: (payload: {
     eventName: string
     participation: 'solo' | 'team'
     teamName?: string
+    feeVariant?: string
     answers: Record<string, string>
-  }) => request<{ entryId: string; eventName: string }>('/api/me/events', {
-    method: 'POST',
-    body: payload,
-    auth: true,
-  }),
+  }) =>
+    request<EventEntryCreated>('/api/me/events', {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
 }
 
 /** True when a session token is stored. Cheap enough to call on every render. */
@@ -507,7 +624,7 @@ export async function waitForConfirmation(
       if (status.confirmed) return true
       if (status.status === 'failed' || status.status === 'expired') return false
     } catch {
-      // Keep trying — a blip here shouldn't end the wait.
+      // Keep trying: a blip here shouldn't end the wait.
     }
     await new Promise((r) => setTimeout(r, intervalMs))
   }
@@ -518,7 +635,7 @@ export async function waitForConfirmation(
  * Download one of the CSV sheets.
  *
  * A plain link cannot carry the session header, and the export routes are
- * behind the admin check — so the file is fetched, then handed to the browser
+ * behind the admin check: so the file is fetched, then handed to the browser
  * as a blob. The object URL is revoked straight after; without that, every
  * download in a long admin session stays in memory until the tab closes.
  */

@@ -7,7 +7,7 @@
  *
  * The guess limit is the part that matters most. Six digits is a million
  * possibilities, which sounds like plenty until you notice that an unbounded
- * attacker gets a million tries — and with a ten-minute window and a fast
+ * attacker gets a million tries: and with a ten-minute window and a fast
  * endpoint, a million tries is not long. Five attempts turns that into a
  * one-in-two-hundred-thousand chance.
  */

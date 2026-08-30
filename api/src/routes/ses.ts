@@ -3,7 +3,7 @@
  *
  * SES reports bounces and complaints through SNS, which POSTs them here. Two
  * things happen with each one: it is written to `email_events`, which is the
- * permanent record, and — for the failures that will never succeed — the
+ * permanent record, and: for the failures that will never succeed, the
  * address goes on the suppression list so we stop writing to it.
  *
  * The distinction matters. A full mailbox is a *transient* bounce and clears
@@ -11,7 +11,7 @@
  * pass. A non-existent address is *permanent* and will never accept mail, and
  * continuing to try is what destroys a sending reputation.
  *
- * A complaint — someone pressing "spam" — is always final, whatever we think
+ * A complaint: someone pressing "spam": is always final, whatever we think
  * of it.
  */
 

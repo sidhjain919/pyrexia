@@ -1,6 +1,8 @@
 import { motion, useMotionValue, useReducedMotion, useSpring, type Variants } from 'framer-motion'
 import { useRef, type MouseEvent, type ReactNode } from 'react'
 
+import { art } from '../lib/art'
+
 /* ---------- Scroll reveal ---------- */
 export function Reveal({
   children,
@@ -136,77 +138,33 @@ export function SectionTitle({
 }
 
 /* ---------- Compass artifact ---------- */
-export function Compass({ size = 120, className = '', spin = true }: { size?: number; className?: string; spin?: boolean }) {
+export function Compass({
+  size = 120,
+  spin = true,
+  className = '',
+}: {
+  size?: number
+  spin?: boolean
+  className?: string
+}) {
   const reduce = useReducedMotion()
   return (
-    <svg
-      viewBox="0 0 200 200"
+    <motion.img
+      src={art.compass}
+      alt=""
+      aria-hidden
+      loading="lazy"
+      decoding="async"
       width={size}
       height={size}
-      className={className}
-      role="img"
-      aria-label="Compass"
-    >
-      <defs>
-        <radialGradient id="cface" cx="50%" cy="42%" r="60%">
-          <stop offset="0%" stopColor="#12303a" />
-          <stop offset="100%" stopColor="#06141b" />
-        </radialGradient>
-      </defs>
-      <circle cx="100" cy="100" r="94" fill="url(#cface)" stroke="#c89b3c" strokeWidth="1.4" opacity="0.95" />
-      <circle cx="100" cy="100" r="80" fill="none" stroke="#c89b3c" strokeWidth="0.6" opacity="0.5" />
-      {/* tick marks */}
-      <g className={spin && !reduce ? 'anim-spin-slow' : ''} style={{ transformOrigin: '100px 100px' }}>
-        {Array.from({ length: 72 }).map((_, i) => {
-          const a = (i * 5 * Math.PI) / 180
-          const major = i % 9 === 0
-          const r1 = major ? 68 : 74
-          const r2 = 80
-          return (
-            <line
-              key={i}
-              x1={100 + r1 * Math.cos(a)}
-              y1={100 + r1 * Math.sin(a)}
-              x2={100 + r2 * Math.cos(a)}
-              y2={100 + r2 * Math.sin(a)}
-              stroke="#c89b3c"
-              strokeWidth={major ? 1.6 : 0.6}
-              opacity={major ? 0.9 : 0.4}
-            />
-          )
-        })}
-      </g>
-      {/* cardinal letters */}
-      {[
-        ['N', 100, 34],
-        ['E', 166, 104],
-        ['S', 100, 174],
-        ['W', 34, 104],
-      ].map(([l, x, y]) => (
-        <text
-          key={l as string}
-          x={x as number}
-          y={y as number}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontFamily="Cinzel, serif"
-          fontSize="13"
-          fill="#e6c25e"
-        >
-          {l}
-        </text>
-      ))}
-      {/* needle */}
-      <g style={{ transformOrigin: '100px 100px' }} className={reduce ? '' : 'anim-float'}>
-        <polygon points="100,44 108,100 100,110 92,100" fill="#b1341f" />
-        <polygon points="100,156 108,100 100,90 92,100" fill="#e8d5ae" />
-        <circle cx="100" cy="100" r="6" fill="#0b2029" stroke="#c89b3c" strokeWidth="1.5" />
-      </g>
-    </svg>
+      className={`select-none object-contain ${className}`}
+      style={{ width: size, height: size }}
+      animate={spin && !reduce ? { rotate: 360 } : undefined}
+      transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+    />
   )
 }
 
-/* ---------- Magnetic button — nudges toward the cursor on hover ---------- */
 export function MagneticButton({
   children,
   href,
@@ -241,7 +199,7 @@ export function MagneticButton({
   }
 
   const base =
-    'font-accent group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[0.9rem] uppercase tracking-wide2 transition-colors duration-300'
+    'font-accent group relative inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.82rem] uppercase tracking-wide2 transition-colors duration-300 sm:px-7 sm:py-3.5 sm:text-[0.9rem]'
   const styles =
     variant === 'solid'
       ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss shadow-[0_18px_40px_-18px_rgba(200,155,60,0.8)] hover:from-gold hover:to-gold-deep'

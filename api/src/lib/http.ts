@@ -3,7 +3,7 @@
  *
  * One rule runs through this file: an error a person will read says what went
  * wrong and what to do about it, while an error a machine will read carries a
- * stable `code`. Internal detail — SQL, stack traces, secrets — never crosses
+ * stable `code`. Internal detail, SQL, stack traces, secrets, never crosses
  * the boundary.
  */
 
@@ -18,7 +18,7 @@ export type ErrorCode =
   | 'payment_required'
   | 'unauthorised'
   | 'forbidden'
-  // The address hasn't been proved yet — the client should show the code
+  // The address hasn't been proved yet: the client should show the code
   // screen rather than an error.
   | 'verification_required'
   | 'invalid_code'
@@ -94,7 +94,7 @@ export async function readJson(c: Context): Promise<unknown> {
  * The raw request body, as text.
  *
  * Webhook signatures are computed over the exact bytes that were sent, so the
- * raw string must be kept and reused — never re-serialised from a parsed object.
+ * raw string must be kept and reused: never re-serialised from a parsed object.
  */
 export async function readRaw(c: Context): Promise<string> {
   return await c.req.text()

@@ -1,10 +1,10 @@
--- PYREXIA 2026 — initial schema
+-- PYREXIA 2026: initial schema
 --
 -- Money is stored as integer paise, never a float. ₹450 is 45000.
 -- Ids are lowercase uuid v4 strings unless noted.
 --
 -- The central design choice: a registration records a *person*, and what they
--- have bought lives in `entitlements` — one row per purchase. Tier is derived,
+-- have bought lives in `entitlements`: one row per purchase. Tier is derived,
 -- never stored on the person, so the Delegate upgrade is an INSERT and a refund
 -- is a revoke rather than an unpick.
 
@@ -31,9 +31,9 @@ CREATE TABLE registrations (
   emergency_name    TEXT NOT NULL,
   emergency_phone   TEXT NOT NULL,
 
-  -- 'pending'   — form submitted, no successful payment yet
-  -- 'confirmed' — at least one entitlement is live
-  -- 'cancelled' — refunded or withdrawn; all entitlements revoked
+  -- 'pending'  : form submitted, no successful payment yet
+  -- 'confirmed': at least one entitlement is live
+  -- 'cancelled': refunded or withdrawn; all entitlements revoked
   status            TEXT NOT NULL DEFAULT 'pending'
                       CHECK (status IN ('pending', 'confirmed', 'cancelled')),
 
@@ -63,7 +63,7 @@ CREATE INDEX idx_reg_created      ON registrations (created_at);
 -- Money
 -- ------------------------------------------------------------------ --
 
--- The catalogue. Prices live in the database, not in client code — the server
+-- The catalogue. Prices live in the database, not in client code, the server
 -- must never be told an amount by a browser.
 CREATE TABLE products (
   id            TEXT PRIMARY KEY,           -- 'basic' | 'delegate'
@@ -77,7 +77,7 @@ CREATE TABLE products (
 
 INSERT INTO products (id, name, amount_paise, requires, sort_order) VALUES
   ('basic',    'Basic Registration', 45000,  NULL,    1),
-  ('delegate', 'Delegate Card',      225000, 'basic', 2);
+  ('delegate', 'Festival Pass',      225000, 'basic', 2);
 
 -- One row per payment attempt. A first-time Delegate buys two products in a
 -- single payment, so the line items live in `order_items` and this row carries
@@ -99,7 +99,7 @@ CREATE TABLE orders (
   status               TEXT NOT NULL DEFAULT 'created'
                          CHECK (status IN ('created', 'paid', 'failed', 'refunded', 'expired')),
 
-  -- What Razorpay actually kept. Populated from the webhook, not assumed —
+  -- What Razorpay actually kept. Populated from the webhook, not assumed -
   -- this is how we learn our real effective rate.
   fee_paise            INTEGER,
   tax_paise            INTEGER,
@@ -189,7 +189,7 @@ CREATE INDEX idx_pass_revoked    ON passes (revoked_at) WHERE revoked_at IS NOT 
 CREATE TABLE gates (
   id            TEXT PRIMARY KEY,
   name          TEXT NOT NULL,
-  -- JSON array of tiers admitted here. Star Night gates carry [1] only, which
+  -- JSON array of tiers admitted here. Pro Night gates carry [1] only, which
   -- is what turns a Basic scan into an upgrade prompt instead of a shrug.
   allowed_tiers TEXT NOT NULL DEFAULT '[0,1]',
   -- 0 = one entry per day; 1 = re-entry allowed all day.
@@ -292,7 +292,7 @@ CREATE UNIQUE INDEX idx_entry_once ON event_entries (registration_id, event_name
   WHERE status = 'confirmed';
 CREATE INDEX idx_entry_event ON event_entries (event_name);
 
--- Team-mates are registrations in their own right — everyone needs their own
+-- Team-mates are registrations in their own right, everyone needs their own
 -- Basic Registration, so a member is a link, not a copy of someone's details.
 CREATE TABLE team_members (
   id              TEXT PRIMARY KEY,

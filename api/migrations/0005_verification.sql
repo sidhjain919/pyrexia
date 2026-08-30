@@ -3,7 +3,7 @@
 -- Until now an account existed the moment someone typed an address, verified
 -- or not. That is a problem beyond looking unserious: the entry pass is
 -- delivered by email, so a typo means a student pays ₹450 and never receives
--- the thing they paid for — and we have no way to tell that from a person who
+-- the thing they paid for: and we have no way to tell that from a person who
 -- simply hasn't checked their inbox.
 --
 -- Two routes to a verified address. A six-digit code for people who sign up

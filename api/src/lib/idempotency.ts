@@ -3,7 +3,7 @@
  *
  * The scenario this exists for: a student on a bad connection taps Register,
  * sees nothing happen, and taps again. Without this they get two registrations
- * and — once payment is wired up — a real chance of paying twice.
+ * and: once payment is wired up: a real chance of paying twice.
  *
  * A client sends `Idempotency-Key` with a value unique to that attempt. The
  * first request does the work and we store its response; a repeat of the same
@@ -24,14 +24,14 @@ export type StoredResponse = {
 }
 
 export type IdempotencyCheck =
-  /** Nothing stored — go do the work, then call `remember`. */
+  /** Nothing stored: go do the work, then call `remember`. */
   | { state: 'fresh' }
-  /** Seen before with the same body — replay this instead of working again. */
+  /** Seen before with the same body: replay this instead of working again. */
   | { state: 'replay'; response: StoredResponse }
 
 /**
  * Keys are scoped per endpoint so the same key on two different routes cannot
- * collide. Only accepts a plausible key — an empty or absurd one is a client bug
+ * collide. Only accepts a plausible key, an empty or absurd one is a client bug
  * worth surfacing rather than quietly ignoring.
  */
 export function requireKey(header: string | undefined): string {

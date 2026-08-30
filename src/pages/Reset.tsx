@@ -8,7 +8,7 @@ import { Field, TextInput } from '../registration/fields'
 /**
  * Choosing a new password from an emailed link.
  *
- * Succeeding signs them straight in — making someone reset a password and then
+ * Succeeding signs them straight in: making someone reset a password and then
  * immediately type it again is a step that exists only because the code was
  * written that way.
  */
@@ -28,7 +28,7 @@ export default function Reset() {
     setFieldError(null)
     try {
       const res = await api.resetPassword(token, password)
-      setSession(res.token)
+      setSession(res.token, res.account)
       navigate('/pass', { replace: true })
     } catch (err) {
       if (err instanceof ApiError && err.fields?.password) setFieldError(err.fields.password)

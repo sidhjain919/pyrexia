@@ -1,9 +1,9 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Zap } from 'lucide-react'
 import { Compass, StaggerWords } from './primitives'
 import { SITE } from '../data/site'
-import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import { sectionPhoto } from '../data/media'
+import { EARLY_BIRD } from '../data/site'
 import { useRegistration } from '../registration/context'
 import { useNavTo } from './routing'
 
@@ -52,10 +52,12 @@ export default function CTA() {
           className="mx-auto mt-6 max-w-lg text-[1rem] leading-relaxed text-parchment/70"
         >
           The island awaits from {SITE.dates}. Complete your Basic Registration, choose your crew,
-          and set sail into the most epic edition of PYREXIA yet. The treasure is real — come claim
+          and set sail into the most epic edition of PYREXIA yet. The treasure is real. Come claim
           it.
         </motion.p>
 
+        {/* What each tier is for, with no numbers on it. The price belongs at
+            the point of paying, where it is current by definition. */}
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -64,23 +66,31 @@ export default function CTA() {
           className="mx-auto mt-9 grid max-w-lg gap-3 text-left sm:grid-cols-2"
         >
           <div className="glass rounded-xl p-4">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="font-display text-[1.05rem] text-offwhite">Basic Registration</span>
-              <span className="font-display text-lg text-gold-bright">₹{BASIC_AMOUNT}</span>
-            </div>
+            <div className="font-display text-[1.05rem] text-offwhite">Basic Registration</div>
             <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
               Compulsory for everyone. Enter the fest and compete in any event.
             </p>
           </div>
           <div className="glass rounded-xl border-gold/40 p-4">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="font-display text-[1.05rem] text-offwhite">Delegate Card</span>
-              <span className="font-display text-lg text-gold-bright">+₹{DELEGATE_ADDON}</span>
-            </div>
+            <div className="font-display text-[1.05rem] text-offwhite">Festival Pass</div>
             <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
-              On top of BR. The only way into the five Star Nights.
+              On top of BR. The only way into the five Pro Nights.
             </p>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.29, duration: 0.8 }}
+          className="mx-auto mt-4 flex max-w-lg items-center gap-3 rounded-xl border border-gold/45 bg-gold/[0.08] px-4 py-3.5 text-left"
+        >
+          <Zap size={16} className="shrink-0 text-gold-bright" />
+          <p className="text-[0.85rem] leading-relaxed text-parchment/85">
+            <span className="font-log uppercase tracking-wide2 text-gold-bright">Early bird</span>{' '}
+            {EARLY_BIRD.blurb}
+          </p>
         </motion.div>
 
         <motion.div

@@ -7,7 +7,7 @@ import { ApiError, api, setSession } from '../api/client'
 /**
  * The landing spot for a sign-in link.
  *
- * `/enter?token=…&next=/pass` — spends the token, stores the session, and
+ * `/enter?token=…&next=/pass`: spends the token, stores the session, and
  * forwards. The token is single-use, so this page must run exactly once even
  * though React's development mode mounts effects twice; hence the ref guard.
  */
@@ -32,7 +32,7 @@ export default function Enter() {
     api
       .consumeSignIn(token)
       .then((res) => {
-        setSession(res.token)
+        setSession(res.token, res.account)
         // `replace` so the back button doesn't return them to a spent link.
         navigate(next.startsWith('/') ? next : '/pass', { replace: true })
       })

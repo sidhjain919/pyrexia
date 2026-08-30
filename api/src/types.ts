@@ -30,7 +30,7 @@ export type Env = {
   RAZORPAY_WEBHOOK_SECRET: string
   /** Ed25519 private key, base64url PKCS#8. Read only by the signing helper. */
   PASS_SIGNING_KEY_V1: string
-  /** Its public half, base64url raw. Not a secret — the guard app needs it. */
+  /** Its public half, base64url raw. Not a secret, the guard app needs it. */
   PASS_PUBLIC_KEY_V1: string
   SESSION_SECRET: string
   DOC_ENCRYPTION_KEY: string

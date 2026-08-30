@@ -7,7 +7,7 @@
  *
  * The case it exists for: a student pays on 3G, the payment captures, and their
  * browser dies before the callback and our webhook delivery fails twice. They
- * are out ₹450 with nothing to show. This finds them without anyone filing a
+ * are out ₹500 with nothing to show. This finds them without anyone filing a
  * complaint.
  */
 
@@ -29,7 +29,7 @@ export async function reconcileOrders(env: Env): Promise<void> {
   // against, and a cron that errors every fifteen minutes only buries the logs
   // that matter later.
   if (!env.RAZORPAY_KEY_SECRET) {
-    console.log('reconcile skipped — RAZORPAY_KEY_SECRET not set')
+    console.log('reconcile skipped, RAZORPAY_KEY_SECRET not set')
     return
   }
 
@@ -64,7 +64,7 @@ export async function reconcileOrders(env: Env): Promise<void> {
 
       if (captured) {
         if (captured.amount !== order.amount_paise) {
-          // Never grant on a mismatch — surface it for a human instead.
+          // Never grant on a mismatch: surface it for a human instead.
           await audit.record(env, {
             action: 'order.reconciled',
             entity: 'order',

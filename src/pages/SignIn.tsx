@@ -7,7 +7,7 @@ import GoogleButton from '../auth/GoogleButton'
 import { Field, TextInput } from '../registration/fields'
 
 /**
- * Sign in, create an account, or ask for a reset — one page, three modes.
+ * Sign in, create an account, or ask for a reset, one page, three modes.
  *
  * It is a plain email-and-password form on purpose. The previous version asked
  * for an email and then said "check your inbox", which reads as a mailing-list
@@ -15,13 +15,13 @@ import { Field, TextInput } from '../registration/fields'
  * to go. Email is now only the recovery path, which is where people expect it.
  *
  * The wording is deliberate throughout: an account is never called a
- * "registration". Registration is the ₹450 thing, and conflating them is how
+ * "registration". Registration is the ₹500 thing, and conflating them is how
  * somebody turns up at a gate believing they have paid.
  *
  * Signing up now ends on a code screen rather than straight inside. The pass
  * is delivered by email, so an address nobody has proved means someone can pay
- * ₹450 and never receive the thing they bought. Google skips that screen
- * entirely — it has already checked the address, which is most of why it is
+ * ₹500 and never receive the thing they bought. Google skips that screen
+ * entirely: it has already checked the address, which is most of why it is
  * offered first.
  */
 
@@ -44,7 +44,7 @@ export default function SignIn() {
   const [code, setCode] = useState('')
   const [resentAt, setResentAt] = useState<number | null>(null)
 
-  /** Where to go once they're in — set when the event flow sends them here. */
+  /** Where to go once they're in: set when the event flow sends them here. */
   const next = params.get('next')
 
   const go = () => navigate(next && next.startsWith('/') ? next : '/pass', { replace: true })
@@ -62,7 +62,7 @@ export default function SignIn() {
 
       if (mode === 'verify') {
         const res = await api.verifyEmail(pending ?? email, code)
-        setSession(res.token)
+        setSession(res.token, res.account)
         go()
         return
       }
@@ -76,11 +76,11 @@ export default function SignIn() {
       }
 
       const res = await api.signIn(email, password)
-      setSession(res.token)
+      setSession(res.token, res.account)
       go()
     } catch (err) {
       if (err instanceof ApiError) {
-        // An account made before the address was proved — or one that never
+        // An account made before the address was proved, or one that never
         // finished. The server has already sent a fresh code.
         if (err.code === 'verification_required') {
           setPending(String(err.extra.email ?? email))
@@ -103,7 +103,7 @@ export default function SignIn() {
     setFatal(null)
     try {
       const res = await api.googleSignIn(credential)
-      setSession(res.token)
+      setSession(res.token, res.account)
       go()
     } catch (err) {
       setFatal(
@@ -239,7 +239,7 @@ export default function SignIn() {
         </div>
 
         <p className="mt-7 text-[0.78rem] leading-relaxed text-parchment/45">
-          Check your spam folder before asking for another — it is the usual
+          Check your spam folder before asking for another; it is the usual
           culprit.
         </p>
       </Shell>
@@ -365,7 +365,7 @@ export default function SignIn() {
       {mode === 'signup' && (
         <p className="mt-7 text-[0.78rem] leading-relaxed text-parchment/45">
           Creating an account is free and is <strong className="text-parchment/70">not</strong> your
-          fest registration. Basic Registration is ₹450 and comes next.
+          fest registration. Basic Registration is ₹500 and comes next.
         </p>
       )}
     </Shell>

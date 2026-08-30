@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
  * It returns React elements, never an HTML string, so there is no
  * `dangerouslySetInnerHTML` anywhere near it and no possible injection: text
  * that isn't recognised as formatting is rendered as text, because that is the
- * only thing React can do with a string. This matters more than it might —
+ * only thing React can do with a string. This matters more than it might -
  * notices are typed by a fest committee, often pasted out of a document, and
  * "paste whatever this is into a public page" is exactly how a script tag gets
  * onto a website.

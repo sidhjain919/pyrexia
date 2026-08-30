@@ -7,7 +7,7 @@ import EventForm from '../registration/EventForm'
 import { Compass } from './primitives'
 import { sectionPhoto } from '../data/media'
 import { resolveEvent } from '../data/registration'
-import { isSignedIn } from '../api/client'
+import { useAuth } from '../auth/useAuth'
 import { Link } from 'react-router-dom'
 import { LogIn, Ticket } from 'lucide-react'
 
@@ -16,7 +16,7 @@ export default function RegisterModal() {
   // The event flow can hand off to the delegate flow ("get a pass first") without
   // losing the event the visitor came from.
   const [returnTo, setReturnTo] = useState<string | null>(null)
-  const signedIn = isSignedIn()
+  const { signedIn } = useAuth()
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -94,7 +94,7 @@ export default function RegisterModal() {
                 <DelegateForm key={returnTo ?? 'delegate'} />
               ) : (
                 /* Buying requires an account, so ask for one before the form
-                   rather than after — filling ten fields and then being told to
+                   rather than after: filling ten fields and then being told to
                    sign in is the worst possible ordering. */
                 <div className="py-2">
                   <p className="text-[0.94rem] leading-relaxed text-parchment/75">
@@ -120,7 +120,7 @@ export default function RegisterModal() {
                   </div>
 
                   <p className="mt-6 text-[0.78rem] leading-relaxed text-parchment/45">
-                    Creating an account is free. Basic Registration is ₹450 and comes straight
+                    Creating an account is free. Basic Registration is ₹500 and comes straight
                     after.
                   </p>
                 </div>

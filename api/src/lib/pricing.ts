@@ -21,14 +21,39 @@ export type QuoteLine = { productId: string; name: string; amountPaise: number }
 
 export type Quote = {
   lines: QuoteLine[]
+  /** The line items alone. */
+  subtotalPaise: number
+  /** Added on top and charged to the payer. Grants nothing. */
+  conveniencePaise: number
+  /** What Razorpay is actually asked for. */
   totalPaise: number
+}
+
+/**
+ * The payment gateway's cut, passed on to the payer.
+ *
+ * Razorpay takes 2% of the transaction and 18% GST on that fee, which is
+ * 2.36% all in. The fest is run on a fixed budget and used to absorb this out
+ * of the registration income; from 2026 it is added on top and shown as its
+ * own line so nobody is surprised by the number on their statement.
+ *
+ * Basis points, so the arithmetic stays in integers all the way to Razorpay.
+ * Change it here and every surface follows.
+ */
+export const CONVENIENCE_BPS = 236
+
+export const CONVENIENCE_LABEL = 'Payment gateway charges'
+
+/** Rounded up, so a rounding remainder is never taken out of the fest's share. */
+export function conveniencePaise(subtotalPaise: number): number {
+  return Math.ceil((subtotalPaise * CONVENIENCE_BPS) / 10000)
 }
 
 export type QuoteFailure =
   | { code: 'unknown_product'; productId: string }
   | { code: 'inactive_product'; productId: string }
   | { code: 'duplicate_product'; productId: string }
-  /** Already owned — an upgrade must not re-sell what they hold. */
+  /** Already owned: an upgrade must not re-sell what they hold. */
   | { code: 'already_owned'; productId: string }
   /** e.g. asking for `delegate` with no `basic` held and none in the order. */
   | { code: 'missing_prerequisite'; productId: string; requires: string }
@@ -49,8 +74,8 @@ export async function loadProducts(env: Env): Promise<Map<string, Product>> {
  * Build a priced quote, or explain exactly why it can't be built.
  *
  * `owned` is the set of product ids the registration already holds live
- * entitlements for — empty for a first-time signup, `{'basic'}` for someone
- * coming back to add the Delegate Card.
+ * entitlements for: empty for a first-time signup, `{'basic'}` for someone
+ * coming back to add the Festival Pass.
  */
 export function quote(
   requested: readonly string[],
@@ -74,7 +99,7 @@ export function quote(
     if (owned.has(id)) return { ok: false, failure: { code: 'already_owned', productId: id } }
 
     // The prerequisite may be satisfied either by something already owned or by
-    // something else in this same order — a first-time Delegate buys both at once.
+    // something else in this same order: a first-time Delegate buys both at once.
     if (product.requires && !owned.has(product.requires) && !seen.has(product.requires)) {
       return {
         ok: false,
@@ -91,9 +116,17 @@ export function quote(
     (a, b) => (products.get(a.productId)!.sort_order) - (products.get(b.productId)!.sort_order),
   )
 
+  const subtotalPaise = lines.reduce((sum, l) => sum + l.amountPaise, 0)
+  const convenience = conveniencePaise(subtotalPaise)
+
   return {
     ok: true,
-    quote: { lines, totalPaise: lines.reduce((sum, l) => sum + l.amountPaise, 0) },
+    quote: {
+      lines,
+      subtotalPaise,
+      conveniencePaise: convenience,
+      totalPaise: subtotalPaise + convenience,
+    },
   }
 }
 

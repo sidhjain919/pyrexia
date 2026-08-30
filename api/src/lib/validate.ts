@@ -73,7 +73,7 @@ const DOMAIN_TYPOS: Record<string, string> = {
 /**
  * Suggest a correction, or null if the address looks fine.
  *
- * Only ever a suggestion — plenty of real institutional domains look like typos
+ * Only ever a suggestion: plenty of real institutional domains look like typos
  * of nothing, so this must never block a submission.
  */
 export function suggestEmailFix(email: string): string | null {

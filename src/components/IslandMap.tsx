@@ -10,13 +10,13 @@ import {
 import { Phone, Ticket } from 'lucide-react'
 import { territories } from '../data/events'
 import { territoryPhoto, territoryFocus } from '../data/media'
-import { Icon } from '../lib/icons'
+import { TerritoryGlyph } from '../lib/art'
 import { asset } from '../lib/asset'
 import { Reveal, SectionTitle } from './primitives'
 import { useRegistration } from '../registration/context'
 
-/** The chart's own proportions — the frame matches them so the torn border is never cropped. */
-const CHART = '1513 / 1039'
+/** The chart's own proportions: the frame matches them so the torn border is never cropped. */
+const CHART = '1536 / 1024'
 /** How long the ship takes to cross; the wake keeps pace with it. */
 const SAIL = { type: 'spring', stiffness: 42, damping: 16, mass: 0.9 } as const
 /** Keeps the drawn route readable instead of scribbling over the whole chart. */
@@ -78,11 +78,11 @@ export default function IslandMap() {
             eyebrow="Explore the Island"
             title="Eleven Territories"
             eyebrowFont="plain"
-            kicker="Every vertical of PYREXIA is a stretch of the lost archipelago. Click an island and the ship sets a course — its wake marks the way, and an X is left on every shore you've made landfall on."
+            kicker="Every vertical of PYREXIA is a stretch of the lost archipelago. Click an island and the ship sets a course. Its wake marks the way, and an X is left on every shore you've made landfall on."
           />
           {/* the captain keeps the empty half of the title row company */}
           <img
-            src={asset('map/captain.png')}
+            src={asset('map/captain.webp')}
             alt=""
             aria-hidden
             className="pointer-events-none absolute -bottom-8 right-0 hidden h-64 w-auto lg:block xl:h-72"
@@ -93,20 +93,20 @@ export default function IslandMap() {
           />
         </div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="mt-12 grid items-start gap-8 lg:grid-cols-[1.25fr_0.75fr]">
           {/* ------------------------------- CHART ------------------------------- */}
           <Reveal>
             <div
-              className="relative w-full overflow-hidden rounded-lg shadow-cinema"
+              className="relative -mx-6 w-[calc(100%+3rem)] overflow-hidden shadow-cinema sm:mx-0 sm:w-full sm:rounded-lg"
               style={{ aspectRatio: CHART }}
             >
               <img
-                src={asset('map/archipelago.png')}
-                alt="The Lost Archipelago — eleven islands, one per PYREXIA vertical"
+                src={asset('map/archipelago.webp')}
+                alt="The Lost Archipelago: eleven islands, one per PYREXIA vertical"
                 className="absolute inset-0 h-full w-full object-cover"
               />
 
-              {/* route — the dotted wake between islands */}
+              {/* route: the dotted wake between islands */}
               <svg
                 className="pointer-events-none absolute inset-0 h-full w-full"
                 viewBox="0 0 100 100"
@@ -155,7 +155,7 @@ export default function IslandMap() {
                 }}
               >
                 <motion.img
-                  src={asset('map/ship.png')}
+                  src={asset('map/ship.webp')}
                   alt=""
                   aria-hidden
                   className="w-full drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]"
@@ -165,7 +165,7 @@ export default function IslandMap() {
                 />
               </motion.div>
 
-              {/* markers — a chest where the ship is, an X on every shore already made */}
+              {/* markers: a chest where the ship is, an X on every shore already made */}
               {territories.map((t) => {
                 const on = t.id === activeId
                 const seen = visited.includes(t.id) && !on
@@ -175,19 +175,19 @@ export default function IslandMap() {
                     onClick={() => sailTo(t.id)}
                     onFocus={() => sailTo(t.id)}
                     data-cursor="SAIL"
-                    aria-label={`${t.code} — ${t.territory}`}
+                    aria-label={`${t.code}: ${t.territory}`}
                     aria-current={on ? 'true' : undefined}
-                    className="group absolute z-10"
+                    className="group absolute z-10 flex flex-col items-center p-2.5 sm:p-1"
                     style={{
                       left: `${t.map.x}%`,
                       top: `${t.map.y}%`,
                       transform: 'translate(-50%, -50%)',
-                      width: on ? 'clamp(34px, 7%, 84px)' : seen ? 'clamp(24px, 5%, 58px)' : 'auto',
+                      width: on ? 'clamp(46px, 7%, 84px)' : seen ? 'clamp(40px, 5%, 58px)' : 'auto',
                     }}
                   >
                     {on ? (
                       <motion.img
-                        src={asset('map/marker-chest.png')}
+                        src={asset('map/marker-chest.webp')}
                         alt=""
                         initial={reduce ? false : { scale: 0.2, opacity: 0, y: -14 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -196,55 +196,83 @@ export default function IslandMap() {
                       />
                     ) : seen ? (
                       <motion.img
-                        src={asset('map/marker-x.png')}
+                        src={asset('map/marker-x.webp')}
                         alt=""
                         initial={reduce ? false : { scale: 0.4, opacity: 0 }}
                         animate={{ scale: 1, opacity: 0.88 }}
                         className="w-full transition-transform duration-300 group-hover:scale-110"
                       />
                     ) : (
+                      /* An inked ring rather than a dark UI chip: on a drawn
+                         chart a glassy button reads as a control pasted over
+                         the artwork instead of part of it. */
                       <span
-                        className="flex h-6 w-6 items-center justify-center rounded-full border transition-transform duration-300 group-hover:scale-125 sm:h-7 sm:w-7"
+                        className="block h-3 w-3 rounded-full border-2 transition-transform duration-300 group-hover:scale-150 sm:h-3.5 sm:w-3.5"
                         style={{
-                          borderColor: 'rgba(200,155,60,0.75)',
-                          background: 'rgba(22,13,6,0.82)',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+                          borderColor: 'rgba(78,38,14,0.9)',
+                          background: 'rgba(214,180,124,0.85)',
+                          boxShadow: '0 1px 3px rgba(40,20,6,0.5)',
                         }}
-                      >
-                        <Icon name={t.icon} size={13} style={{ color: '#e6c25e' }} />
-                      </span>
+                      />
                     )}
 
-                    <span
-                      className={`pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 font-log text-[0.6rem] uppercase tracking-wide2 shadow-[0_4px_12px_rgba(0,0,0,0.55)] transition-opacity duration-300 sm:text-[0.68rem] ${
-                        on ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
-                      }`}
-                      style={{ background: 'rgba(4,15,20,0.94)', border: `1px solid ${t.accent}88`, color: t.accent }}
-                    >
-                      {t.territory}
-                    </span>
+                    {/* No label here any more: the island names are lettered
+                        onto the chart itself, which is where a cartographer
+                        would put them. */}
                   </button>
                 )
               })}
 
-              {/* chart cartouche, sitting on the torn margin */}
-              <img
-                src={asset('map/compass.png')}
-                alt=""
-                aria-hidden
-                className="pointer-events-none absolute opacity-55"
-                style={{
-                  left: '36%',
-                  top: '62%',
-                  width: 'clamp(38px, 9%, 104px)',
-                  transform: 'translate(-50%, -50%)',
-                }}
-              />
-            </div>
+
+              </div>
+
+              {/* The key, and the wardens. Both sit under the chart so the two
+                  columns finish on roughly the same line: the panel opposite is
+                  always taller than a fixed-ratio map, and the gap it left
+                  underneath was the emptiest part of the page. */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-lg border border-gold/15 bg-navy/35 px-4 py-2.5 font-log text-[0.55rem] uppercase tracking-wide2 text-parchment/55 sm:text-[0.6rem]">
+                <span className="flex items-center gap-1.5">
+                  <img src={asset('map/marker-chest.webp')} alt="" className="h-4 w-auto" />
+                  You are here
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <img src={asset('map/marker-x.webp')} alt="" className="h-3.5 w-auto opacity-80" />
+                  Shore made
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full border-2"
+                    style={{ borderColor: 'rgba(78,38,14,0.9)', background: 'rgba(214,180,124,0.85)' }}
+                  />
+                  Uncharted
+                </span>
+              </div>
+
+              {active.contacts.length > 0 && (
+                <div className="mt-4 rounded-lg border border-gold/15 bg-navy/35 px-5 py-4">
+                  <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/65">
+                    {active.code} · Territory Wardens
+                  </div>
+                  <div className="mt-2.5 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {active.contacts.slice(0, 3).map((c) => (
+                      <a
+                        key={c.phone}
+                        href={`tel:${c.phone}`}
+                        data-cursor="CALL"
+                        className="flex items-center gap-2 text-[0.8rem] text-parchment/70 transition-colors hover:text-gold-bright"
+                      >
+                        <Phone size={12} className="shrink-0 text-gold/60" />
+                        <span className="truncate text-offwhite/90">{c.name}</span>
+                        <span className="tabular-nums text-parchment/50">{c.phone}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
           </Reveal>
 
           {/* --------------------------- DETAIL PANEL --------------------------- */}
-          <div className="relative min-h-[420px]">
+          <div className="relative">
             <AnimatePresence mode="wait">
               <motion.div
                 key={active.id}
@@ -267,12 +295,7 @@ export default function IslandMap() {
 
                 <div className="p-7 pt-5">
                   <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-11 w-11 items-center justify-center rounded-lg"
-                      style={{ background: `${active.accent}22`, border: `1px solid ${active.accent}66` }}
-                    >
-                      <Icon name={active.icon} size={20} style={{ color: active.accent }} />
-                    </span>
+                    <TerritoryGlyph id={active.id} size={48} />
                     <div>
                       <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">
                         {active.territory}
@@ -290,7 +313,7 @@ export default function IslandMap() {
 
                   {active.noRegister ? (
                     <p className="rounded-lg bg-ocean/50 px-3 py-2.5 text-[0.78rem] text-parchment/60">
-                      No registration needed — every delegate is welcomed in.
+                      No registration needed. Every delegate is welcomed in.
                     </p>
                   ) : (
                     <div>
@@ -304,32 +327,10 @@ export default function IslandMap() {
                             onClick={() => openRegister(e.name)}
                             data-cursor="REGISTER"
                             className="rounded-full border border-gold/20 bg-ocean/50 px-3 py-1.5 text-[0.72rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright"
-                            title={`Register for ${e.name} — ${e.tag}`}
+                            title={`Register for ${e.name} · ${e.tag}`}
                           >
                             {e.name}
                           </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {active.contacts.length > 0 && (
-                    <div className="mt-6">
-                      <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
-                        Territory Wardens
-                      </div>
-                      <div className="mt-2 flex flex-col gap-1.5">
-                        {active.contacts.slice(0, 3).map((c) => (
-                          <a
-                            key={c.phone}
-                            href={`tel:${c.phone}`}
-                            data-cursor="CALL"
-                            className="flex items-center gap-2 text-[0.82rem] text-parchment/70 transition-colors hover:text-gold-bright"
-                          >
-                            <Phone size={12} className="text-gold/60" />
-                            <span className="text-offwhite/90">{c.name}</span>
-                            <span className="text-parchment/50">· {c.phone}</span>
-                          </a>
                         ))}
                       </div>
                     </div>
@@ -343,7 +344,7 @@ export default function IslandMap() {
                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                   >
                     <Ticket size={14} />
-                    Get your delegate pass
+                    Get your Festival Pass
                   </button>
                 </div>
               </motion.div>

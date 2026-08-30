@@ -111,7 +111,7 @@ test('resend: a network failure is retried, not swallowed', async () => {
   }
 })
 
-test('brevo still works — switching provider is a config change', async () => {
+test('brevo still works: switching provider is a config change', async () => {
   const { seen, result } = await capture(
     { ...base, MAIL_PROVIDER: 'brevo', BREVO_API_KEY: 'xkeysib-test' },
     () => new Response(JSON.stringify({ messageId: 'brevo_1' }), { status: 200 }),
@@ -125,7 +125,7 @@ test('brevo still works — switching provider is a config change', async () => 
  * Amazon SES
  *
  * SES is here because Wix hosts our DNS and will not create the MX record
- * most providers want. These check the request we build, not the signature —
+ * most providers want. These check the request we build, not the signature -
  * the signature has its own tests against AWS's published vector.
  * ------------------------------------------------------------------ */
 

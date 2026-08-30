@@ -28,7 +28,7 @@ const BRAND = {
 /**
  * Escape anything that came from a person.
  *
- * A student's name goes into HTML we send to their own inbox — the blast radius
+ * A student's name goes into HTML we send to their own inbox, the blast radius
  * is small, but a name containing a tag would still break the layout, and
  * escaping at the boundary is cheaper than remembering not to.
  */
@@ -100,7 +100,7 @@ export function registrationConfirmed(args: {
           `We received ${esc(amount)}.`,
       ) +
       codeBox('Your registration number', args.publicCode) +
-      p('Open your pass to show at the gate. Keep this email — the link signs you in.') +
+      p('Open your pass to show at the gate. Keep this email, the link signs you in.') +
       button(args.passUrl, 'View my pass') +
       p(
         `Quote <strong style="color:${BRAND.parchment};">${esc(args.publicCode)}</strong> if you contact the crew. ` +
@@ -123,7 +123,7 @@ Keep this email. Quote your registration number if you contact the crew.
 PYREXIA 2026 · Pirates of the Lost Island
 12-16 October 2026 · AIIMS Rishikesh`
 
-  return { subject: `You're aboard — ${args.publicCode}`, html, text }
+  return { subject: `You're aboard: ${args.publicCode}`, html, text }
 }
 
 /* ------------------------------------------------------------------ *
@@ -135,18 +135,18 @@ export function signInLink(args: { name: string; url: string; minutes: number })
 
   const html = shell(
     h1('Sign in to your voyage') +
-      p(`Hello ${esc(first)} — here's your way back in.`) +
+      p(`Hello ${esc(first)}: here's your way back in.`) +
       button(args.url, 'Open my account') +
       p(
         `This link works once and expires in ${args.minutes} minutes. ` +
-          `If you didn't ask for it, you can ignore this email — nothing has changed.`,
+          `If you didn't ask for it, you can ignore this email, nothing has changed.`,
       ),
     'Your PYREXIA sign-in link',
   )
 
   const text = `Sign in to your voyage
 
-Hello ${first} — here's your way back in:
+Hello ${first}: here's your way back in:
 
 ${args.url}
 
@@ -175,7 +175,7 @@ export function paymentFailed(args: {
     h1('That payment didn’t go through') +
       p(
         `${esc(first)}, your ${esc(amount)} payment didn't complete, so your registration isn't confirmed yet. ` +
-          `<strong style="color:${BRAND.parchment};">No money has left your account</strong> — and if your bank shows a deduction, it will reverse itself within a few days.`,
+          `<strong style="color:${BRAND.parchment};">No money has left your account</strong>, and if your bank shows a deduction, it will reverse itself within a few days.`,
       ) +
       button(args.retryUrl, 'Try again') +
       p('If it keeps failing, try a different payment method, or reply to this email and the crew will sort it out.'),
@@ -203,10 +203,10 @@ PYREXIA 2026 · AIIMS Rishikesh`
  * ------------------------------------------------------------------ */
 
 /**
- * Someone who already had Basic and has just added the Delegate Card.
+ * Someone who already had Basic and has just added the Festival Pass.
  *
  * They are already aboard, so greeting them as a new arrival reads as a system
- * that has forgotten them — and quoting the cumulative total makes it look like
+ * that has forgotten them: and quoting the cumulative total makes it look like
  * they have been charged twice.
  */
 export function upgradeConfirmed(args: {
@@ -219,28 +219,28 @@ export function upgradeConfirmed(args: {
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
 
   const html = shell(
-    h1('The Star Nights are yours') +
+    h1('The Pro Nights are yours') +
       p(
-        `${esc(first)}, your <strong style="color:${BRAND.parchment};">Delegate Card</strong> is confirmed. ` +
+        `${esc(first)}, your <strong style="color:${BRAND.parchment};">Festival Pass</strong> is confirmed. ` +
           `We received ${esc(amount)} on top of your Basic Registration.`,
       ) +
       codeBox('Your registration number', args.publicCode) +
       p(
-        'Your pass is the same one you already have — it now reads Delegate, ' +
+        'Your pass is the same one you already have: it now reads Delegate, ' +
           'so anything you have already printed still works at the gate.',
       ) +
       button(args.passUrl, 'View my pass') +
-      p('All five Star Nights are open to you. See you on the island.'),
-    `Delegate Card confirmed · ${args.publicCode}`,
+      p('All five Pro Nights are open to you. See you on the island.'),
+    `Festival Pass confirmed · ${args.publicCode}`,
   )
 
-  const text = `The Star Nights are yours
+  const text = `The Pro Nights are yours
 
-${first}, your Delegate Card is confirmed. We received ${amount} on top of your Basic Registration.
+${first}, your Festival Pass is confirmed. We received ${amount} on top of your Basic Registration.
 
 Registration number: ${args.publicCode}
 
-Your pass is the same one you already have — it now reads Delegate, so anything
+Your pass is the same one you already have: it now reads Delegate, so anything
 you have already printed still works at the gate.
 
 View your pass (this link signs you in):
@@ -249,7 +249,7 @@ ${args.passUrl}
 PYREXIA 2026 · Pirates of the Lost Island
 12-16 October 2026 · AIIMS Rishikesh`
 
-  return { subject: `Delegate Card confirmed — ${args.publicCode}`, html, text }
+  return { subject: `Festival Pass confirmed: ${args.publicCode}`, html, text }
 }
 
 /* ------------------------------------------------------------------ *
@@ -261,18 +261,18 @@ export function resetPassword(args: { name: string; url: string; minutes: number
 
   const html = shell(
     h1('Set a new password') +
-      p(`Hello ${esc(first)} — use this to choose a new one.`) +
+      p(`Hello ${esc(first)}: use this to choose a new one.`) +
       button(args.url, 'Choose a new password') +
       p(
         `This link works once and expires in ${args.minutes} minutes. ` +
-          `If you didn't ask for it, ignore this email — your password has not changed.`,
+          `If you didn't ask for it, ignore this email: your password has not changed.`,
       ),
     'Reset your PYREXIA password',
   )
 
   const text = `Set a new password
 
-Hello ${first} — use this to choose a new one:
+Hello ${first}: use this to choose a new one:
 
 ${args.url}
 
@@ -295,7 +295,7 @@ export function verificationCode(args: { code: string; minutes: number }) {
       codeBox('Your code', args.code) +
       p(
         `It expires in ${args.minutes} minutes. ` +
-          `If you didn't try to sign up, you can ignore this email — no account has been created.`,
+          `If you didn't try to sign up, you can ignore this email, no account has been created.`,
       ),
     `Your PYREXIA verification code: ${args.code}`,
   )

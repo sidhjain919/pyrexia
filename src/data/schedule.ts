@@ -1,5 +1,5 @@
 /**
- * Captain's Log — the day-wise voyage plan for 12–16 October 2026.
+ * Captain's Log: the day-wise voyage plan for 12–16 October 2026.
  * Day names are the creative 2026 chapter titles; the minute-by-minute
  * schedule itself isn't finalized yet, so entries stay empty and the UI
  * shows "Coming Soon" until the real log is released nearer the fest.

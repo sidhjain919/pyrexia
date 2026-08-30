@@ -11,7 +11,7 @@ test('otp: generates six digits, and keeps leading zeros', () => {
 })
 
 test('otp: does not repeat itself', () => {
-  // Not a randomness proof — just enough to catch a constant or a seeded
+  // Not a randomness proof: just enough to catch a constant or a seeded
   // generator, which is the failure that would actually ship.
   const seen = new Set(Array.from({ length: 300 }, generateCode))
   assert.ok(seen.size > 290, `only ${seen.size} distinct codes in 300`)

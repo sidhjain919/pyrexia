@@ -6,7 +6,7 @@ import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
  * The four pages Razorpay checks for before activating live payments: terms,
  * privacy, refunds and contact.
  *
- * They share one component because they share one shape — a title, a date, and
+ * They share one component because they share one shape, a title, a date, and
  * prose in a readable column. Four near-identical files would drift apart the
  * first time someone edited one of them.
  *
@@ -15,10 +15,15 @@ import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
  * sentence, not four paragraphs of hedging.
  */
 
-const UPDATED = '27 August 2026'
-const ORG = 'ARSWA, All India Institute of Medical Sciences, Rishikesh'
+const UPDATED = '30 August 2026'
+const ORG = 'the PYREXIA Organising Committee, All India Institute of Medical Sciences, Rishikesh'
 const EMAIL = 'pyrexia@aiimsrishikesh.edu.in'
-const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`
+/**
+ * Rupees in, rupees out. This used to divide by a hundred, on the assumption
+ * that it was handed paise: `BASIC_AMOUNT` is 500 rupees, so the refund page
+ * had been promising nobody could get their four rupees fifty back.
+ */
+const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`
 
 export default function Legal() {
   const { pathname } = useLocation()
@@ -117,9 +122,19 @@ function terms() {
             allows you to enter and compete in any event.
           </P>
           <P>
-            <strong className="text-parchment">The Delegate Card (a further {rupees(DELEGATE_ADDON)})</strong>{' '}
+            <strong className="text-parchment">The Festival Pass (a further {rupees(DELEGATE_ADDON)})</strong>{' '}
             can be bought with your Basic Registration or added later at the same price. It is the
-            only way to attend the Star Nights. Basic Registration alone does not admit you to them.
+            only way to attend the Pro Nights. Basic Registration alone does not admit you to them.
+          </P>
+          <P>
+            <strong className="text-parchment">Individual event entry fees.</strong> Some events
+            charge their own entry fee on top of Basic Registration. The amount is shown on that
+            event's entry form and is paid on this website; nothing is collected at the venue.
+          </P>
+          <P>
+            <strong className="text-parchment">Payment gateway charges.</strong> Our payment
+            provider's charge of 2.36% (2% plus GST) is added to every amount above and shown as its
+            own line before you pay. The figures quoted on this site are exclusive of it.
           </P>
         </Block>
 
@@ -158,7 +173,7 @@ function terms() {
         <Block>
           <H>Things that may change</H>
           <P>
-            Event schedules, venues, judges and performing artists may change. Star Night line-ups
+            Event schedules, venues, judges and performing artists may change. Pro Night line-ups
             are announced closer to the festival and are subject to artist availability. A change of
             line-up, schedule or venue is not grounds for a refund.
           </P>
@@ -220,24 +235,24 @@ function privacy() {
           <H>What we collect</H>
           <L>
             <li>
-              <strong className="text-parchment">Your account</strong> — email address and a
+              <strong className="text-parchment">Your account.</strong> Email address and a
               password, which we store only as a cryptographic hash and can never read.
             </li>
             <li>
-              <strong className="text-parchment">Your registration</strong> — name, mobile number,
+              <strong className="text-parchment">Your registration.</strong> Name, mobile number,
               gender, college, city, course, year of study, and an emergency contact.
             </li>
             <li>
-              <strong className="text-parchment">Identity documents</strong> — where you upload
+              <strong className="text-parchment">Identity documents.</strong> Where you upload
               them for verification at the gate.
             </li>
             <li>
-              <strong className="text-parchment">Payments</strong> — the amount, the method and the
+              <strong className="text-parchment">Payments.</strong> The amount, the method and the
               reference number. <strong className="text-parchment">We never see or store your card
               or UPI details</strong>; those go directly to Razorpay.
             </li>
             <li>
-              <strong className="text-parchment">Attendance</strong> — when your pass is scanned,
+              <strong className="text-parchment">Attendance.</strong> When your pass is scanned,
               and at which gate.
             </li>
           </L>
@@ -259,9 +274,9 @@ function privacy() {
         <Block>
           <H>Who else touches it</H>
           <L>
-            <li><strong className="text-parchment">Razorpay</strong> — to take payment.</li>
-            <li><strong className="text-parchment">Our email provider</strong> — to deliver your pass and confirmations.</li>
-            <li><strong className="text-parchment">Cloudflare</strong> — where the website and database are hosted.</li>
+            <li><strong className="text-parchment">Razorpay</strong>, to take payment.</li>
+            <li><strong className="text-parchment">Our email provider</strong>, to deliver your pass and confirmations.</li>
+            <li><strong className="text-parchment">Cloudflare</strong>, where the website and database are hosted.</li>
           </L>
         </Block>
 
@@ -278,7 +293,7 @@ function privacy() {
           <H>Keeping it safe</H>
           <P>
             Everything travels over an encrypted connection. Identity documents are encrypted at
-            rest, are never publicly reachable, and can be opened only by a named verifier — every
+            rest, are never publicly reachable, and can be opened only by a named verifier, and every
             such viewing is logged. Passwords are hashed. Your pass is cryptographically signed so
             it cannot be forged.
           </P>
@@ -312,9 +327,10 @@ function refunds() {
               Registration fees are non-refundable.
             </p>
             <p className="mt-2 text-[0.92rem] leading-relaxed text-parchment/75">
-              Once your payment is confirmed, neither Basic Registration ({rupees(BASIC_AMOUNT)})
-              nor the Delegate Card ({rupees(DELEGATE_ADDON)}) can be refunded or transferred to
-              another person.
+              Once your payment is confirmed, none of Basic Registration ({rupees(BASIC_AMOUNT)}),
+              the Festival Pass ({rupees(DELEGATE_ADDON)}) or an individual event entry fee can be
+              refunded or transferred to another person. Payment gateway charges are not refundable
+              in any circumstance, as they are not ours to return.
             </p>
           </div>
         </Block>
@@ -333,7 +349,7 @@ function refunds() {
           <L>
             <li>You are unable to attend, for any reason.</li>
             <li>You attend only some of the five days.</li>
-            <li>You withdraw from an event you had entered.</li>
+            <li>You withdraw from an event you had entered, or paid an entry fee for.</li>
             <li>An event, venue or artist line-up changes.</li>
             <li>Your registration is cancelled for breaking the terms.</li>
           </L>
@@ -343,7 +359,7 @@ function refunds() {
           <H>The one exception</H>
           <P>
             If you are <strong className="text-parchment">charged twice for the same
-            registration</strong> — a duplicate payment for one person — write to us and we will
+            registration</strong> (a duplicate payment for one person), write to us and we will
             refund the duplicate in full. Send your registration number and the payment reference
             to <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
           </P>
@@ -427,7 +443,7 @@ function contact() {
           <H>What to tell us</H>
           <P>
             If your question is about a registration or a payment, include your{' '}
-            <strong className="text-parchment">registration number</strong> — it looks like{' '}
+            <strong className="text-parchment">registration number</strong>. It looks like{' '}
             <span className="font-log text-gold-bright">PYX26-XXXXXX</span> and is on your pass and
             in your confirmation email. It lets us find you immediately.
           </P>
@@ -438,7 +454,7 @@ function contact() {
           <L>
             <li>
               <strong className="text-parchment">Haven't received your pass?</strong> Check your
-              spam folder first, then sign in and open <Link to="/pass">My Pass</Link> — it's always
+              spam folder first, then sign in and open <Link to="/pass">My Pass</Link>. It's always
               there.
             </li>
             <li>

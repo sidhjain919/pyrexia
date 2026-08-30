@@ -64,7 +64,7 @@ const present = (r: Row) => ({
  * A readable, unique URL fragment.
  *
  * Two notices called "Day 2 Schedule" must not collide, so a short suffix is
- * appended rather than failing the save — a committee member retyping a title
+ * appended rather than failing the save: a committee member retyping a title
  * should never meet a database error.
  */
 function slugify(title: string): string {
@@ -141,14 +141,14 @@ function readNotice(body: Record<string, unknown>) {
     pinned: body.pinned ? 1 : 0,
     published: body.published ? 1 : 0,
     // An empty string from a cleared date input means "no expiry", not a date
-    // of nothing — which SQLite would happily store and then compare wrongly.
+    // of nothing: which SQLite would happily store and then compare wrongly.
     expiresAt: typeof body.expiresAt === 'string' && body.expiresAt.trim()
       ? body.expiresAt.trim()
       : null,
   }
 }
 
-/** Everything, drafts included — the admin list. */
+/** Everything, drafts included: the admin list. */
 notices.get('/admin/notices', async (c) => {
   await requireNoticeAdmin(c)
 

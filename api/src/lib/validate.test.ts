@@ -75,7 +75,7 @@ test('common domain typos are suggested, never enforced', () => {
   assert.equal(suggestEmailFix('aarav@aiimsrishikesh.edu.in'), null)
   assert.equal(suggestEmailFix('aarav@gmail.com'), null)
 
-  // And a typo'd address still validates — the suggestion is advisory only,
+  // And a typo'd address still validates: the suggestion is advisory only,
   // because blocking on it would reject legitimate addresses we've not heard of.
   assert.equal(validateRegistration({ ...GOOD, email: 'aarav@gmial.com' }).ok, true)
 })

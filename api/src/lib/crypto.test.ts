@@ -1,7 +1,7 @@
 /**
  * A bug in here is the worst kind: silent at upload, discovered only when
  * somebody needs the file and it will not come back. These check the round
- * trip, and the two properties that make encryption worth doing at all —
+ * trip, and the two properties that make encryption worth doing at all -
  * that the stored bytes reveal nothing, and that altered bytes are refused.
  */
 
@@ -27,7 +27,7 @@ test('crypto: the stored bytes do not contain the plaintext', async () => {
 
 test('crypto: the same file encrypts differently every time', async () => {
   // A fresh nonce per file. Without it, two people uploading the same document
-  // would produce identical blobs — which leaks that they match.
+  // would produce identical blobs: which leaks that they match.
   const a = await encryptBytes(SECRET, bytes('same file'))
   const b = await encryptBytes(SECRET, bytes('same file'))
   assert.notEqual(new TextDecoder().decode(a), new TextDecoder().decode(b))

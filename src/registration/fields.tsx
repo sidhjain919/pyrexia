@@ -233,7 +233,7 @@ export function DocumentUpload({
               <FileUp size={17} className="shrink-0 text-gold-bright" />
             )}
             <span className="text-[0.86rem] text-parchment/70">
-              {busy ? 'Uploading…' : 'Choose a file — JPG, PNG, WEBP or PDF'}
+              {busy ? 'Uploading…' : 'Choose a file: JPG, PNG, WEBP or PDF'}
             </span>
           </button>
         </>

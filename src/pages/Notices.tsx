@@ -4,12 +4,13 @@ import { AlertTriangle, Loader2, Pin } from 'lucide-react'
 
 import { ApiError, api, type Notice } from '../api/client'
 import { Markdown } from '../lib/markdown'
+import { art } from '../lib/art'
 
 /**
  * The public noticeboard.
  *
  * Pinned notices first, then newest. Anything expired is filtered out by the
- * server rather than dimmed here — a board that keeps yesterday's "bus leaves
+ * server rather than dimmed here: a board that keeps yesterday's "bus leaves
  * at 6pm" is a board people stop reading.
  *
  * Urgent notices are marked with a word and a border, not colour alone.
@@ -38,14 +39,29 @@ export default function Notices() {
 
   return (
     <section className="mx-auto min-h-[80svh] max-w-3xl px-5 py-24 sm:px-8">
-      <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
-        PYREXIA 2026
+      {/* The board itself, planks and all. The page is the one people open
+          every morning of the fest, and it used to look like a settings
+          screen. */}
+      <div
+        className="flex flex-col items-center justify-center px-8 py-12 text-center sm:px-14 sm:py-16"
+        style={{
+          backgroundImage: `url(${art.noticeBoard})`,
+          backgroundSize: '100% 100%',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 16px 36px rgba(0,0,0,0.55))',
+        }}
+      >
+        <div className="font-log text-[0.62rem] uppercase tracking-cinema text-parchment/80 [text-shadow:0_2px_8px_rgba(0,0,0,0.95)]">
+          PYREXIA 2026
+        </div>
+        <h1 className="mt-2 font-display text-3xl text-offwhite drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] sm:text-4xl">
+          Noticeboard
+        </h1>
+        <p className="mt-3 max-w-md text-[0.9rem] leading-relaxed text-parchment/85 [text-shadow:0_2px_8px_rgba(0,0,0,0.95)]">
+          Schedule changes, results and announcements from the crew. Worth a look
+          each morning of the fest.
+        </p>
       </div>
-      <h1 className="mt-3 font-display text-3xl text-offwhite sm:text-4xl">Noticeboard</h1>
-      <p className="mt-3 max-w-xl text-[0.94rem] leading-relaxed text-parchment/60">
-        Schedule changes, results and announcements from the crew. Worth a look
-        each morning of the fest.
-      </p>
 
       {error && (
         <div className="mt-8 flex items-start gap-2 rounded-lg border border-coral/50 bg-coral/10 p-3 text-[0.85rem] text-coral">

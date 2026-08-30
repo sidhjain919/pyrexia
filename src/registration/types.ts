@@ -13,7 +13,7 @@ export type DocumentKind = 'aadhaar' | 'studentId' | 'photo'
 export type DelegateStatus =
   /** Form submitted, payment not completed. */
   | 'pending_payment'
-  /** Paid and verified — this is the only status that unlocks event entry. */
+  /** Paid and verified: this is the only status that unlocks event entry. */
   | 'confirmed'
   /** Payment attempted and failed or was abandoned. */
   | 'failed'
@@ -42,7 +42,7 @@ export type Delegate = DelegateInput & {
   createdAt: string
   paidAt?: string
   amount: number
-  /** Opaque string encoded into the QR — a check-in scanner resolves it server-side. */
+  /** Opaque string encoded into the QR: a check-in scanner resolves it server-side. */
   qrPayload: string
 }
 

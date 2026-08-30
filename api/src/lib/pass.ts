@@ -1,5 +1,5 @@
 /**
- * PYREXIA 2026 — pass tokens.
+ * PYREXIA 2026: pass tokens.
  *
  * A pass QR does not *point at* a record; it *is* a signed statement. That
  * distinction is the whole security model:
@@ -7,7 +7,7 @@
  *   - Forging one needs the Ed25519 private key, which lives only in the
  *     signing Worker's secret and never reaches a browser or a phone.
  *   - The gate app ships the *public* key, so it verifies authenticity with no
- *     network at all — which is exactly the situation at a gate in a crowd.
+ *     network at all: which is exactly the situation at a gate in a crowd.
  *   - `kid` names the key, so a compromised key can be retired without
  *     invalidating every pass already printed.
  *
@@ -18,14 +18,14 @@
  * Payload, 23 bytes, big-endian:
  *
  *   0       version
- *   1       kid — signing key id
+ *   1       kid: signing key id
  *   2..17   passId, 16 random bytes
- *   18      tierFloor — the tier held when this pass was issued
+ *   18      tierFloor: the tier held when this pass was issued
  *   19..22  issuedAt, uint32, minutes since the Unix epoch
  *
- * `tierFloor` is a floor, not the truth. Someone who buys the Delegate Card in
+ * `tierFloor` is a floor, not the truth. Someone who buys the Festival Pass in
  * October still holds a QR printed in September that says Basic, and reissuing
- * it is no help — they already have the old one on paper. So the gate takes the
+ * it is no help: they already have the old one on paper. So the gate takes the
  * greater of this floor and the tier in its synced manifest. The floor keeps a
  * brand-new pass working before any device has synced it; the manifest lets an
  * upgrade bought at 8pm work at the 9pm gate.
@@ -52,13 +52,13 @@ export type PassPayload = {
 }
 
 export type VerifyFailure =
-  /** Not a pass token at all — wrong prefix or shape. */
+  /** Not a pass token at all: wrong prefix or shape. */
   | 'malformed'
   /** A version this build does not know how to read. */
   | 'unsupported_version'
   /** Signed with a key id we hold no public key for. */
   | 'unknown_key'
-  /** Cryptographically invalid — forged, corrupted, or altered in transit. */
+  /** Cryptographically invalid: forged, corrupted, or altered in transit. */
   | 'bad_signature'
 
 export type VerifyResult =
@@ -66,7 +66,7 @@ export type VerifyResult =
   | { valid: false; reason: VerifyFailure }
 
 /* ------------------------------------------------------------------ *
- * base64url — no padding, URL and QR safe
+ * base64url: no padding, URL and QR safe
  * ------------------------------------------------------------------ */
 
 export function toBase64Url(bytes: Uint8Array): string {
@@ -155,7 +155,7 @@ export function nowInMinutes(at: Date = new Date()): number {
 const ED25519 = { name: 'Ed25519' } as const
 
 /**
- * Mint a pass token. Only ever called inside the signing Worker — the private
+ * Mint a pass token. Only ever called inside the signing Worker, the private
  * key must not exist anywhere a request handler can reach it.
  */
 export async function signPass(payload: PassPayload, privateKey: CryptoKey): Promise<string> {
@@ -167,7 +167,7 @@ export async function signPass(payload: PassPayload, privateKey: CryptoKey): Pro
 /**
  * Check a scanned token against the public keys the device holds.
  *
- * This answers exactly one question — "did we issue this?" — and deliberately
+ * This answers exactly one question: "did we issue this?", and deliberately
  * no others. Whether the pass is revoked, already used today, or good enough
  * for *this* gate are all questions about current state, answered against the
  * synced manifest by `decidePassAtGate`. Keeping them apart is what lets this
@@ -217,14 +217,14 @@ export type ManifestEntry = {
   name: string
   college?: string
   photoUrl?: string
-  /** Current tier — this is what makes upgrades work without a reissue. */
+  /** Current tier: this is what makes upgrades work without a reissue. */
   tier: Tier
   revoked: boolean
 }
 
 export type GateConfig = {
   gateId: string
-  /** Star Night gates carry [1] only. */
+  /** Pro Night gates carry [1] only. */
   allowedTiers: Tier[]
   allowReentry: boolean
 }
@@ -239,7 +239,7 @@ export type ScanOutcome =
 
 export type GateDecision = {
   outcome: ScanOutcome
-  /** The tier actually applied — max(signed floor, manifest). */
+  /** The tier actually applied: max(signed floor, manifest). */
   tier: Tier
   entry?: ManifestEntry
   /** Set when a stale manifest might be the reason for a rejection. */
@@ -291,7 +291,7 @@ export function decidePassAtGate(args: {
   }
 
   // Signature is good and the gate admits this tier. An unknown pass is still
-  // let through on the strength of the signature — only the guard's screen is
+  // let through on the strength of the signature: only the guard's screen is
   // poorer for it, showing no photo to check against.
   if (!entry) {
     return { outcome: 'ok', tier, recheckOnline: true }

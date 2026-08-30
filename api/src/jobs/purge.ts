@@ -8,7 +8,7 @@
  *
  * The row is kept and marked `purged_at` rather than deleted outright: it is
  * the evidence that the promise was honoured, and it holds no personal content
- * once the object is gone — a kind, a size and a date.
+ * once the object is gone: a kind, a size and a date.
  */
 
 import type { Env } from '../types.ts'
@@ -32,7 +32,7 @@ export async function purgeExpiredDocuments(env: Env): Promise<number> {
     try {
       await env.DOCS.delete(doc.r2_key)
     } catch (err) {
-      // A bucket that is briefly unavailable should not mark the row as done —
+      // A bucket that is briefly unavailable should not mark the row as done -
       // that would leave the file behind with nothing left to find it by. Skip
       // it and let the next run try again.
       console.error('purge: could not delete object', doc.r2_key, err)

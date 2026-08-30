@@ -1,5 +1,6 @@
 import Hero from '../components/Hero'
 import Legend from '../components/Legend'
+import Reels from '../components/Reels'
 import Stats from '../components/Stats'
 import IslandMap from '../components/IslandMap'
 import EventsGrid from '../components/EventsGrid'
@@ -12,7 +13,7 @@ import CTA from '../components/CTA'
 import Navigator from '../components/Navigator'
 
 /**
- * Single-page layout — every section lives here, in nav order, and the
+ * Single-page layout: every section lives here, in nav order, and the
  * navbar/footer link to these sections by id instead of routing elsewhere.
  */
 export default function Home() {
@@ -20,6 +21,8 @@ export default function Home() {
     <>
       <Hero />
       <Legend />
+      {/* Renders nothing until a reel link is set in src/data/videos.ts. */}
+      <Reels />
       <Stats />
       <FeaturedEvents />
       <IslandMap />

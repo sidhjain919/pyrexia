@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from 'react'
  * "Continue with Google".
  *
  * Google renders this button itself, inside an iframe we are not allowed to
- * restyle — that is the deal for using it, and trying to fake it with our own
+ * restyle: that is the deal for using it, and trying to fake it with our own
  * markup is both against their terms and a good way to get sign-in blocked.
  * So the surrounding page adapts to the button rather than the other way
  * round, and the theme below is the closest of their options to our ground.
  *
  * The client id is public on purpose: it ships inside every page that shows
  * this button. What makes it safe is the origin allowlist in Google's console
- * plus the audience check the server does on the returned token — not secrecy.
+ * plus the audience check the server does on the returned token, not secrecy.
  */
 
 const CLIENT_ID = '422997955520-i6d1963hfip9gs9enp4lbf70onnfi754.apps.googleusercontent.com'
@@ -109,7 +109,8 @@ export default function GoogleButton({
           shape: 'pill',
           text: 'continue_with',
           logo_alignment: 'center',
-          width: 320,
+          // Google's maximum. The wrapper below is sized to match.
+          width: 400,
         })
       })
       .catch(() => {
@@ -121,7 +122,7 @@ export default function GoogleButton({
     }
   }, [])
 
-  // A blocked script, an ad blocker, a network that filters Google — none of
+  // A blocked script, an ad blocker, a network that filters Google, none of
   // these should look like a broken page. Email and password still works, and
   // saying so is more use than an error.
   if (failed) {
@@ -132,11 +133,25 @@ export default function GoogleButton({
     )
   }
 
+  /*
+   * Google renders the button into a cross-origin iframe that is a little
+   * larger than the pill it draws, and that iframe paints itself white. We
+   * cannot reach inside it, and on a dark page the result is a white slab with
+   * a black pill floating in the middle of it.
+   *
+   * So the surround is clipped away instead. The wrapper is the size of the
+   * pill, rounded to the same radius, with the iframe centred inside and
+   * overflow hidden. Worst case if Google changes their metrics is a button a
+   * pixel tight, not a broken one.
+   */
   return (
     <div
-      ref={holder}
       aria-busy={disabled}
-      className={`flex justify-center ${disabled ? 'pointer-events-none opacity-50' : ''}`}
-    />
+      className={`mx-auto h-[46px] w-full max-w-[400px] overflow-hidden rounded-full ${
+        disabled ? 'pointer-events-none opacity-50' : ''
+      }`}
+    >
+      <div ref={holder} className="flex h-full w-full items-center justify-center" />
+    </div>
   )
 }

@@ -2,7 +2,7 @@
  * PYREXIA 2026 API.
  *
  * Everything public is static and served from Pages; this Worker handles only
- * the small, write-shaped part of the site — registration, payments, passes and
+ * the small, write-shaped part of the site: registration, payments, passes and
  * the gate. That split is what lets the whole thing sit inside a $5 plan while
  * absorbing a launch-day rush.
  */
@@ -49,8 +49,8 @@ const ALLOWED_ORIGINS = [
 ]
 
 /**
- * Outside production, also allow a dev server reached over the local network —
- * `http://192.168.1.7:5199` and the like — so the site can be opened on a phone
+ * Outside production, also allow a dev server reached over the local network -
+ * `http://192.168.1.7:5199` and the like, so the site can be opened on a phone
  * during development. Gated on ENVIRONMENT so it can never widen the real site.
  */
 const PRIVATE_NETWORK =
@@ -129,7 +129,7 @@ export default {
    * Every 15 minutes: settle anything left hanging.
    *
    * This is what rescues the student whose browser died between paying and
-   * telling us — Razorpay knows the payment succeeded even when we never heard.
+   * telling us: Razorpay knows the payment succeeded even when we never heard.
    */
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(reconcileOrders(env))

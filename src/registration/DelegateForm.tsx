@@ -20,8 +20,8 @@ import { Field, Select, TextInput } from './fields'
  * Three steps, the middle one skippable.
  *
  * Identity documents were originally removed from this form entirely and left
- * to the pass page, because blocking a ₹450 payment on someone finding a photo
- * of their college ID loses registrations for no benefit — the desk checks the
+ * to the pass page, because blocking a ₹500 payment on someone finding a photo
+ * of their college ID loses registrations for no benefit, the desk checks the
  * physical card either way. That reasoning still holds, so the step is here but
  * has a Skip beside Continue, and the same upload remains on the pass page for
  * anyone who passes it by.
@@ -77,10 +77,21 @@ export default function DelegateForm() {
   const basic = products.find((p) => p.id === 'basic')
   const delegate = products.find((p) => p.id === 'delegate')
 
-  const totalPaise = useMemo(
+  const subtotalPaise = useMemo(
     () => (basic?.amountPaise ?? 0) + (wantsDelegate ? (delegate?.amountPaise ?? 0) : 0),
     [basic, delegate, wantsDelegate],
   )
+
+  /*
+   * Razorpay's cut, added on top and shown here.
+   *
+   * The server computes the paise that are actually charged; this mirrors the
+   * same rate so the number in the summary is the number in the Razorpay
+   * window. Being surprised by a different total at the last step is how a
+   * payment gets abandoned.
+   */
+  const conveniencePaise = Math.ceil((subtotalPaise * 236) / 10000)
+  const totalPaise = subtotalPaise + conveniencePaise
 
   const set = (k: keyof RegistrationInput, v: string) => {
     setForm((f) => ({ ...f, [k]: v }))
@@ -123,7 +134,7 @@ export default function DelegateForm() {
     try {
       const result = await openCheckout(created.checkout)
 
-      // Makes the success screen instant. It grants nothing — the webhook does.
+      // Makes the success screen instant. It grants nothing, the webhook does.
       await api.verifyCheckout(result).catch(() => {})
 
       setPhase({ name: 'confirming', orderId: created.orderId })
@@ -133,21 +144,21 @@ export default function DelegateForm() {
         setPhase({
           name: 'done',
           publicCode: created.publicCode ?? '',
-          tierName: wantsDelegate ? 'Delegate Card' : 'Basic Registration',
+          tierName: wantsDelegate ? 'Festival Pass' : 'Basic Registration',
         })
       } else {
         setPhase({ name: 'slow', publicCode: created.publicCode ?? '' })
       }
     } catch (err) {
       setPhase({ name: 'form' })
-      // Back to payment, not to documents — they cancelled a payment and that
+      // Back to payment, not to documents: they cancelled a payment and that
       // is the screen they need in front of them to try again.
       setStep(2)
 
       if (err instanceof PaymentCancelled) {
         // Not an error worth alarming them about. The order stays unpaid and
-        // they can try again with the same key — no duplicate registration.
-        setFatal('Payment was cancelled. Your details are saved — try again when ready.')
+        // they can try again with the same key: no duplicate registration.
+        setFatal('Payment was cancelled. Your details are saved, try again when ready.')
         return
       }
       setFatal(err instanceof Error ? err.message : 'The payment could not be completed.')
@@ -173,7 +184,7 @@ export default function DelegateForm() {
         </h3>
         <p className="mx-auto mt-2 max-w-sm text-[0.9rem] leading-relaxed text-parchment/70">
           Your {phase.tierName} is confirmed, and we've emailed your pass. You're already signed
-          in — your pass is ready whenever you want it.
+          in. Your pass is ready whenever you want it.
         </p>
 
         <div className="mx-auto mt-6 max-w-xs rounded-xl border border-gold/25 bg-ocean/50 p-4">
@@ -201,7 +212,7 @@ export default function DelegateForm() {
         <Loader2 size={26} className="mx-auto animate-spin text-gold/70" />
         <h3 className="mt-4 font-display text-xl text-offwhite">Your payment went through</h3>
         <p className="mx-auto mt-2 max-w-sm text-[0.88rem] leading-relaxed text-parchment/70">
-          It's taking a moment to confirm. Nothing is lost — your registration number is{' '}
+          It's taking a moment to confirm. Nothing is lost. Your registration number is{' '}
           <span className="text-gold-bright">{phase.publicCode}</span>, and the confirmation email
           will arrive shortly. You can close this window.
         </p>
@@ -360,7 +371,7 @@ export default function DelegateForm() {
               <div>
                 <h3 className="font-display text-lg text-offwhite">Identity documents</h3>
                 <p className="mt-1.5 text-[0.85rem] text-parchment/55">
-                  Optional. Skip if you haven’t got them to hand — you can add
+                  Optional. Skip if you haven’t got them to hand. You can add
                   them later from your pass.
                 </p>
               </div>
@@ -374,8 +385,8 @@ export default function DelegateForm() {
                 <Star size={17} className="mt-0.5 shrink-0 text-gold-bright" />
                 <p className="text-[0.82rem] leading-relaxed text-parchment/80">
                   Basic Registration is compulsory for everyone and lets you enter{' '}
-                  <strong className="text-parchment">any event</strong>. The Star Nights are the one
-                  exception — they need the Delegate Card.
+                  <strong className="text-parchment">any event</strong>. The Pro Nights are the one
+                  exception: they need the Festival Pass.
                 </p>
               </div>
 
@@ -385,7 +396,7 @@ export default function DelegateForm() {
                     Basic Registration
                   </span>
                   <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
-                    {rupees(basic?.amountPaise ?? 45000)}
+                    {rupees(basic?.amountPaise ?? 50000)}
                   </span>
                 </div>
                 <div className="mt-1 font-log text-[0.58rem] uppercase tracking-wide2 text-parchment/50">
@@ -402,7 +413,7 @@ export default function DelegateForm() {
                   )}
                   <li className="flex items-center gap-2 text-[0.78rem] text-parchment/45">
                     <X size={12} className="shrink-0 text-coral/70" />
-                    Star Nights — those need the Delegate Card
+                    Pro Nights, which need the Festival Pass
                   </li>
                 </ul>
               </div>
@@ -419,14 +430,14 @@ export default function DelegateForm() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-display text-[1.05rem] leading-tight text-offwhite sm:text-lg">
-                    Add the Delegate Card
+                    Add the Festival Pass
                   </span>
                   <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
-                    +{rupees(delegate?.amountPaise ?? 225000)}
+                    +{rupees(delegate?.amountPaise ?? 220000)}
                   </span>
                 </div>
                 <p className="mt-1 text-[0.82rem] text-parchment/65">
-                  The only way into all five Star Nights. You can also add this later — it costs
+                  The only way into all five Pro Nights. You can also add this later, and it costs
                   exactly the same.
                 </p>
               </button>
@@ -434,14 +445,18 @@ export default function DelegateForm() {
               <div className="rounded-xl border border-gold/25 bg-ocean/50 p-4">
                 <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
                   <span>Basic Registration</span>
-                  <span>{rupees(basic?.amountPaise ?? 45000)}</span>
+                  <span>{rupees(basic?.amountPaise ?? 50000)}</span>
                 </div>
                 {wantsDelegate && (
                   <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
-                    <span>Delegate Card · Star Nights</span>
-                    <span>{rupees(delegate?.amountPaise ?? 225000)}</span>
+                    <span>Festival Pass · Pro Nights</span>
+                    <span>{rupees(delegate?.amountPaise ?? 220000)}</span>
                   </div>
                 )}
+                <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
+                  <span>Payment gateway charges</span>
+                  <span>{rupees(conveniencePaise)}</span>
+                </div>
                 <div className="my-3 rule-gold" />
                 <div className="flex items-center justify-between">
                   <span className="font-log text-[0.8rem] uppercase tracking-wide2 text-parchment/80">

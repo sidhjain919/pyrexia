@@ -1,4 +1,4 @@
-# PYREXIA 2026 — Island Map Art Brief
+# PYREXIA 2026: Island Map Art Brief
 
 Everything you need to generate for the **Eleven Territories** section, plus the exact
 prompts. Drop the finished files into `site/public/map/` with the filenames below and the
@@ -12,7 +12,7 @@ map component picks them up.
    garble type. Every territory name, chip and legend is drawn over the art in code, so it
    stays crisp and tintable.
 2. **No logos and no watermark.**
-3. Colour target — the site palette, so the art doesn't fight the page:
+3. Colour target, the site palette, so the art doesn't fight the page:
 
    | role | hex |
    |---|---|
@@ -22,21 +22,21 @@ map component picks them up.
    | gold ink | `#c89b3c` |
    | wax red | `#7a2318` |
 
-4. Export **PNG**. Sprites must be **transparent**, with no drop shadow baked in — the
+4. Export **PNG**. Sprites must be **transparent**, with no drop shadow baked in, the
    code adds the shadow, and a baked one looks wrong the moment the sprite rotates.
 5. Generate at the size given; don't upscale a small render.
 
 ---
 
-## 1. The map — `map/archipelago.png`
+## 1. The map, `map/archipelago.png`
 
 **The one required asset.** An aged sea chart with eleven islands.
 
-- Size: **2048 × 1408** (16:11 — the exact ratio of the map frame; mobile crops to 4:3
+- Size: **2048 × 1408** (16:11: the exact ratio of the map frame; mobile crops to 4:3
   from the centre, so keep every island inside the middle 75% horizontally).
 - Format: PNG, opaque.
 - Style: aged parchment nautical chart, hand-inked, sepia + gold ink, faint watercolour
-  wash. Not photoreal, not cartoon-cute — an 18th-century privateer's chart.
+  wash. Not photoreal, not cartoon-cute, an 18th-century privateer's chart.
 
 **Prompt**
 
@@ -60,7 +60,7 @@ map component picks them up.
 > compass rose, modern coastline, satellite photo, photorealistic, 3D render, people,
 > frame border, blurry
 
-**Layout hint — raises your odds of a usable arrangement.** The site currently places the
+**Layout hint: raises your odds of a usable arrangement.** The site currently places the
 eleven territories at these positions, as a percentage of the map's width and height:
 
 | # | Vertical | Territory | x % | y % | island character to aim for |
@@ -77,7 +77,7 @@ eleven territories at these positions, as a percentage of the map's width and he
 | 10 | Thunderbolt | Thunder Keep | 78 | 82 | cliff fortress under storm |
 | 11 | Auriga | Starlight Summit | 50 | 88 | tall lone summit |
 
-You don't have to hit these exactly — **send me the final PNG and I'll re-measure the
+You don't have to hit these exactly: **send me the final PNG and I'll re-measure the
 eleven coordinates off the actual image** and update `src/data/events.ts`. What matters is
 that there are exactly eleven separated islands, with clear open water between them and
 none jammed against an edge.
@@ -85,11 +85,11 @@ none jammed against an edge.
 > **Variant worth trying:** the same prompt with *"deep midnight blue-black chart, gold
 > ink on dark indigo, moonlit"* in place of parchment. Parchment gives the section strong
 > focal contrast against the dark page; the dark version blends in more. Generate both and
-> compare — parchment is my recommendation.
+> compare: parchment is my recommendation.
 
 ---
 
-## 2. The ship — `map/ship.png`
+## 2. The ship, `map/ship.png`
 
 The sprite that sails between territories.
 
@@ -97,7 +97,7 @@ The sprite that sails between territories.
 - **Critical:** three-quarter *aerial* view (camera above and slightly behind), with the
   **bow pointing at the RIGHT edge of the frame**, ship horizontally centred, sails up.
   The code rotates the sprite to face its heading, and rotation is measured from "pointing
-  right" — any other orientation puts the ship permanently sideways.
+  right": any other orientation puts the ship permanently sideways.
 - Leave ~12% empty margin on all sides so rotation never clips a mast.
 - No water, no wake, no shadow, no background.
 
@@ -117,9 +117,9 @@ The sprite that sails between territories.
 
 ---
 
-## 3. The captain — `map/captain.png`
+## 3. The captain, `map/captain.png`
 
-The pirate who guides the voyage — shown beside the active territory's detail panel.
+The pirate who guides the voyage: shown beside the active territory's detail panel.
 
 - Size: **1024 × 1536** (2:3 portrait), transparent PNG.
 - Full body, standing, facing slightly left, feet inside the frame.
@@ -141,15 +141,15 @@ The pirate who guides the voyage — shown beside the active territory's detail 
 
 ---
 
-## 4. Route markers — `map/markers.png`
+## 4. Route markers, `map/markers.png`
 
 One transparent sheet, **1024 × 1024**, four icons in a clean 2 × 2 grid with generous
 empty space between them (I slice it into four files):
 
-1. top-left — a hand-inked **X** mark, two crossed brush strokes, wax red
-2. top-right — a small closed **treasure chest**, gold-banded, three-quarter view
-3. bottom-left — an **anchor**
-4. bottom-right — a **skull-and-crossbones wax seal**, deep red wax
+1. top-left, a hand-inked **X** mark, two crossed brush strokes, wax red
+2. top-right, a small closed **treasure chest**, gold-banded, three-quarter view
+3. bottom-left, an **anchor**
+4. bottom-right, a **skull-and-crossbones wax seal**, deep red wax
 
 **Prompt**
 
@@ -169,7 +169,7 @@ empty space between them (I slice it into four files):
 
 ---
 
-## 5. Optional — `map/compass.png`
+## 5. Optional, `map/compass.png`
 
 Only if you want to replace the SVG compass rose already on the map. **1024 × 1024**,
 transparent.

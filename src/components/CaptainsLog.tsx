@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { art } from '../lib/art'
 import { Hourglass } from 'lucide-react'
 import { captainsLog } from '../data/schedule'
 import { Reveal, SectionTitle } from './primitives'
 import { SITE } from '../data/site'
 
 const catColor: Record<string, string> = {
-  'Star Night': '#e6c25e',
+  'Pro Night': '#e6c25e',
   Music: '#5aa9d0',
   Dance: '#d05a8a',
   Sports: '#4fae8b',
@@ -33,7 +34,7 @@ export default function CaptainsLog() {
           index="04"
           eyebrow="The Schedule"
           title="Captain's Log"
-          kicker={`Five days on the island, ${SITE.dates}. The hour-by-hour log is still being charted — check back closer to the fest.`}
+          kicker={`Five days on the island, ${SITE.dates}. The hour-by-hour log is still being charted; check back closer to the fest.`}
         />
 
         {/* day tabs */}
@@ -118,10 +119,21 @@ export default function CaptainsLog() {
                   })}
                 </div>
               ) : (
-                <div className="glass mt-8 flex flex-col items-center gap-3 rounded-xl px-6 py-14 text-center">
-                  <Hourglass size={22} className="text-gold/60" />
-                  <p className="font-display text-2xl text-offwhite">Coming Soon</p>
-                  <p className="max-w-sm text-[0.85rem] leading-relaxed text-parchment/60">
+                /* An empty day is a blank page in the log, not an empty
+                   panel. The ruled paper says "nothing written here yet" more
+                   plainly than any copy can. */
+                <div
+                  className="mt-8 flex flex-col items-center justify-center gap-3 px-10 py-16 text-center sm:px-16 sm:py-20"
+                  style={{
+                    backgroundImage: `url(${art.logbook})`,
+                    backgroundSize: '100% 100%',
+                    backgroundRepeat: 'no-repeat',
+                    filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.5))',
+                  }}
+                >
+                  <Hourglass size={22} className="text-wood/50" />
+                  <p className="font-display text-2xl text-wood">Coming Soon</p>
+                  <p className="max-w-sm text-[0.85rem] leading-relaxed text-wood/75">
                     The crew is still charting {active.title}'s hour-by-hour log for{' '}
                     {active.date} 2026. It'll drop here closer to the fest.
                   </p>

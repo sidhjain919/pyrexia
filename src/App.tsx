@@ -27,9 +27,27 @@ export default function App() {
   const [loaded, setLoaded] = useState(false)
   const { pathname } = useLocation()
 
-  // The account screens are utilities, not part of the voyage — the branded
+  // The account screens are utilities, not part of the voyage, the branded
   // loading sequence would be noise in front of a sign-in link.
   const isAccountScreen = ['/enter', '/pass', '/sign-in'].includes(pathname)
+
+  // Every route except the landing page opens with a heading rather than a
+  // full-bleed hero, and the header now carries the announcement strip under
+  // the bar. Without this the strip lands on the first line of each of them.
+  // The hero handles its own clearance.
+  const INNER = [
+    '/enter',
+    '/pass',
+    '/sign-in',
+    '/reset',
+    '/admin',
+    '/notices',
+    '/terms',
+    '/privacy',
+    '/refunds',
+    '/contact',
+  ]
+  const inner = INNER.includes(pathname)
 
   return (
     <>
@@ -41,7 +59,7 @@ export default function App() {
       <VoyageProgress />
       <Navbar />
 
-      <main>
+      <main className={inner ? 'pt-12 sm:pt-8' : undefined}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/enter" element={<Enter />} />
@@ -49,7 +67,7 @@ export default function App() {
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/reset" element={<Reset />} />
 
-          {/* Not the security boundary — every endpoint behind it checks the
+          {/* Not the security boundary: every endpoint behind it checks the
               admins table itself. This just shows a sentence rather than a
               broken screen to anyone who isn't crew. */}
           <Route path="/admin" element={<Admin />} />

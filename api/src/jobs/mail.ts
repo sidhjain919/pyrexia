@@ -41,7 +41,7 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
   switch (job.kind) {
     case 'email.registration_confirmed': {
       // Describe *this* order, not the running total. Someone adding the
-      // Delegate Card in October paid ₹2,250 today; telling them we received
+      // Festival Pass in October paid ₹2,250 today; telling them we received
       // ₹2,700 reads like they were charged twice.
       const row = await env.DB.prepare(
         `SELECT r.name, r.email, r.public_code, o.amount_paise,
@@ -70,7 +70,7 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
       const passUrl = await deepLink(env, job.registrationId, '/pass')
 
       // An upgrade is a paid order that follows an earlier one and adds only
-      // the Delegate Card. Everything else is a first arrival.
+      // the Festival Pass. Everything else is a first arrival.
       const isUpgrade = row.earlier_orders > 0 && !products.includes('basic')
 
       const message = isUpgrade
@@ -83,7 +83,7 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
         : templates.registrationConfirmed({
             name: row.name,
             publicCode: row.public_code,
-            tierName: products.includes('delegate') ? 'Delegate Card' : 'Basic Registration',
+            tierName: products.includes('delegate') ? 'Festival Pass' : 'Basic Registration',
             amountPaise: row.amount_paise,
             passUrl,
           })
@@ -120,7 +120,7 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
 
       // Deliberately not through deliver(): a verification code is how someone
       // proves an address works, so refusing to send it because that address
-      // is on the suppression list would make a bounced typo permanent — they
+      // is on the suppression list would make a bounced typo permanent, they
       // could never correct it by re-verifying.
       const result = await send.send({
         to: row.email,
@@ -199,7 +199,7 @@ async function deliver(
   toName: string,
   message: { subject: string; html: string; text: string },
 ): Promise<void> {
-  // Has this address already told us to stop — by bouncing permanently, or by
+  // Has this address already told us to stop: by bouncing permanently, or by
   // someone marking us as spam? Amazon judges a sender on how often they send
   // to addresses that reject them, and one bad reputation delays every
   // student's pass. So the question is asked before every single send, not
@@ -233,7 +233,7 @@ async function deliver(
   console.error('mail failed', send.name, to, result.error)
 
   // Throwing hands the message back to the queue for another attempt. A
-  // permanent failure — a bad address, an unverified sender — is swallowed,
+  // permanent failure: a bad address, an unverified sender, is swallowed,
   // because retrying it just burns the queue for the same answer.
   if (result.retryable) throw new Error(result.error)
 }

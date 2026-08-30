@@ -5,8 +5,8 @@
 -- be sent to do it. Previously a person who hadn't paid didn't exist at all,
 -- which made "please sign in" impossible to act on.
 --
--- Rather than split into accounts + registrations — a rebuild that every
--- foreign key in the schema points at — a registration row is now created at
+-- Rather than split into accounts + registrations, a rebuild that every
+-- foreign key in the schema points at: a registration row is now created at
 -- sign-up with its detail columns empty, and filled in when the pass is
 -- bought. `status` reads:
 --

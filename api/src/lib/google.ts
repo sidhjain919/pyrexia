@@ -1,7 +1,7 @@
 /**
  * Verifying a Google sign-in.
  *
- * The browser hands us an ID token — a JWT that Google signed. Everything we
+ * The browser hands us an ID token: a JWT that Google signed. Everything we
  * are about to trust (this is Aarav, this is his address, Google checked it)
  * rests on that signature, so the token is checked in full before a single
  * field inside it is read.
@@ -79,7 +79,7 @@ export async function verifyGoogleIdToken(
     return null
   }
 
-  // Only RS256. Accepting whatever the token names is the classic JWT hole —
+  // Only RS256. Accepting whatever the token names is the classic JWT hole -
   // "alg": "none" turns a signature check into a formality.
   if (header.alg !== 'RS256' || typeof header.kid !== 'string') return null
 

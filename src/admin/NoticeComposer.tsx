@@ -85,7 +85,7 @@ export default function NoticeComposer({ onError }: { onError: (message: string)
 
   const remove = async (notice: Notice) => {
     // Deleting a notice is not recoverable and the list gives no undo, so it
-    // asks first. Publishing and unpublishing do not — those are reversible.
+    // asks first. Publishing and unpublishing do not, those are reversible.
     if (!confirm(`Delete “${notice.title}”? This cannot be undone.`)) return
     try {
       await api.deleteNotice(notice.id)
@@ -277,7 +277,7 @@ export default function NoticeComposer({ onError }: { onError: (message: string)
               <div className="mt-0.5 font-log text-[0.55rem] uppercase tracking-wide2 text-parchment/35">
                 {notice.category}
                 {' · '}
-                {/* The word, not a colour — a draft must never be mistaken for live. */}
+                {/* The word, not a colour: a draft must never be mistaken for live. */}
                 {notice.published ? 'Live' : 'Draft'}
                 {notice.expiresAt ? ' · expires' : ''}
               </div>

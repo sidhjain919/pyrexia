@@ -1,6 +1,6 @@
 /**
  * Bounce notifications are only worth acting on if we can tell a real one from
- * a forged one — a fake bounce would let a stranger stop us emailing whichever
+ * a forged one: a fake bounce would let a stranger stop us emailing whichever
  * address they chose.
  *
  * The certificate and signature below are real, generated with openssl at the
@@ -70,7 +70,7 @@ test('sns: rejects a tampered message', async () => {
 })
 
 test('sns: rejects a certificate served from somewhere other than Amazon', async () => {
-  // Without this the check would be circular — the sender chooses the URL, so
+  // Without this the check would be circular: the sender chooses the URL, so
   // they would simply point it at their own certificate.
   const spoofed = {
     ...message,

@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 
 /**
  * Two distinct journeys:
- *  - `delegate` — buy the pass. Details, ID documents, payment, QR issued.
- *  - `event`    — enter one specific competition. Gated on a confirmed pass.
+ *  - `delegate`: buy the pass. Details, ID documents, payment, QR issued.
+ *  - `event`   : enter one specific competition. Gated on a confirmed pass.
  */
 export type RegisterMode = 'delegate' | 'event'
 

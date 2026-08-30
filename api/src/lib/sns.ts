@@ -3,7 +3,7 @@
  *
  * SES reports bounces and complaints by POSTing to a URL of ours. Anyone can
  * POST to a URL, and a forged bounce would let a stranger stop us emailing any
- * address they chose — so every message is checked against Amazon's signature
+ * address they chose: so every message is checked against Amazon's signature
  * before it is believed.
  *
  * The awkward part is that Amazon signs with an X.509 certificate, and
@@ -105,7 +105,7 @@ export type SnsMessage = {
 /**
  * The exact bytes Amazon signed.
  *
- * Field order is fixed by Amazon and is not alphabetical by accident — it is
+ * Field order is fixed by Amazon and is not alphabetical by accident, it is
  * simply what their signer does. A field that is absent is skipped rather than
  * sent empty, which is why `Subject` is conditional.
  */
@@ -127,7 +127,7 @@ function canonicalString(message: SnsMessage): string {
 /**
  * Only Amazon's own hosts may be asked for a signing certificate.
  *
- * Without this the SigningCertURL — a field the sender controls — would make
+ * Without this the SigningCertURL: a field the sender controls, would make
  * the check circular: an attacker would point it at their own certificate and
  * sign with the matching key.
  */

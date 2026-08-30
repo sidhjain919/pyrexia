@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { NAV, SITE, SOCIAL } from '../data/site'
-import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import { Icon } from '../lib/icons'
 import { Compass } from './primitives'
 import { asset } from '../lib/asset'
@@ -80,8 +79,8 @@ export default function Footer() {
           <div>
             <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
-              Basic Registration (₹{BASIC_AMOUNT}) and the Delegate Card (+₹{DELEGATE_ADDON} for the
-              Star Nights) — both on the official PYREXIA website.
+              Basic Registration and the Festival Pass, which opens the Pro Nights, are both on the
+              official PYREXIA website. You see the price when you register.
             </p>
             <button
               onClick={() => openRegister()}

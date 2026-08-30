@@ -2,7 +2,7 @@
  * Encrypting identity documents at rest.
  *
  * A scanned Aadhaar card or a college ID is the most sensitive thing this
- * system will ever hold — far more damaging if leaked than an email address or
+ * system will ever hold: far more damaging if leaked than an email address or
  * even a payment record, because it cannot be changed after the fact. So the
  * bytes in the bucket are ciphertext, and the key lives outside the bucket as
  * a Worker secret. Someone who obtains the storage still has nothing.
@@ -13,7 +13,7 @@
  * returning different bytes.
  */
 
-/** Never reuse a nonce with the same key — 12 random bytes per file. */
+/** Never reuse a nonce with the same key: 12 random bytes per file. */
 const NONCE_BYTES = 12
 
 /**
@@ -58,7 +58,7 @@ export async function encryptBytes(secret: string, plain: ArrayBuffer): Promise<
 /**
  * Reverse it.
  *
- * Throws on a wrong key or a tampered file rather than returning rubbish —
+ * Throws on a wrong key or a tampered file rather than returning rubbish -
  * that is GCM's authentication tag doing its job, and the caller should treat
  * a failure here as "this file is not readable", never as "return it anyway".
  */
@@ -75,7 +75,7 @@ export async function decryptBytes(secret: string, stored: ArrayBuffer): Promise
   )
 }
 
-/** For the integrity column — lets a later audit prove a file is unchanged. */
+/** For the integrity column: lets a later audit prove a file is unchanged. */
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', data)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')

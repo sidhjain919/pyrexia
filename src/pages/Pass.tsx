@@ -7,21 +7,23 @@ import {
   ApiError,
   api,
   clearSession,
+  rememberAccount,
   getSession,
   newIdempotencyKey,
   waitForConfirmation,
   type Me,
   type PassView,
 } from '../api/client'
+import { art } from '../lib/art'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
 import { useRegistration } from '../registration/context'
 
 /**
- * My Voyage — the pass, and the one thing left to buy.
+ * My Voyage: the pass, and the one thing left to buy.
  *
  * The QR is rendered here from a token the server signs on every request rather
  * than from a stored image. That costs nothing and means the code on screen is
- * always current: buy the Delegate Card and reopen this page, and the QR
+ * always current: buy the Festival Pass and reopen this page, and the QR
  * already says Delegate.
  */
 export default function Pass() {
@@ -45,6 +47,14 @@ export default function Pass() {
     try {
       const account = await api.me()
       setMe(account)
+      // Keeps the greeting in the header right for sessions that predate it,
+      // and for anyone whose name changed since they signed in.
+      rememberAccount({
+        email: account.email,
+        name: account.name,
+        publicCode: account.publicCode,
+        hasRegistration: account.hasRegistration,
+      })
 
       if (account.hasPass) {
         const p = await api.pass()
@@ -167,21 +177,32 @@ export default function Pass() {
               You haven't registered for the fest yet
             </p>
             <p className="mx-auto mt-2 max-w-sm text-[0.88rem] leading-relaxed text-parchment/70">
-              Having an account isn't the same as being registered. Basic Registration is ₹450, it's
+              Having an account isn't the same as being registered. Basic Registration is ₹500, it's
               compulsory for everyone, and it covers every event.
             </p>
             <button
               onClick={() => openRegister()}
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-7 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
             >
-              <Ticket size={14} /> Complete my registration · ₹450
+              <Ticket size={14} /> Complete my registration · ₹500
             </button>
           </div>
         )}
 
         {/* The pass */}
         {me.hasRegistration && pass && qr ? (
-          <div className="parchment mt-9 rounded-2xl p-6 shadow-cinema sm:p-8">
+          <div
+            /* A printed ticket rather than a CSS card. This is the thing people
+               screenshot and hold up at the gate, so it is worth it looking
+               like something that was printed. */
+            className="mt-9 px-7 py-8 sm:px-10 sm:py-10"
+            style={{
+              backgroundImage: `url(${art.passCard})`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat',
+              filter: 'drop-shadow(0 20px 44px rgba(0,0,0,0.55))',
+            }}
+          >
             {/* The date line gets its own row: sharing one with the tier badge
                 left both it and the name wrapping on a narrow phone. */}
             <div className="font-log text-[0.58rem] uppercase tracking-cinema text-wood/60">
@@ -214,7 +235,7 @@ export default function Pass() {
             </div>
 
             <p className="mt-5 text-center text-[0.7rem] leading-relaxed text-wood/60">
-              Show this at the gate. It works offline — but don't share it: one entry per gate per
+              Show this at the gate. It works offline, but don't share it: one entry per gate per
               day, and the guard sees your name.
             </p>
           </div>
@@ -243,14 +264,14 @@ export default function Pass() {
           <div className="glass mt-6 rounded-2xl p-6">
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-display text-[1.05rem] leading-tight text-offwhite sm:text-lg">
-                Add the Delegate Card
+                Add the Festival Pass
               </span>
               <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
                 +₹{((me.available.find((p) => p.id === 'delegate')?.amountPaise ?? 225000) / 100).toLocaleString('en-IN')}
               </span>
             </div>
             <p className="mt-1.5 text-[0.85rem] leading-relaxed text-parchment/65">
-              The only way into all five Star Nights. Your pass stays the same — anything you've
+              The only way into all five Pro Nights. Your pass stays the same, and anything you've
               already printed keeps working.
             </p>
             <button
@@ -259,7 +280,7 @@ export default function Pass() {
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss disabled:opacity-60"
             >
               {upgrading ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
-              {upgrading ? 'Working…' : 'Unlock the Star Nights'}
+              {upgrading ? 'Working…' : 'Unlock the Pro Nights'}
             </button>
           </div>
         )}
@@ -268,7 +289,7 @@ export default function Pass() {
           <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-aqua/35 bg-aqua/10 px-4 py-3">
             <Check size={15} className="shrink-0 text-aqua" />
             <span className="text-[0.86rem] text-parchment/80">
-              All five Star Nights are open to you.
+              All five Pro Nights are open to you.
             </span>
           </div>
         )}

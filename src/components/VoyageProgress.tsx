@@ -1,7 +1,7 @@
 import { motion, useReducedMotion, useScroll, useSpring } from 'framer-motion'
 
 /**
- * A fixed voyage line down the left edge of the page — a small ship glides
+ * A fixed voyage line down the left edge of the page, a small ship glides
  * along it as you scroll, so navigating the site itself feels like sailing
  * from the top of the chart to the bottom.
  */

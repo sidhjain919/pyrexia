@@ -2,7 +2,7 @@
  * Passwords.
  *
  * Cloudflare Workers have no bcrypt or argon2, so this uses PBKDF2-HMAC-SHA256
- * from the built-in crypto — the standard choice on the platform.
+ * from the built-in crypto: the standard choice on the platform.
  *
  * The stored format carries its own parameters:
  *
@@ -18,7 +18,7 @@ const ALGO = 'pbkdf2'
 const DIGEST = 'sha256'
 
 /**
- * Cloudflare Workers refuse more than 100,000 PBKDF2 iterations — anything
+ * Cloudflare Workers refuse more than 100,000 PBKDF2 iterations, anything
  * higher throws NotSupportedError. That is well under OWASP's 600,000 for
  * PBKDF2-SHA256, so rather than settle for a weaker hash we chain rounds: six
  * passes of 100,000, each feeding the previous output back in as the password.
@@ -93,7 +93,7 @@ export async function verifyPassword(password: string, stored: string | null): P
   const parts = stored.split('$')
   if (parts.length !== 5 || parts[0] !== ALGO || parts[1] !== DIGEST) return false
 
-  // "100000x6" — iterations per round, and how many rounds. A bare number is
+  // "100000x6": iterations per round, and how many rounds. A bare number is
   // the older single-round form, still read so nothing already stored breaks.
   const [iterText, roundText] = parts[2].split('x')
   const iterations = Number(iterText)

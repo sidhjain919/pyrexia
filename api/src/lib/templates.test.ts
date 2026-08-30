@@ -10,18 +10,18 @@ test('the confirmation carries the number, the amount and the link', () => {
     name: 'Aarav Sharma',
     publicCode: 'PYX26-4KD9TQ',
     tierName: 'Basic Registration',
-    amountPaise: 45000,
+    amountPaise: 50000,
     passUrl: PASS_URL,
   })
 
   for (const body of [mail.html, mail.text]) {
     assert.match(body, /PYX26-4KD9TQ/, 'registration number must appear')
-    assert.match(body, /₹450/, 'the amount they paid must appear')
+    assert.match(body, /₹500/, 'the amount they paid must appear')
     assert.match(body, /Basic Registration/)
     assert.match(body, /token=abc123/, 'the sign-in link must appear')
   }
 
-  // In HTML an ampersand inside an attribute has to be written `&amp;` — the
+  // In HTML an ampersand inside an attribute has to be written `&amp;`, the
   // browser decodes it back, so the link still works. The text version keeps
   // the raw URL, because there is nothing to decode it.
   assert.ok(mail.html.includes(PASS_URL.replace(/&/g, '&amp;')), 'href must be entity-escaped')
@@ -35,13 +35,13 @@ test('a Delegate sees ₹2,700, formatted for India', () => {
   const mail = registrationConfirmed({
     name: 'Meera Nair',
     publicCode: 'PYX26-D90T8M',
-    tierName: 'Delegate Card',
+    tierName: 'Festival Pass',
     amountPaise: 270000,
     passUrl: PASS_URL,
   })
 
   assert.match(mail.text, /₹2,70,000|₹2,700/, `got: ${mail.text.match(/₹[\d,]+/)?.[0]}`)
-  assert.match(mail.text, /Delegate Card/)
+  assert.match(mail.text, /Festival Pass/)
 })
 
 test('a name containing HTML cannot break the message', () => {
@@ -103,7 +103,7 @@ test('the HTML is self-contained and survives Gmail', () => {
     amountPaise: 45000, passUrl: PASS_URL,
   })
 
-  assert.doesNotMatch(mail.html, /<style/i, 'Gmail strips style blocks — everything must be inline')
+  assert.doesNotMatch(mail.html, /<style/i, 'Gmail strips style blocks, everything must be inline')
   assert.doesNotMatch(mail.html, /<img/i, 'no images: clients block them and a baked-in QR goes stale')
   assert.match(mail.html, /style="/, 'styling has to be inline attributes')
   assert.match(mail.html, /<!doctype html>/i)

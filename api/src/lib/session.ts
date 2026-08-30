@@ -1,7 +1,7 @@
 /**
  * Sessions and passwordless sign-in.
  *
- * Nobody signs up. Paying *is* signing up — by the time someone finishes Basic
+ * Nobody signs up. Paying *is* signing up, by the time someone finishes Basic
  * Registration we already hold their name, email and phone, so making them fill
  * a second form to "create an account" would be friction for nothing.
  *
@@ -19,7 +19,7 @@ import type { Env } from '../types.ts'
 import { newSecretToken, sha256Hex } from './ids.ts'
 import { ApiError } from './http.ts'
 
-/** A recovery link is short-lived on purpose — it is a password reset. */
+/** A recovery link is short-lived on purpose: it is a password reset. */
 const LINK_TTL_MINUTES = 30
 /**
  * The link inside the confirmation email is a different animal. That email says
@@ -27,7 +27,7 @@ const LINK_TTL_MINUTES = 30
  * make it dead on arrival for anyone who didn't tap immediately, so it lives as
  * long as a session and can be reopened.
  *
- * The trade is that it becomes a bearer credential sitting in an inbox — which
+ * The trade is that it becomes a bearer credential sitting in an inbox, which
  * is the same bargain every ticket email makes, and why buying an upgrade
  * re-checks rather than trusting the session alone.
  */
@@ -51,7 +51,7 @@ export type Session = {
 /**
  * Mint a single-use sign-in token.
  *
- * Returns the raw token, which is the *only* time it exists in readable form —
+ * Returns the raw token, which is the *only* time it exists in readable form -
  * it goes straight into an email and we keep nothing but its hash.
  */
 export type TokenPurpose = 'magic_link' | 'otp' | 'pass_link'
@@ -76,7 +76,7 @@ export async function createLoginToken(
 }
 
 function sixDigitCode(): string {
-  // Rejection sampling so every code is equally likely — a modulo here would
+  // Rejection sampling so every code is equally likely, a modulo here would
   // make some codes measurably more common than others.
   const max = 1_000_000
   const limit = Math.floor(0xffffffff / max) * max
@@ -193,7 +193,7 @@ export async function resolveSession(env: Env, token: string | null): Promise<Se
 
   if (!row) return null
 
-  // Fire and forget — a failed heartbeat should never fail the request.
+  // Fire and forget: a failed heartbeat should never fail the request.
   env.DB.prepare("UPDATE sessions SET last_seen_at = datetime('now') WHERE token_hash = ?")
     .bind(await sha256Hex(token))
     .run()
@@ -222,7 +222,7 @@ export async function revokeSession(env: Env, token: string): Promise<void> {
 /**
  * Accept either a bearer token or a cookie.
  *
- * Right now the site is on github.io and the API on workers.dev — different
+ * Right now the site is on github.io and the API on workers.dev, different
  * sites, so an httpOnly cookie would be a third-party cookie and Safari would
  * drop it. Bearer tokens work everywhere today. Once both live under one
  * domain (`pyrexia.in` and `api.pyrexia.in`) the cookie becomes first-party and

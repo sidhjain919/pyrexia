@@ -12,7 +12,7 @@
  *   - create the Razorpay order with the secret key
  *   - verify `razorpay_signature` with HMAC-SHA256 before marking a pass paid
  *   - store Aadhaar / student-ID files in a PRIVATE bucket, admin-read only,
- *     served through short-lived signed URLs — never public objects
+ *     served through short-lived signed URLs: never public objects
  *   - mint the QR payload as a signed token the scanner can verify offline
  */
 
@@ -40,12 +40,12 @@ export interface RegistrationApi {
   confirmDelegatePayment(delegateId: string, payment: PaymentResult): Promise<Delegate>
   /** Enter a confirmed delegate into one event. */
   registerForEvent(input: EventEntryInput): Promise<EventEntry>
-  /** Everything this delegate has already entered — used to block double entries. */
+  /** Everything this delegate has already entered: used to block double entries. */
   listEntries(delegateId: string): Promise<EventEntry[]>
 }
 
 /* ------------------------------------------------------------------ *
- * Mock adapter — localStorage, no network, no money
+ * Mock adapter: localStorage, no network, no money
  * ------------------------------------------------------------------ */
 
 const KEY_DELEGATES = 'pyrexia26.delegates'
@@ -68,7 +68,7 @@ function write<T>(key: string, rows: T[]) {
   try {
     localStorage.setItem(key, JSON.stringify(rows))
   } catch {
-    /* private mode / quota — the mock just forgets */
+    /* private mode / quota: the mock just forgets */
   }
 }
 
@@ -104,7 +104,7 @@ export const mockApi: RegistrationApi = {
   async uploadDocument(file, kind) {
     await wait(700)
     if (file.size > 8 * 1024 * 1024) {
-      throw new RegistrationError('That file is over 8 MB — please compress it.', 'upload_failed')
+      throw new RegistrationError('That file is over 8 MB. Please compress it.', 'upload_failed')
     }
     const ref: DocumentRef = {
       ref: `mock://${kind}/${code(10)}`,
@@ -112,7 +112,7 @@ export const mockApi: RegistrationApi = {
       size: file.size,
       mime: file.type,
     }
-    // Metadata only. The mock never persists the file bytes — an identity
+    // Metadata only. The mock never persists the file bytes, an identity
     // document has no business sitting in localStorage.
     write(KEY_DOCS, [...read<DocumentRef>(KEY_DOCS), ref])
     return ref
@@ -176,7 +176,7 @@ export const mockApi: RegistrationApi = {
     if (!delegate) throw new RegistrationError('No pass found for that number.', 'not_found')
     if (delegate.status !== 'confirmed') {
       throw new RegistrationError(
-        'That pass has not been paid for yet — complete the delegate payment first.',
+        'That pass has not been paid for yet. Complete the delegate payment first.',
         'not_confirmed',
       )
     }

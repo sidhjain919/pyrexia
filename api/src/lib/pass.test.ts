@@ -2,7 +2,7 @@
  * Pass token tests.
  *
  * These are the tests that matter most in the whole codebase: everything here
- * is about someone not getting into a Star Night they didn't pay for, or a
+ * is about someone not getting into a Pro Night they didn't pay for, or a
  * paying delegate not being turned away at the door.
  *
  * Run with:  npm test
@@ -127,8 +127,8 @@ test('upgrading the tier byte breaks the signature', async () => {
   const { privateKey, publicKey } = await keypair()
   const token = await signPass(payload({ tierFloor: 0 }), privateKey)
 
-  // Flip byte 18 from Basic to Delegate and re-encode — the exact attack a
-  // Basic holder would try to get into a Star Night.
+  // Flip byte 18 from Basic to Delegate and re-encode, the exact attack a
+  // Basic holder would try to get into a Pro Night.
   const [prefix, body, sig] = token.split('.')
   const bytes = fromBase64Url(body)
   bytes[18] = 1
@@ -217,7 +217,7 @@ test('a valid Basic pass gets into the main gate', async () => {
   assert.equal(decision.entry?.name, 'Aarav Sharma')
 })
 
-test('a Basic pass is turned away from a Star Night gate', async () => {
+test('a Basic pass is turned away from a Pro Night gate', async () => {
   const { privateKey, publicKey } = await keypair()
   const p = payload()
   const verified = await verifyPass(await signPass(p, privateKey), new Map([[1, publicKey]]))
@@ -241,7 +241,7 @@ test('an upgrade bought after printing works on the old QR', async () => {
   const p = payload({ tierFloor: 0 })
   const verified = await verifyPass(await signPass(p, privateKey), new Map([[1, publicKey]]))
 
-  // Bought the Delegate Card last night; the manifest knows even though the
+  // Bought the Festival Pass last night; the manifest knows even though the
   // paper in their hand still says Basic.
   const decision = decidePassAtGate({
     verified,

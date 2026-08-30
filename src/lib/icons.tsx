@@ -16,7 +16,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 
-/* Brand glyphs — lucide-react removed its brand icons, so these are inlined. */
+/* Brand glyphs: lucide-react removed its brand icons, so these are inlined. */
 const Instagram = (p: LucideProps) => (
   <svg viewBox="0 0 24 24" width={p.size ?? 24} height={p.size ?? 24} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
     <rect x="2" y="2" width="20" height="20" rx="5" />

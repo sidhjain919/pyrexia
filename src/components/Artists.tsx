@@ -17,17 +17,17 @@ export default function Artists() {
           eyebrow="The Crew · Legends"
           title="Starlight Summit"
           meaning="Lineup"
-          kicker={`Five nights, five reveals — one for every day of the voyage, ${SITE.dates}. A glimpse of the legends who have lit the PYREXIA sky, and the names still charted in secret.`}
+          kicker={`Five nights, five reveals, one for every day of the voyage, ${SITE.dates}. A glimpse of the legends who have lit the PYREXIA sky, and the names still charted in secret.`}
         />
 
-        {/* 2026 mystery slots — one per night of the fest */}
+        {/* 2026 mystery slots: one per night of the fest */}
         <div className="mt-14 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
           {mysterySlots.map((m, i) => (
             <Reveal
               key={m.label}
               delay={i * 0.08}
               /* Five cards over a three-column tablet grid leave a gap on the
-                 last row — the final card spans it so the block stays even. */
+                 last row: the final card spans it so the block stays even. */
               className={i === mysterySlots.length - 1 ? 'col-span-2 sm:col-span-1' : undefined}
             >
               <div className="glass group relative flex h-44 flex-col items-center justify-center overflow-hidden rounded-xl px-3 text-center">

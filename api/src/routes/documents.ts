@@ -8,7 +8,7 @@
  * **Encrypted before it is stored.** Nothing readable ever reaches the bucket.
  *
  * **Every view is logged.** An admin opening someone's Aadhaar card leaves an
- * audit entry with their name on it. Not a deterrent for an attacker — a
+ * audit entry with their name on it. Not a deterrent for an attacker, a
  * record for the people whose documents these are.
  *
  * **Deleted on a date fixed at upload.** The privacy policy promises removal
@@ -74,7 +74,7 @@ documents.post('/me/documents', async (c) => {
   }
 
   // Already approved? Then this is the desk's evidence and not the student's
-  // to overwrite. Anything else — unsubmitted, pending, rejected — may be
+  // to overwrite. Anything else, unsubmitted, pending, rejected, may be
   // replaced, which is how somebody fixes a blurred photo.
   const state = await c.env.DB.prepare('SELECT verification FROM registrations WHERE id = ?')
     .bind(session.registrationId)
@@ -135,7 +135,7 @@ documents.post('/me/documents', async (c) => {
   return c.json({ id, kind, sizeBytes: plain.byteLength }, 201)
 })
 
-/** What this person has uploaded — metadata only, never the file. */
+/** What this person has uploaded: metadata only, never the file. */
 documents.get('/me/documents', async (c) => {
   const session = await resolveSession(c.env, readToken(c.req.raw.headers))
   if (!session) throw new ApiError('unauthorised', 'Sign in first.')

@@ -3,7 +3,7 @@
  *
  * The Ed25519 private key arrives as a base64url PKCS#8 secret and has to be
  * turned into a `CryptoKey` before it can sign anything. That import is not
- * free, so it is cached for the lifetime of the isolate — a Worker handling a
+ * free, so it is cached for the lifetime of the isolate, a Worker handling a
  * burst of registrations imports the key once, not once per request.
  *
  * The cache is keyed by the secret itself rather than by key id, so rotating
@@ -22,7 +22,7 @@ function fromBase64Url(s: string): Uint8Array {
 
 /**
  * The private half. Import fails loudly rather than silently producing an
- * unusable key — a pass that can't be signed must stop the request, not
+ * unusable key: a pass that can't be signed must stop the request, not
  * quietly issue something the gate will reject.
  */
 export async function importSigningKey(secret: string): Promise<CryptoKey> {
@@ -30,7 +30,7 @@ export async function importSigningKey(secret: string): Promise<CryptoKey> {
   if (hit) return hit
 
   if (!secret) {
-    throw new Error('PASS_SIGNING_KEY_V1 is not set — cannot issue passes')
+    throw new Error('PASS_SIGNING_KEY_V1 is not set, cannot issue passes')
   }
 
   const key = await crypto.subtle.importKey(

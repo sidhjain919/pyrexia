@@ -1,5 +1,5 @@
 /**
- * Razorpay — orders, and the two signatures that stand between us and someone
+ * Razorpay: orders, and the two signatures that stand between us and someone
  * granting themselves a pass for free.
  *
  * Three rules this module exists to enforce:
@@ -21,6 +21,24 @@ export type RazorpayConfig = {
   keyId: string
   keySecret: string
   webhookSecret: string
+}
+
+/**
+ * The credentials, read from the environment.
+ *
+ * Lives here rather than being redefined per route: two copies is one copy too
+ * many for the thing that signs money.
+ */
+export function razorpayConfig(env: {
+  RAZORPAY_KEY_ID: string
+  RAZORPAY_KEY_SECRET: string
+  RAZORPAY_WEBHOOK_SECRET: string
+}): RazorpayConfig {
+  return {
+    keyId: env.RAZORPAY_KEY_ID,
+    keySecret: env.RAZORPAY_KEY_SECRET,
+    webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
+  }
 }
 
 export type CreatedOrder = {
@@ -82,7 +100,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
  * Verify the signature Checkout hands back in the browser.
  *
  * Razorpay signs `order_id|payment_id` with the key secret. Passing this means
- * the payment is real — but it arrives over a channel the user controls, so
+ * the payment is real: but it arrives over a channel the user controls, so
  * treat it as good enough to show a success screen and never as authority to
  * grant an entitlement. That is the webhook's job.
  */
@@ -98,7 +116,7 @@ export async function verifyCheckoutSignature(
 /**
  * Verify a webhook.
  *
- * `rawBody` must be the exact bytes Razorpay sent — read the body as text once
+ * `rawBody` must be the exact bytes Razorpay sent, read the body as text once
  * and hand that same string here. Parsing to JSON and re-serialising changes
  * key order and whitespace, and the signature will never match again. This is
  * the single most common way this integration is got wrong.
@@ -141,7 +159,7 @@ async function call<T>(cfg: RazorpayConfig, path: string, init?: RequestInit): P
 /**
  * Create an order.
  *
- * `amountPaise` is always read from our products table by the caller — this
+ * `amountPaise` is always read from our products table by the caller, this
  * function has no opinion, but nothing upstream should ever be taking it from
  * a request body.
  */
@@ -165,7 +183,7 @@ export async function createOrder(
       currency: 'INR',
       receipt: args.receipt,
       notes: args.notes ?? {},
-      // Capture automatically — a payment left authorised but uncaptured is
+      // Capture automatically: a payment left authorised but uncaptured is
       // money the student has parted with and we have not taken.
       payment_capture: 1,
     }),

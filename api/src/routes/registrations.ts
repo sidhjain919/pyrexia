@@ -4,7 +4,7 @@
  * The shape of the flow, and why:
  *
  *   POST /api/registrations           new person + order, returns a Razorpay order
- *   POST /api/registrations/:id/upgrade   an existing person adds the Delegate Card
+ *   POST /api/registrations/:id/upgrade   an existing person adds the Festival Pass
  *   POST /api/checkout/verify         the browser's success callback
  *
  * Nothing here grants an entitlement. The callback in `/checkout/verify` proves
@@ -24,15 +24,9 @@ import { validateRegistration } from '../lib/validate.ts'
 import * as idem from '../lib/idempotency.ts'
 import * as audit from '../lib/audit.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
-import { createOrder, verifyCheckoutSignature } from '../lib/razorpay.ts'
+import { createOrder, razorpayConfig, verifyCheckoutSignature } from '../lib/razorpay.ts'
 
 export const registrations = new Hono<{ Bindings: Env }>()
-
-const razorpayConfig = (env: Env) => ({
-  keyId: env.RAZORPAY_KEY_ID,
-  keySecret: env.RAZORPAY_KEY_SECRET,
-  webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
-})
 
 /* ------------------------------------------------------------------ *
  * Catalogue
@@ -76,17 +70,17 @@ registrations.get('/pass-keys', (c) =>
  * ------------------------------------------------------------------ */
 
 /**
- * Buy Basic Registration (and optionally the Delegate Card with it).
+ * Buy Basic Registration (and optionally the Festival Pass with it).
  *
- * Requires an account. The row already exists — sign-up created it with the
- * detail columns empty — so this fills them in and opens an order, rather than
+ * Requires an account. The row already exists, sign-up created it with the
+ * detail columns empty: so this fills them in and opens an order, rather than
  * conjuring a person out of a form.
  */
 /**
  * No paying from an address nobody has proved.
  *
  * The pass is delivered by email, so a typo here means someone pays and never
- * receives the thing they paid for — and from our side that is indistinguishable
+ * receives the thing they paid for: and from our side that is indistinguishable
  * from a person who just hasn't checked their inbox. Better to stop before the
  * money moves than to refund afterwards.
  */
@@ -117,7 +111,7 @@ registrations.post('/registrations', async (c) => {
     return c.json(seen.response.body as object, seen.response.statusCode as 200)
   }
 
-  // The email comes from the account, never from this form — it is the login,
+  // The email comes from the account, never from this form, it is the login,
   // and letting a checkout rewrite it is how someone locks themselves out.
   const { ok, errors, value } = validateRegistration({ ...body, email: session.email })
   if (!ok) {
@@ -133,7 +127,7 @@ registrations.post('/registrations', async (c) => {
   if (owned.has('basic')) {
     throw new ApiError(
       'already_registered',
-      'Your Basic Registration is already complete. Add the Delegate Card from your pass instead.',
+      'Your Basic Registration is already complete. Add the Festival Pass from your pass instead.',
     )
   }
 
@@ -193,9 +187,16 @@ registrations.post('/registrations', async (c) => {
         registrationId,
       ),
       c.env.DB.prepare(
-        `INSERT INTO orders (id, registration_id, amount_paise, razorpay_order_id, status)
-         VALUES (?, ?, ?, ?, 'created')`,
-      ).bind(orderId, registrationId, priced.quote.totalPaise, rzpOrder.id),
+        `INSERT INTO orders (id, registration_id, amount_paise, convenience_paise,
+                             kind, razorpay_order_id, status)
+         VALUES (?, ?, ?, ?, 'registration', ?, 'created')`,
+      ).bind(
+        orderId,
+        registrationId,
+        priced.quote.totalPaise,
+        priced.quote.conveniencePaise,
+        rzpOrder.id,
+      ),
       ...priced.quote.lines.map((line) =>
         c.env.DB.prepare(
           'INSERT INTO order_items (id, order_id, product_id, amount_paise) VALUES (?, ?, ?, ?)',
@@ -225,6 +226,9 @@ registrations.post('/registrations', async (c) => {
         phone: value.phone,
       },
       lines: priced.quote.lines,
+      subtotalPaise: priced.quote.subtotalPaise,
+      conveniencePaise: priced.quote.conveniencePaise,
+      totalPaise: priced.quote.totalPaise,
     }
 
     await idem.remember(c.env, { key, endpoint, statusCode: 201, body: response })
@@ -236,15 +240,15 @@ registrations.post('/registrations', async (c) => {
 })
 
 /* ------------------------------------------------------------------ *
- * Upgrade — adding the Delegate Card later
+ * Upgrade: adding the Festival Pass later
  * ------------------------------------------------------------------ */
 
 /**
- * Adding the Delegate Card later.
+ * Adding the Festival Pass later.
  *
  * Two paths into the same handler:
- *   POST /api/me/upgrade                  — the one the site uses
- *   POST /api/registrations/:id/upgrade   — same thing, id spelled out
+ *   POST /api/me/upgrade                 : the one the site uses
+ *   POST /api/registrations/:id/upgrade  : same thing, id spelled out
  *
  * Both resolve the buyer from the session, never from the URL. The `:id` form
  * exists only so a mismatch can be reported clearly instead of silently
@@ -256,9 +260,9 @@ const upgradeHandler = async (c: Context<{ Bindings: Env }>) => {
   const body = (await readJson(c)) as Record<string, unknown>
   const key = idem.requireKey(c.req.header('Idempotency-Key'))
 
-  // The buyer is whoever holds the session — never whoever is named in the URL.
+  // The buyer is whoever holds the session: never whoever is named in the URL.
   const session = await resolveSession(c.env, readToken(c.req.raw.headers))
-  if (!session) throw new ApiError('unauthorised', 'Sign in to add the Delegate Card.')
+  if (!session) throw new ApiError('unauthorised', 'Sign in to add the Festival Pass.')
 
   if (paramId && paramId !== 'me' && paramId !== session.registrationId) {
     throw new ApiError('forbidden', 'You can only upgrade your own registration.')
@@ -289,7 +293,7 @@ const upgradeHandler = async (c: Context<{ Bindings: Env }>) => {
   if (registration.status !== 'confirmed') {
     throw new ApiError(
       'payment_required',
-      'Finish your Basic Registration before adding the Delegate Card.',
+      'Finish your Basic Registration before adding the Festival Pass.',
     )
   }
 
@@ -316,9 +320,16 @@ const upgradeHandler = async (c: Context<{ Bindings: Env }>) => {
 
     await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO orders (id, registration_id, amount_paise, razorpay_order_id, status)
-         VALUES (?, ?, ?, ?, 'created')`,
-      ).bind(orderId, registrationId, priced.quote.totalPaise, rzpOrder.id),
+        `INSERT INTO orders (id, registration_id, amount_paise, convenience_paise,
+                             kind, razorpay_order_id, status)
+         VALUES (?, ?, ?, ?, 'registration', ?, 'created')`,
+      ).bind(
+        orderId,
+        registrationId,
+        priced.quote.totalPaise,
+        priced.quote.conveniencePaise,
+        rzpOrder.id,
+      ),
       ...priced.quote.lines.map((line) =>
         c.env.DB.prepare(
           'INSERT INTO order_items (id, order_id, product_id, amount_paise) VALUES (?, ?, ?, ?)',
@@ -347,6 +358,9 @@ const upgradeHandler = async (c: Context<{ Bindings: Env }>) => {
         phone: registration.phone,
       },
       lines: priced.quote.lines,
+      subtotalPaise: priced.quote.subtotalPaise,
+      conveniencePaise: priced.quote.conveniencePaise,
+      totalPaise: priced.quote.totalPaise,
     }
 
     await idem.remember(c.env, { key, endpoint, statusCode: 201, body: response })
@@ -368,7 +382,7 @@ registrations.post('/registrations/:id/upgrade', upgradeHandler)
  * The browser reports a successful payment.
  *
  * Verifying the signature here proves the payment is genuine, which is enough
- * to stop showing a spinner. It is deliberately *not* enough to issue a pass —
+ * to stop showing a spinner. It is deliberately *not* enough to issue a pass -
  * that happens in the webhook, so the two paths cannot disagree and a dead
  * browser cannot cost someone the thing they paid for.
  */
@@ -465,9 +479,9 @@ function describeQuoteFailure(f: import('../lib/pricing.ts').QuoteFailure): stri
     case 'duplicate_product':
       return 'That registration type was listed twice.'
     case 'already_owned':
-      return 'You already hold that — nothing more to pay.'
+      return 'You already hold that: nothing more to pay.'
     case 'missing_prerequisite':
-      return 'The Delegate Card sits on top of Basic Registration; you need both.'
+      return 'The Festival Pass sits on top of Basic Registration; you need both.'
     case 'empty_order':
       return 'Choose what you are registering for.'
   }

@@ -3,14 +3,14 @@
  *
  * Providers behind one interface:
  *
- *   console — writes the message to the log instead of sending. The default,
+ *   console: writes the message to the log instead of sending. The default,
  *             and what runs until a real key is configured, so the whole flow
  *             is exercisable before anyone signs up for anything.
- *   resend  — 3,000/month free, $20/month for 50,000. Verifies a domain with
+ *   resend : 3,000/month free, $20/month for 50,000. Verifies a domain with
  *             DKIM plus an MX record on a sending subdomain.
- *   brevo   — 300 free sends a day. Verifies with TXT records only, which
+ *   brevo  : 300 free sends a day. Verifies with TXT records only, which
  *             matters when the registrar won't allow MX.
- *   ses     — Amazon. About ₹9 per thousand, so a fest's worth of email costs
+ *   ses    : Amazon. About ₹9 per thousand, so a fest's worth of email costs
  *             less than a cup of tea. Verifies with three CNAME records and no
  *             MX at all, which is why it is here: Wix hosts our DNS and will
  *             not create an MX record on a subdomain, and that single
@@ -21,7 +21,7 @@
  * that decision can change without touching a single template or job.
  *
  * Nothing calls this directly from a request handler. Everything goes through
- * the queue, because a student tapping Register must never wait on an inbox —
+ * the queue, because a student tapping Register must never wait on an inbox -
  * and because a provider outage should delay an email, not fail a payment.
  */
 
@@ -55,7 +55,7 @@ class ConsoleProvider implements MailProvider {
   async send(message: Message): Promise<SendResult> {
     console.log(
       JSON.stringify({
-        mail: 'not actually sent — no provider configured',
+        mail: 'not actually sent: no provider configured',
         to: message.to,
         subject: message.subject,
         // The text body carries any link, which is what you need while testing.
@@ -101,7 +101,7 @@ class BrevoProvider implements MailProvider {
         }),
       })
     } catch (err) {
-      // Network trouble — worth another go.
+      // Network trouble: worth another go.
       return { ok: false, error: String(err), retryable: true }
     }
 
@@ -112,7 +112,7 @@ class BrevoProvider implements MailProvider {
 
     const detail = await res.text().catch(() => '')
 
-    // 4xx means the message itself is wrong — a bad address, an unverified
+    // 4xx means the message itself is wrong: a bad address, an unverified
     // sender. Retrying sends the same broken thing again, so don't.
     // 429 is the exception: rate limiting clears on its own.
     const retryable = res.status >= 500 || res.status === 429
@@ -168,7 +168,7 @@ class ResendProvider implements MailProvider {
 
     const detail = await res.text().catch(() => '')
 
-    // 4xx means the message itself is wrong — an unverified domain, a bad
+    // 4xx means the message itself is wrong: an unverified domain, a bad
     // address. Retrying sends the same broken thing again. 429 is the
     // exception: rate limiting clears by itself.
     const retryable = res.status >= 500 || res.status === 429
@@ -234,7 +234,7 @@ class SesProvider implements MailProvider {
         body,
       })
     } catch (err) {
-      // A signing failure is a configuration problem — a malformed key, most
+      // A signing failure is a configuration problem: a malformed key, most
       // likely. Retrying re-signs the same bad credentials.
       return { ok: false, error: `ses signing: ${String(err)}`, retryable: false }
     }
@@ -257,7 +257,7 @@ class SesProvider implements MailProvider {
 
     const detail = await res.text().catch(() => '')
 
-    // 4xx is our fault — an unverified sender, a bad address, or still being
+    // 4xx is our fault: an unverified sender, a bad address, or still being
     // in the sandbox. Sending it again changes nothing. 429 is throttling,
     // which does clear; so does anything 5xx.
     const retryable = res.status >= 500 || res.status === 429

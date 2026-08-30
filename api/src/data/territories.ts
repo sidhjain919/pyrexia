@@ -2,7 +2,7 @@
 // if these two ever drift, the API is the one that decides what is real.
 
 /**
- * PYREXIA 2026 — Event data
+ * PYREXIA 2026: Event data
  * Sourced from the PYREXIA 5.0 (2025) official brochure, AIIMS Rishikesh.
  * Category names, sub-events and coordinator contacts are real.
  * Island "territory" names are the 2026 creative layer.
@@ -43,10 +43,10 @@ export const territories: Territory[] = [
     territory: 'Ember Landing',
     blurb: 'Where the fever is lit. The gates open and the voyage begins in fire and light.',
     icon: 'Flame',
-    map: { x: 48.5, y: 20.0 },
+    map: { x: 58.5, y: 82.0 },
     accent: '#e0894a',
     events: [{ name: 'Fahrenheit', tag: 'Grand Opening Ceremony' }],
-    /** Opening ceremony — every delegate attends automatically, so no registration. */
+    /** Opening ceremony: every delegate attends automatically, so no registration. */
     noRegister: true,
     contacts: [
       { name: 'Pulkit', phone: '6387508295' },
@@ -61,7 +61,7 @@ export const territories: Territory[] = [
     territory: 'Rhythm Reef',
     blurb: 'Every wave keeps time. Solo storms, folk tides and street currents collide on the reef.',
     icon: 'Music4',
-    map: { x: 17.8, y: 23.5 },
+    map: { x: 13.5, y: 13.0 },
     accent: '#d05a8a',
     events: [
       { name: 'Adaptune', tag: 'Extempore Dance' },
@@ -80,9 +80,9 @@ export const territories: Territory[] = [
     code: 'Sinfonia',
     subtitle: 'The Vocal Symphony',
     territory: "Siren's Harbor",
-    blurb: 'Voices that lure ships to shore — classical swells, western storms, bands and rap battles.',
+    blurb: 'Voices that lure ships to shore: classical swells, western storms, bands and rap battles.',
     icon: 'Mic2',
-    map: { x: 76.8, y: 22.5 },
+    map: { x: 36.5, y: 12.0 },
     accent: '#5aa9d0',
     events: [
       { name: 'Tarang', tag: 'Indian / Classical Singing' },
@@ -104,7 +104,7 @@ export const territories: Territory[] = [
     territory: 'Masquerade Bay',
     blurb: 'Masks, monologues and mayhem. The stage where every story is a heist.',
     icon: 'Drama',
-    map: { x: 31.0, y: 42.5 },
+    map: { x: 65.5, y: 13.0 },
     accent: '#b06fd0',
     events: [
       { name: 'Comic Combat', tag: 'Stand-up Comedy' },
@@ -125,7 +125,7 @@ export const territories: Territory[] = [
     territory: 'Conquest Arena',
     blurb: 'Sand, sweat and glory. Eleven battlegrounds where crews fight for the flag.',
     icon: 'Swords',
-    map: { x: 78.0, y: 46.5 },
+    map: { x: 79.0, y: 31.5 },
     accent: '#4fae8b',
     events: [
       { name: 'Cricket', tag: 'Team' },
@@ -153,7 +153,7 @@ export const territories: Territory[] = [
     territory: 'Crown Isle',
     blurb: 'Poise, wit and presence. The isle that crowns the faces of the fever.',
     icon: 'Crown',
-    map: { x: 53.5, y: 43.0 },
+    map: { x: 50.0, y: 33.0 },
     accent: '#e6c25e',
     events: [{ name: 'Mr. & Ms. PYREXIA', tag: 'Personality Showcase' }],
     contacts: [
@@ -168,22 +168,25 @@ export const territories: Territory[] = [
     code: 'Littmania',
     subtitle: "The Storytellers' Guild",
     territory: 'Ink & Lore Lagoon',
-    blurb: 'Words are weapons here — poetry duels, debates, extempore and quizzes of every realm.',
+    blurb: 'Words are weapons here: poetry duels, debates, extempore and quizzes of every realm.',
     icon: 'ScrollText',
-    map: { x: 17.5, y: 59.5 },
+    map: { x: 23.5, y: 33.0 },
     accent: '#c98f5a',
     events: [
-      { name: 'JAM', tag: '60-second Extempore' },
-      { name: 'Bilingual Debate', tag: 'Hindi & English' },
-      { name: 'Kavyotsav', tag: 'Hindi Poetry' },
-      { name: 'Poetic Reverie', tag: 'English Poetry' },
+      { name: 'JAM', tag: 'Just a Minute' },
+      { name: 'Literary Escape Room', tag: 'Solve your way out' },
+      { name: 'Oratio', tag: 'Bi-lingual Debate' },
+      { name: 'Poetic Reveries', tag: 'English Poetry' },
       { name: 'Taboo', tag: 'Word Play' },
-      { name: 'Literary Treasure Hunt', tag: 'Informal' },
-      { name: 'Biocrux Jr & Sr', tag: 'Pre-Clinical / Clinical Quiz' },
+      { name: 'Declamation', tag: 'Spoken Word' },
+      { name: 'Kavyotsav', tag: 'Hindi Poetry' },
+      { name: 'Storysmiths', tag: 'Storytelling' },
+      { name: 'Logophilia', tag: 'For the word-obsessed' },
       { name: 'Cognizzia', tag: 'General Trivia' },
-      { name: 'Cineholic', tag: 'Fandom Quiz' },
-      { name: 'Anime No Tatakae', tag: 'Anime Quiz' },
-      { name: 'Hindi Gyan Utsav', tag: 'Literature Quiz' },
+      { name: 'Cineholics', tag: 'Fandom Quiz' },
+      { name: 'Biocrux Jr.', tag: 'Pre-Clinical Quiz' },
+      { name: 'Biocrux Sr.', tag: 'Clinical Quiz' },
+      { name: 'Anime no Tatakai', tag: 'Anime Quiz' },
     ],
     contacts: [
       { name: 'Jatin', phone: '9571602438' },
@@ -199,7 +202,7 @@ export const territories: Territory[] = [
     territory: 'Painted Cliffs',
     blurb: 'Pigment, clay and coffee. Cliffs where the island paints its own legend.',
     icon: 'Palette',
-    map: { x: 24.3, y: 80.0 },
+    map: { x: 36.5, y: 55.0 },
     accent: '#d98f6a',
     events: [
       { name: 'Fantasy Faces', tag: 'Face Painting' },
@@ -209,7 +212,7 @@ export const territories: Territory[] = [
       { name: 'Brushless Strokes', tag: 'No-brush Painting' },
       { name: 'Splash Tees', tag: 'T-shirt Painting' },
       { name: 'Mould It Up', tag: 'Clay Sculpting' },
-      { name: 'Fold Tales', tag: 'Origami + Story' },
+      { name: 'Stone Painting', tag: 'Paint on stone' },
       { name: 'Cupful of Doodles', tag: 'Cup Doodling' },
     ],
     contacts: [
@@ -220,27 +223,28 @@ export const territories: Territory[] = [
   {
     id: 'alfresco',
     code: 'Alfresco',
-    subtitle: 'The Informals — Fun Frenzy',
+    subtitle: 'The Informals · Fun Frenzy',
     territory: 'Carnival Cove',
     blurb: 'No rules, all riot. Squid games, dates, dumb charades and treasure hunts on the sand.',
     icon: 'PartyPopper',
-    map: { x: 57.0, y: 62.5 },
+    map: { x: 50.5, y: 63.5 },
     accent: '#e07a5a',
     events: [
-      { name: 'Squid Game', tag: 'Win big or else' },
-      { name: 'Capture and Conquer', tag: 'Photo Hunt' },
-      { name: 'Treasure Hunt', tag: 'Can you find it?' },
-      { name: 'Silent Giggles', tag: 'Guess without a sound' },
-      { name: 'Paper Dance', tag: 'Balance duo' },
-      { name: 'Balloon Burst Frenzy', tag: 'Every pop counts' },
-      { name: 'Songstravaganza', tag: 'Melody marathon' },
-      { name: "Your Pace or Mine?", tag: 'Dumb Charades' },
       { name: 'Evening Amore', tag: 'Date Night' },
-      { name: 'Swift Mingle', tag: 'Speed connect' },
-      { name: 'Soul Sync', tag: 'Test your bond' },
+      { name: 'Capture and Conquer', tag: 'Photo Hunt' },
+      { name: 'Grab O Mania', tag: 'Grab it before it goes' },
+      { name: 'Squid Game', tag: 'Win big or else' },
+      { name: 'Pictionary', tag: 'Draw it out' },
+      { name: 'Paper Dance', tag: 'Balance duo' },
+      { name: 'Balloon Burst', tag: 'Every pop counts' },
+      { name: 'Treasure Hunt', tag: 'Can you find it?' },
+      { name: 'Songstra Vaganza', tag: 'Melody marathon' },
       { name: 'Tambola', tag: 'Housie' },
       { name: 'Musical Chairs', tag: 'Spin & scramble' },
+      { name: 'Soul Sync', tag: 'Test your bond' },
       { name: 'Drape It', tag: 'Style face-off' },
+      { name: 'Dumb Charades', tag: 'Act it, never say it' },
+      { name: 'Swift Mingle', tag: 'Speed connect' },
     ],
     contacts: [
       { name: 'Shail Nandini', phone: '9817818054' },
@@ -254,7 +258,7 @@ export const territories: Territory[] = [
     territory: 'Thunder Keep',
     blurb: 'Screens flash like lightning. Squads clash in the keep of the digital storm.',
     icon: 'Gamepad2',
-    map: { x: 79.5, y: 79.5 },
+    map: { x: 66.5, y: 52.0 },
     accent: '#6f7bd0',
     events: [
       { name: 'BGMI', tag: 'Squad Tournament' },
@@ -271,13 +275,13 @@ export const territories: Territory[] = [
   {
     id: 'auriga',
     code: 'Auriga',
-    subtitle: 'The Star Nights',
+    subtitle: 'The Pro Nights',
     territory: 'Starlight Summit',
     blurb: 'The peak of the voyage. Where the biggest names light up the island sky.',
     icon: 'Star',
-    map: { x: 50.2, y: 79.5 },
+    map: { x: 87.5, y: 57.0 },
     accent: '#e6c25e',
-    events: [{ name: 'The Star Nights', tag: 'Headline Performances' }],
+    events: [{ name: 'The Pro Nights', tag: 'Headline Performances' }],
     contacts: [],
   },
 ]

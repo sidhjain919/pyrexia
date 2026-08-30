@@ -1,5 +1,5 @@
 /**
- * My Voyage — everything a signed-in person can see about themselves.
+ * My Voyage: everything a signed-in person can see about themselves.
  *
  *   GET /api/me        who they are, what they own, what's left to buy
  *   GET /api/me/pass   the signed pass token their phone turns into a QR
@@ -120,8 +120,8 @@ me.get('/me', async (c) => {
  * only ever exists in memory during a request and a just-revoked pass stops
  * being handed out immediately.
  *
- * But it is signed from *fixed* inputs — the pass id and its original issue
- * time — so the result is byte-for-byte identical every time. A QR someone
+ * But it is signed from *fixed* inputs: the pass id and its original issue
+ * time: so the result is byte-for-byte identical every time. A QR someone
  * downloaded in September matches the one on screen in October exactly.
  *
  * The one thing that does change it is an upgrade: the tier byte flips, so the
@@ -158,7 +158,7 @@ me.get('/me/pass', async (c) => {
   if (!row) {
     throw new ApiError(
       'payment_required',
-      'No pass yet — complete your Basic Registration and it will appear here.',
+      'No pass yet: complete your Basic Registration and it will appear here.',
     )
   }
 
@@ -179,7 +179,7 @@ me.get('/me/pass', async (c) => {
       // straight away, without waiting for a gate to sync its manifest.
       tierFloor: Math.max(row.tier_floor, row.tier) as Tier,
       // The pass's own issue time, never "now". Stamping the current minute
-      // made the QR image different on every open — same meaning, but a
+      // made the QR image different on every open: same meaning, but a
       // downloaded copy no longer matched what the screen showed, which reads
       // as one of them being wrong. Now the code is byte-identical every time
       // and changes only when the tier genuinely changes.

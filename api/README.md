@@ -1,4 +1,4 @@
-# PYREXIA 2026 — API
+# PYREXIA 2026: API
 
 Cloudflare Workers + Hono + D1. Handles the small, write-shaped part of the
 site: registration, payments, passes and (soon) the gate. Everything public
@@ -29,12 +29,12 @@ Deployed at `https://pyrexia-api.pyrexia-api.workers.dev`.
 | KV | feature flags, rate limits |
 | Queues | `pyrexia-jobs` + dead-letter |
 | Cron | reconciliation, every 15 min |
-| R2 | **not enabled yet** — needed only for document upload |
+| R2 | **not enabled yet**: needed only for document upload |
 
 ## Before first deploy
 
 ```bash
-wrangler login                   # browser OAuth — nothing to paste anywhere
+wrangler login                   # browser OAuth, nothing to paste anywhere
 wrangler d1 create pyrexia       # paste database_id into wrangler.toml
 wrangler kv namespace create KV  # paste id into wrangler.toml
 wrangler r2 bucket create pyrexia-docs
@@ -61,7 +61,7 @@ src/lib/audit.ts           Append-only log
 src/routes/registrations.ts  Register, upgrade, verify, poll, pass keys
 src/routes/auth.ts         Request a link, spend it, sign out
 src/routes/me.ts           My Voyage, and the signed pass
-src/routes/webhooks.ts     Razorpay — the only place entitlements are granted
+src/routes/webhooks.ts     Razorpay, the only place entitlements are granted
 src/jobs/mail.ts           Queue consumer
 src/jobs/reconcile.ts      15-minute sweep for payments the webhook missed
 ```
@@ -74,7 +74,7 @@ amount comes from the `products` table, every time. See `lib/pricing.ts`.
 **The webhook is the truth, the callback is the animation.** `/api/checkout/verify`
 proves a payment is real so the success screen can stop spinning. It grants
 nothing. `routes/webhooks.ts` is the only file that creates an entitlement or
-issues a pass — so a browser that dies mid-payment still ends up with a pass,
+issues a pass: so a browser that dies mid-payment still ends up with a pass,
 and a forged callback ends up with nothing.
 
 **Everything is idempotent.** Razorpay retries for days. `UNIQUE(razorpay_payment_id)`,
@@ -101,7 +101,7 @@ cron */15 * * * *                → anything still 'created' after 30 minutes i
 ```
 
 `POST /api/registrations/:id/upgrade` runs the same path for someone adding the
-Delegate Card later. Because Razorpay's fee is purely percentage-based, this
+Festival Pass later. Because Razorpay's fee is purely percentage-based, this
 costs the fest exactly what selling both upfront would have.
 
 ## Turning email on
@@ -112,7 +112,7 @@ Everything is written and queued; only delivery is switched off. To send for rea
 2. `wrangler secret put BREVO_API_KEY`
 3. Change `MAIL_PROVIDER` to `"brevo"` in `wrangler.toml`, and deploy.
 
-Until then every message is written to the log — run `wrangler tail` and you can
+Until then every message is written to the log, run `wrangler tail` and you can
 read exactly what would have been sent, links included.
 
 **Before going live**, set `ENVIRONMENT = "production"`. That is what stops
@@ -128,4 +128,4 @@ the flow can be tested without a mailbox.
 - Gate manifest sync and scan ingest
 - Wiring the React site to this API
 
-`lib/pass.ts` is finished and tested — the gate work is wiring, not design.
+`lib/pass.ts` is finished and tested, the gate work is wiring, not design.

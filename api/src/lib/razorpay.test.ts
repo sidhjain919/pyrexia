@@ -3,7 +3,7 @@
  *
  * The vectors below are computed with an independent HMAC implementation
  * (node:crypto) rather than by calling our own code, so these tests can catch
- * a wrong algorithm, a wrong message format, or a wrong encoding — not merely
+ * a wrong algorithm, a wrong message format, or a wrong encoding, not merely
  * confirm that our function agrees with itself.
  */
 
@@ -74,7 +74,7 @@ test('a signature from the wrong secret is rejected', async () => {
 })
 
 test('a signature for a different payment is rejected', async () => {
-  // Someone replays a real signature from their own ₹450 payment against an
+  // Someone replays a real signature from their own ₹500 payment against an
   // order they never paid for.
   const theirSignature = hmac(KEY_SECRET, 'order_theirs|pay_theirs')
 
@@ -119,14 +119,14 @@ test('re-serialising the body breaks the signature', async () => {
   assert.equal(
     await verifyWebhookSignature(shuffled, signature, WEBHOOK_SECRET),
     false,
-    're-ordered JSON must not verify — always hold on to the raw bytes',
+    're-ordered JSON must not verify: always hold on to the raw bytes',
   )
   assert.equal(reserialised.length, raw.length)
 })
 
 test('a webhook signed with the API secret rather than the webhook secret fails', async () => {
   // These are two different secrets in the Razorpay dashboard and mixing them
-  // up silently accepts nothing — or, worse, accepts everything if unchecked.
+  // up silently accepts nothing: or, worse, accepts everything if unchecked.
   const body = '{"event":"payment.captured"}'
   const wrong = hmac(KEY_SECRET, body)
 
@@ -142,7 +142,7 @@ test('a tampered body is rejected', async () => {
   const body = '{"event":"payment.captured","payload":{"payment":{"entity":{"amount":45000}}}}'
   const signature = hmac(WEBHOOK_SECRET, body)
 
-  // Bump the amount to a Delegate Card after signing.
+  // Bump the amount to a Festival Pass after signing.
   const tampered = body.replace('45000', '270000')
   assert.equal(await verifyWebhookSignature(tampered, signature, WEBHOOK_SECRET), false)
 })

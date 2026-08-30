@@ -20,7 +20,7 @@ import NoticeComposer from '../admin/NoticeComposer'
  * importance in the abstract: anything wrong first, then the money, then the
  * shape of who is coming, then the searchable list of people.
  *
- * The page is not the security boundary — every endpoint behind it checks the
+ * The page is not the security boundary: every endpoint behind it checks the
  * admins table itself, and typing this URL as a stranger gets you nothing. The
  * gate here exists so that a person who isn't an admin sees a sentence instead
  * of a broken screen.
@@ -203,9 +203,9 @@ export default function Admin() {
               tone="good"
             />
             <StatTile
-              label="Delegate cards"
+              label="Festival Passes"
               value={stats.delegates}
-              hint="Star Nights access"
+              hint="Pro Nights access"
             />
             <StatTile
               label="Accounts"
@@ -222,7 +222,7 @@ export default function Admin() {
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <RankedBars
               title="Colleges"
-              empty="No colleges yet — this fills in as people register."
+              empty="No colleges yet. This fills in as people register."
               rows={stats.colleges.map((c) => ({ label: c.college, n: c.n }))}
             />
             <RankedBars
@@ -328,17 +328,17 @@ export default function Admin() {
                     {row.publicCode}
                   </td>
                   <td className="px-4 py-3 text-[0.88rem] text-offwhite">
-                    {row.name || <span className="text-parchment/35">—</span>}
+                    {row.name || <span className="text-parchment/35">not given</span>}
                   </td>
                   <td className="px-4 py-3 text-[0.82rem] text-parchment/65">
                     <div className="truncate">{row.email}</div>
                     {row.phone && <div className="tabular-nums text-parchment/45">{row.phone}</div>}
                   </td>
                   <td className="max-w-[14rem] truncate px-4 py-3 text-[0.82rem] text-parchment/65">
-                    {row.college || <span className="text-parchment/35">—</span>}
+                    {row.college || <span className="text-parchment/35">not given</span>}
                   </td>
                   <td className="px-4 py-3">
-                    {/* The word, not just a colour — a tier you can only see
+                    {/* The word, not just a colour: a tier you can only see
                         by hue is no use to half the team. */}
                     <span
                       className={`rounded-full px-2.5 py-1 font-log text-[0.55rem] uppercase tracking-wide2 ${
@@ -347,7 +347,7 @@ export default function Admin() {
                           : 'bg-parchment/8 text-parchment/60'
                       }`}
                     >
-                      {row.tier === 1 ? 'Delegate' : 'Basic'}
+                      {row.tier === 1 ? 'Festival Pass' : 'Basic'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[0.85rem] tabular-nums text-parchment/75">
