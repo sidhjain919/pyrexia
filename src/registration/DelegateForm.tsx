@@ -426,7 +426,7 @@ export default function DelegateForm() {
                 <p className="text-[0.82rem] leading-relaxed text-parchment/80">
                   Basic Registration is compulsory for everyone and lets you enter{' '}
                   <strong className="text-parchment">any event</strong>. The Festival Pass adds the
-                  rest of the programme, including the evenings on the main stage.
+                  rest of the programme across the island, the pro nights included.
                 </p>
               </div>
 
@@ -453,7 +453,7 @@ export default function DelegateForm() {
                   )}
                   <li className="flex items-center gap-2 text-[0.78rem] text-parchment/45">
                     <X size={12} className="shrink-0 text-coral/70" />
-                    The evening programme, which the Festival Pass covers
+                    The pro nights and the wider programme, which the Festival Pass covers
                   </li>
                 </ul>
               </div>
@@ -477,7 +477,7 @@ export default function DelegateForm() {
                   </span>
                 </div>
                 <p className="mt-1 text-[0.82rem] text-parchment/65">
-                  Full access to everything the island runs, all five evenings included. You can
+                  Full access to everything the island runs, the pro nights included. You can
                   also add this later, and it costs exactly the same.
                 </p>
               </button>

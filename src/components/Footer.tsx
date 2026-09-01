@@ -88,7 +88,7 @@ export default function Footer() {
               {state === 'festival'
                 ? 'You hold the Festival Pass — the full run of the island is yours. Your pass is ready whenever you want it.'
                 : state === 'basic'
-                  ? 'Your Basic Registration is confirmed. Add the Festival Pass any time for the full programme, including every evening on the main stage.'
+                  ? 'Your Basic Registration is confirmed. Add the Festival Pass any time for the full programme across the island, the pro nights included.'
                   : 'Basic Registration and the Festival Pass, which covers the full programme, are both on the official PYREXIA website. You see the price when you register.'}
             </p>
             {cta.action === 'register' ? (

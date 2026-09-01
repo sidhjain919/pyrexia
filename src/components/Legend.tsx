@@ -28,7 +28,7 @@ const chapters = [
   {
     n: 'V',
     title: 'The Treasure',
-    body: 'And then the summit: the Pro Nights. The biggest names light up the sky, and the island keeps its promise. Feel the fever.',
+    body: 'And then the summit: the Pro Nights. The island saves its brightest for last, and keeps its promise. Feel the fever.',
   },
 ]
 

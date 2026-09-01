@@ -123,9 +123,9 @@ function terms() {
           </P>
           <P>
             <strong className="text-parchment">The Festival Pass (a further {rupees(DELEGATE_ADDON)})</strong>{' '}
-            can be bought with your Basic Registration or added later at the same price. It is the
-            access to the full festival programme, including the evening events. Basic
-            Registration alone does not cover those.
+            can be bought with your Basic Registration or added later at the same price. It opens
+            access to the full festival programme across the island, the pro nights included. Basic
+            Registration alone does not cover the full programme.
           </P>
           <P>
             <strong className="text-parchment">Individual event entry fees.</strong> Some events

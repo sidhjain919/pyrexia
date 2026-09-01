@@ -79,7 +79,7 @@ export default function CTA() {
           <div className="glass rounded-xl border-gold/40 p-4">
             <div className="font-display text-[1.05rem] text-offwhite">Festival Pass</div>
             <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
-              On top of BR. The run of the whole island, every evening included.
+              On top of BR. Access to the full programme across the island, the pro nights included.
             </p>
           </div>
         </motion.div>

@@ -72,7 +72,7 @@ export type PassTier = {
  * The wording across every surface describes levels of *festival access*, not
  * admission sold to a particular performance. What it still has to do is leave
  * a buyer in no doubt: somebody who takes Basic Registration alone needs to
- * know the evening programme is not part of it, or they reach a gate and are
+ * know the wider programme is not part of it, or they reach a gate and are
  * turned away, which is a worse outcome than any phrasing it avoided.
  */
 export const DELEGATE_PASSES: PassTier[] = [
@@ -87,7 +87,7 @@ export const DELEGATE_PASSES: PassTier[] = [
       'Register for and compete in any event',
       'Delegate ID & kit',
     ],
-    excludes: ['The evening programme, which the Festival Pass covers'],
+    excludes: ['The pro nights and the wider programme, which the Festival Pass covers'],
     lines: [{ label: 'Basic Registration', amount: BASIC_AMOUNT }],
   },
   {
@@ -95,10 +95,10 @@ export const DELEGATE_PASSES: PassTier[] = [
     name: 'Festival Pass',
     short: 'BR + Festival Pass',
     amount: BASIC_AMOUNT + DELEGATE_ADDON,
-    blurb: `Basic Registration plus the run of the whole island, evenings included. Add ₹${DELEGATE_ADDON}.`,
+    blurb: `Basic Registration plus access to the full programme across the island, the pro nights included. Add ₹${DELEGATE_ADDON}.`,
     includes: [
       'Everything in Basic Registration',
-      'Full access to the festival programme, all five evenings included',
+      'Full access to the festival programme, the pro nights included',
       'Festival Pass, ID & kit',
     ],
     lines: [

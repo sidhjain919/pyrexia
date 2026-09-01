@@ -302,7 +302,7 @@ export default function Pass() {
               </span>
             </div>
             <p className="mt-1.5 text-[0.85rem] leading-relaxed text-parchment/65">
-              Full access to everything the island runs, all five evenings included. Your pass
+              Full access to everything the island runs, the pro nights included. Your pass
               stays the same, and anything you've already printed keeps working.
             </p>
             <button
