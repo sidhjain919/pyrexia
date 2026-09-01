@@ -41,7 +41,7 @@ export const galleryCats: GalleryCat[] = [
 export const gallery: Shot[] = [
   { src: p('gallery/star-nights-01.webp'), cat: 'Pro Nights', caption: "The summit lights up" },
   { src: p('gallery/star-nights-02.webp'), cat: 'Pro Nights', caption: "A sea of hands under the stage" },
-  { src: p('gallery/star-nights-03.webp'), cat: 'Pro Nights', caption: "Pyros over the main stage", wide: true },
+  { src: p('gallery/star-nights-03.webp'), cat: 'Pro Nights', caption: "Pyros light the night", wide: true },
   { src: p('gallery/star-nights-04.webp'), cat: 'Pro Nights', caption: "Smoke, light and thousands", wide: true },
   { src: p('gallery/star-nights-05.webp'), cat: 'Pro Nights', caption: "The headline set", tall: true },
   { src: p('gallery/star-nights-06.webp'), cat: 'Pro Nights', caption: "Confetti at the last chorus" },

@@ -278,7 +278,7 @@ export const territories: Territory[] = [
     icon: 'Star',
     map: { x: 87.5, y: 57.0 },
     accent: '#e6c25e',
-    events: [{ name: 'The Pro Nights', tag: 'Headline Performances' }],
+    events: [{ name: 'The Pro Nights', tag: "The island's grand finale" }],
     contacts: [],
   },
 ]
