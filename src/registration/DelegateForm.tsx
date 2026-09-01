@@ -10,6 +10,7 @@ import {
   type Product,
   type RegistrationInput,
 } from '../api/client'
+import { ANNOUNCEMENT_CHANNEL } from '../data/site'
 import { openCheckout, PaymentCancelled } from './razorpay'
 import DocumentUpload from './DocumentUpload'
 import { Field, Select, TextInput } from './fields'
@@ -203,9 +204,30 @@ export default function DelegateForm() {
           </div>
         </div>
 
+        {/* The one thing left to do, and the moment somebody is most likely
+            to do it: they have just paid and the fest is on their mind. It
+            goes above the pass link because the pass will still be there
+            tomorrow and this attention will not. */}
+        <a
+          href={ANNOUNCEMENT_CHANNEL.href}
+          target="_blank"
+          rel="noreferrer"
+          className="mx-auto mt-6 block max-w-sm rounded-xl border border-aqua/45 bg-aqua/10 px-5 py-4 text-left transition-colors hover:border-aqua"
+        >
+          <div className="font-display text-[1.02rem] text-offwhite">
+            Join the announcement channel
+          </div>
+          <p className="mt-1 text-[0.82rem] leading-relaxed text-parchment/70">
+            Every schedule change and result goes here first.
+          </p>
+          <p className="mt-2 text-[0.78rem] leading-relaxed text-aqua">
+            {ANNOUNCEMENT_CHANNEL.mute}
+          </p>
+        </a>
+
         <a
           href={`${import.meta.env.BASE_URL}pass`}
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
         >
           <Ticket size={14} /> View my pass
         </a>

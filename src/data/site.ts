@@ -55,7 +55,10 @@ export const NAV = [
  */
 export const ANNOUNCEMENT_CHANNEL = {
   label: 'WhatsApp announcements',
-  note: 'Schedule changes and results, straight from the crew. Channels are muted by default — unmute it.',
+  note: 'Schedule changes and results, straight from the crew.',
+  /** The crew's own wording. It matters: an unmuted channel is the whole point. */
+  mute:
+    'WhatsApp channels are muted by default, kindly unmute this channel manually to receive all the important updates on time.',
   href: 'https://whatsapp.com/channel/0029VbCwmsD7Noa8sdKrYm32',
 } as const
 

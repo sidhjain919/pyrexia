@@ -14,6 +14,7 @@ import {
   type Me,
   type PassView,
 } from '../api/client'
+import { ANNOUNCEMENT_CHANNEL } from '../data/site'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
 import { useRegistration } from '../registration/context'
 
@@ -189,6 +190,29 @@ export default function Pass() {
         )}
 
         {/* The pass */}
+        {/* Shown to anyone who holds a registration, not only to somebody who
+            has just bought one: most people who registered before this existed
+            will meet the channel here, and during the fest this page is the one
+            they open most. */}
+        {me.hasRegistration && (
+          <a
+            href={ANNOUNCEMENT_CHANNEL.href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-6 block rounded-xl border border-aqua/45 bg-aqua/10 px-5 py-4 transition-colors hover:border-aqua"
+          >
+            <div className="font-display text-[1.02rem] text-offwhite">
+              Join the announcement channel
+            </div>
+            <p className="mt-1 text-[0.83rem] leading-relaxed text-parchment/70">
+              Every schedule change and result goes here first.
+            </p>
+            <p className="mt-2 text-[0.79rem] leading-relaxed text-aqua">
+              {ANNOUNCEMENT_CHANNEL.mute}
+            </p>
+          </a>
+        )}
+
         {me.hasRegistration && pass && qr ? (
           <div
             /*

@@ -73,6 +73,36 @@ const p = (t: string) =>
 const button = (href: string, label: string) =>
   `<div style="padding:8px 0 24px;"><a href="${esc(href)}" style="display:inline-block;background:${BRAND.brassBright};color:${BRAND.ink};font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:1px;text-decoration:none;padding:13px 28px;border-radius:99px;">${esc(label)}</a></div>`
 
+/**
+ * The crew's announcement channel.
+ *
+ * Its own block rather than a line in a paragraph, because it is an action
+ * and the mute warning has to travel with it: a channel somebody joins and
+ * never hears from is the same as one they never joined.
+ */
+const CHANNEL_URL = 'https://whatsapp.com/channel/0029VbCwmsD7Noa8sdKrYm32'
+
+const channelBlock = () =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;">
+     <tr><td style="border:1px solid ${BRAND.brass}55;border-radius:10px;padding:16px 18px;">
+       <div style="font:600 15px/1.4 Georgia,serif;color:${BRAND.parchment};">Join the announcement channel</div>
+       <div style="font:14px/1.6 Georgia,serif;color:${BRAND.muted};margin-top:5px;">
+         Every schedule change and result goes here first.
+       </div>
+       <div style="margin-top:10px;">
+         <a href="${CHANNEL_URL}" style="font:600 14px/1.4 Georgia,serif;color:${BRAND.brassBright};text-decoration:underline;">${CHANNEL_URL}</a>
+       </div>
+       <div style="font:13px/1.6 Georgia,serif;color:${BRAND.muted};margin-top:10px;">
+         WhatsApp channels are muted by default, kindly unmute this channel manually to receive all the important updates on time.
+       </div>
+     </td></tr>
+   </table>`
+
+const CHANNEL_TEXT = `Join the announcement channel — every schedule change and result goes there first:
+${CHANNEL_URL}
+
+WhatsApp channels are muted by default, kindly unmute this channel manually to receive all the important updates on time.`
+
 const codeBox = (label: string, value: string) =>
   `<div style="background:#050f13;border:1px solid #17323c;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
 <div style="font-family:monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6b7d81;padding-bottom:6px;">${esc(label)}</div>
@@ -102,6 +132,7 @@ export function registrationConfirmed(args: {
       codeBox('Your registration number', args.publicCode) +
       p('Open your pass to show at the gate. Keep this email, the link signs you in.') +
       button(args.passUrl, 'View my pass') +
+      channelBlock() +
       p(
         `Quote <strong style="color:${BRAND.parchment};">${esc(args.publicCode)}</strong> if you contact the crew. ` +
           `See you on the island, 12&ndash;16 October.`,
@@ -117,6 +148,8 @@ Registration number: ${args.publicCode}
 
 View your pass (this link signs you in):
 ${args.passUrl}
+
+${CHANNEL_TEXT}
 
 Keep this email. Quote your registration number if you contact the crew.
 

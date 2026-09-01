@@ -166,6 +166,9 @@ export default function Notices() {
           <span className="mt-1 text-[0.8rem] leading-relaxed text-parchment/60">
             {ANNOUNCEMENT_CHANNEL.note}
           </span>
+          <span className="mt-1.5 text-[0.78rem] leading-relaxed text-gold-bright/85">
+            {ANNOUNCEMENT_CHANNEL.mute}
+          </span>
         </a>
         <a
           href={`tel:${REGISTRATION_HELP.phone}`}

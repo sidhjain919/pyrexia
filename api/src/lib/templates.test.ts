@@ -108,3 +108,25 @@ test('the HTML is self-contained and survives Gmail', () => {
   assert.match(mail.html, /style="/, 'styling has to be inline attributes')
   assert.match(mail.html, /<!doctype html>/i)
 })
+
+test('a confirmed registration is pointed at the announcement channel', () => {
+  const mail = registrationConfirmed({
+    name: 'Aarav Sharma',
+    publicCode: 'PYX26-ABC123',
+    tierName: 'Festival Pass',
+    amountPaise: 270000,
+    passUrl: 'https://pyrexiaaiims.com/pass?t=x',
+  })
+
+  for (const body of [mail.html, mail.text]) {
+    assert.match(body, /whatsapp\.com\/channel\/0029VbCwmsD7Noa8sdKrYm32/)
+    // The mute warning has to travel with the link: a channel somebody joins
+    // and never hears from is the same as one they never joined.
+    assert.match(body, /muted by default/)
+    assert.match(body, /unmute this channel manually/)
+  }
+
+  // The pass is still the primary action; the channel does not displace it.
+  assert.match(mail.html, /View my pass/)
+  assert.match(mail.text, /PYX26-ABC123/)
+})
