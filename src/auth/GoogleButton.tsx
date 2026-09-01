@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react'
  * restyle: that is the deal for using it, and trying to fake it with our own
  * markup is both against their terms and a good way to get sign-in blocked.
  * So the surrounding page adapts to the button rather than the other way
- * round, and the theme below is the closest of their options to our ground.
+ * round. Note that `theme` is a request, not a guarantee - see the frame at
+ * the bottom of this file for the two different buttons Google will draw.
  *
  * The client id is public on purpose: it ships inside every page that shows
  * this button. What makes it safe is the origin allowlist in Google's console
@@ -134,24 +135,35 @@ export default function GoogleButton({
   }
 
   /*
-   * Google renders the button into a cross-origin iframe that is a little
-   * larger than the pill it draws, and that iframe paints itself white. We
-   * cannot reach inside it, and on a dark page the result is a white slab with
-   * a black pill floating in the middle of it.
+   * Google renders the button into a cross-origin iframe we cannot restyle,
+   * and it draws two entirely different buttons in there.
    *
-   * So the surround is clipped away instead. The wrapper is the size of the
-   * pill, rounded to the same radius, with the iframe centred inside and
-   * overflow hidden. Worst case if Google changes their metrics is a button a
-   * pixel tight, not a broken one.
+   * Signed out, it honours `filled_black` and hands back a dark pill 46px
+   * tall. Signed in, it substitutes the *personalised* button - an avatar,
+   * "Continue as <name>", the address on a second line, a disclosure chevron -
+   * which is both taller than 46px and painted light no matter what theme was
+   * asked for. Neither of those is negotiable from out here.
+   *
+   * This used to clip to a hard 46px on the assumption there was only the
+   * first button, so the second one arrived with its bottom sliced off, and
+   * the white the iframe paints behind its pill leaked out at the corners
+   * where our radius and theirs disagreed.
+   *
+   * So the frame stops fighting it. It sizes to whatever Google draws instead
+   * of imposing a height, and it is deliberately light: the leak is white, so
+   * a white plate is the one background it cannot show up against, and it
+   * gives the personalised button somewhere to belong rather than floating as
+   * a bright slab on a dark page. The gold ring is what makes it read as part
+   * of this site rather than something pasted onto it.
    */
   return (
     <div
       aria-busy={disabled}
-      className={`mx-auto h-[46px] w-full max-w-[400px] overflow-hidden rounded-full ${
+      className={`mx-auto flex w-full max-w-[400px] items-center justify-center overflow-hidden rounded-full bg-white p-[3px] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] ring-1 ring-gold/45 ${
         disabled ? 'pointer-events-none opacity-50' : ''
       }`}
     >
-      <div ref={holder} className="flex h-full w-full items-center justify-center" />
+      <div ref={holder} className="flex w-full items-center justify-center overflow-hidden rounded-full" />
     </div>
   )
 }
