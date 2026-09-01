@@ -17,6 +17,7 @@ import {
 import { ANNOUNCEMENT_CHANNEL } from '../data/site'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
 import { useRegistration } from '../registration/context'
+import { refreshEntitlement } from '../registration/useEntitlement'
 
 /**
  * My Voyage: the pass, and the one thing left to buy.
@@ -104,7 +105,13 @@ export default function Pass() {
           ? null
           : 'Your payment went through and is still confirming. Refresh in a moment.',
       )
-      if (ok) await load()
+      if (ok) {
+        await load()
+        // The shared entitlement store feeds the header, hero and chart CTAs.
+        // Reloading only `me` here left every one of them still saying
+        // "Upgrade" until the next full page load, so tell the store too.
+        refreshEntitlement()
+      }
     } catch (err) {
       if (err instanceof PaymentCancelled) {
         setNotice('Payment cancelled. Nothing has been charged.')

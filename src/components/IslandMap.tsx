@@ -159,7 +159,7 @@ export default function IslandMap() {
           <Reveal className="min-w-0">
             <div
               ref={chartRef}
-              className="relative -mx-6 w-[calc(100%+3rem)] overflow-hidden shadow-cinema sm:mx-0 sm:w-full sm:rounded-lg"
+              className="relative w-full overflow-hidden rounded-lg shadow-cinema"
               style={{ aspectRatio: CHART }}
             >
               <img
@@ -297,7 +297,7 @@ export default function IslandMap() {
                   as it answers the chart. */}
               <div
                 ref={railRef}
-                className="relative -mx-6 mt-3 flex snap-x gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
+                className="relative mt-3 flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
               >
                 {territories.map((t) => {
                   const on = t.id === activeId

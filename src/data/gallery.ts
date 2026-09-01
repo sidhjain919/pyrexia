@@ -98,7 +98,7 @@ export const gallery: Shot[] = [
   { src: p('gallery/cultural-03.webp'), cat: 'Cultural', caption: "On stage, in character", wide: true },
   { src: p('gallery/cultural-04.webp'), cat: 'Cultural', caption: "Nukkad Natak on the quad" },
   { src: p('gallery/cultural-05.webp'), cat: 'Cultural', caption: "The monologue", wide: true },
-  { src: p('gallery/cultural-06.webp'), cat: 'Cultural', caption: "Comic Combat, the punchline", wide: true },
+  { src: p('gallery/cultural-06.webp'), cat: 'Cultural', caption: "The punchline lands", wide: true },
   { src: p('gallery/cultural-07.webp'), cat: 'Cultural', caption: "Costume and light", wide: true },
   { src: p('gallery/cultural-08.webp'), cat: 'Cultural', caption: "The ensemble scene", wide: true },
   { src: p('gallery/cultural-09.webp'), cat: 'Cultural', caption: "A held gesture" },

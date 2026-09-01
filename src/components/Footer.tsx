@@ -5,10 +5,16 @@ import { Compass } from './primitives'
 import { asset } from '../lib/asset'
 import { useNavTo } from './routing'
 import { useRegistration } from '../registration/context'
+import { passCta, useEntitlement } from '../registration/useEntitlement'
 
 export default function Footer() {
   const navTo = useNavTo()
   const { openRegister } = useRegistration()
+  // The footer's "Set Sail" call to action follows what the visitor already
+  // holds, exactly like the header and hero: a registered delegate should not
+  // be told to "Register Now" from the bottom of every page.
+  const { state } = useEntitlement()
+  const cta = passCta(state)
   return (
     <footer className="relative overflow-hidden border-t border-gold/15 bg-abyss pt-20">
       {/* background compass + coordinates */}
@@ -79,15 +85,35 @@ export default function Footer() {
           <div>
             <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
-              Basic Registration and the Festival Pass, which covers the full programme, are both on the
-              official PYREXIA website. You see the price when you register.
+              {state === 'festival'
+                ? 'You hold the Festival Pass — the full run of the island is yours. Your pass is ready whenever you want it.'
+                : state === 'basic'
+                  ? 'Your Basic Registration is confirmed. Add the Festival Pass any time for the full programme, including every evening on the main stage.'
+                  : 'Basic Registration and the Festival Pass, which covers the full programme, are both on the official PYREXIA website. You see the price when you register.'}
             </p>
-            <button
-              onClick={() => openRegister()}
-              className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
+            {cta.action === 'register' ? (
+              <button
+                onClick={() => openRegister()}
+                className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
+              >
+                {cta.label} →
+              </button>
+            ) : (
+              <Link
+                to={cta.to ?? '/pass'}
+                className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
+              >
+                {cta.label} →
+              </Link>
+            )}
+            <a
+              href={asset('pyrexia-brochure.pdf')}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 block text-[0.82rem] text-parchment/60 underline decoration-gold/30 underline-offset-4 transition-colors hover:text-gold-bright"
             >
-              Register Now →
-            </button>
+              View the 2026 brochure →
+            </a>
           </div>
         </div>
 

@@ -193,7 +193,17 @@ export default function Hero() {
           ) : (
             <MagneticButton href={cta.to ?? '/pass'} dataCursor="PASS">
               <Ticket size={16} />
-              {cta.label}
+              {/* "Upgrade to Festival Pass" wraps to two lines in the
+                  full-width phone button. A shorter label on mobile keeps it on
+                  one line; the full wording returns from `sm` up. */}
+              {state === 'basic' ? (
+                <>
+                  <span className="sm:hidden">Get Festival Pass</span>
+                  <span className="hidden sm:inline">{cta.label}</span>
+                </>
+              ) : (
+                cta.label
+              )}
             </MagneticButton>
           )}
           <MagneticButton href="#legend" variant="ghost" dataCursor="ENTER" className="group">

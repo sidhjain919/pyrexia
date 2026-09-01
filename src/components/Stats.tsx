@@ -6,12 +6,21 @@ import { Reveal } from './primitives'
 function CountUp({ value, suffix }: { value: string; suffix: string }) {
   const target = parseInt(value, 10)
   const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-20%' })
+  // `amount` (a visibility threshold), never a percentage `margin`. Safari's
+  // IntersectionObserver rejects a percentage rootMargin, which is what a
+  // `margin: '-20%'` compiles to — so on some iPads the observer never fired,
+  // `inView` stayed false, and the number sat at 0 forever. A threshold uses no
+  // rootMargin and fires everywhere.
+  const inView = useInView(ref, { once: true, amount: 0.3 })
   const reduce = useReducedMotion()
   const [n, setN] = useState(reduce ? target : 0)
 
   useEffect(() => {
-    if (!inView || reduce) return
+    if (reduce) {
+      setN(target)
+      return
+    }
+    if (!inView) return
     let raf = 0
     const start = performance.now()
     const dur = 1400
@@ -24,6 +33,21 @@ function CountUp({ value, suffix }: { value: string; suffix: string }) {
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [inView, target, reduce])
+
+  // Belt and braces: if the observer somehow never reports this element as
+  // visible (an old engine, a resize race), the real number still lands rather
+  // than showing a permanent 0. Only rescues a value that ought to be on screen
+  // already — anything still below the fold is left to animate when reached.
+  useEffect(() => {
+    if (reduce || target === 0) return
+    const t = window.setTimeout(() => {
+      const el = ref.current
+      if (el && el.getBoundingClientRect().top < window.innerHeight) {
+        setN((cur) => (cur === 0 ? target : cur))
+      }
+    }, 2600)
+    return () => window.clearTimeout(t)
+  }, [target, reduce])
 
   return (
     <span ref={ref} className="font-display text-foil text-5xl font-semibold sm:text-6xl">

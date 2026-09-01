@@ -115,7 +115,12 @@ export default function Navbar() {
           }}
         />
         <nav
-          className={`pointer-events-auto flex w-full max-w-[78rem] items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-all duration-500 sm:gap-4 sm:px-5 ${
+          /* From 2xl up the bar shows the "2026 · AIIMS Rishikesh" block and
+             the roomier link spacing, which together are wider than the old
+             78rem cap — so the Register button spilled off the right edge of
+             the glass. Widening the cap at that one breakpoint gives the extra
+             content the room it needs and keeps everything inside the bar. */
+          className={`pointer-events-auto flex w-full max-w-[78rem] items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-all duration-500 sm:gap-4 sm:px-5 2xl:max-w-[88rem] ${
             scrolled ? 'glass shadow-cinema' : 'bg-transparent'
           }`}
         >
@@ -200,11 +205,11 @@ export default function Navbar() {
                   to="/pass"
                   data-cursor="PASS"
                   aria-label={who ? `Signed in as ${who}. Open my pass` : 'Open my pass'}
-                  /* Gone below 360px, where the row is over by more than this
-                     is wide. Nothing is lost: the menu behind the hamburger
-                     names whoever is signed in, and the gold button is the
-                     thing that must survive. */
-                  className="hidden shrink-0 items-center gap-2 rounded-full border border-gold/35 p-1 transition-colors hover:border-gold/70 min-[360px]:flex 2xl:pr-3.5"
+                  /* On mobile this is now the only account control in the bar:
+                     the gold Register/Upgrade button is hidden below `sm` so it
+                     does not duplicate the hero's, so the avatar-to-pass link
+                     has to survive at every width. */
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-gold/35 p-1 transition-colors hover:border-gold/70 2xl:pr-3.5"
                 >
                   <span className="font-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep text-[0.72rem] text-abyss">
                     {(who ?? 'P').charAt(0).toUpperCase()}
@@ -220,11 +225,15 @@ export default function Navbar() {
                     holding Basic Registration who is a tap away from the Pro
                     Nights, and one who is done. The old bar said "My Pass" to
                     all three, which was wrong for two of them. */}
+                {/* Hidden below `sm`: on a phone the hero already carries this
+                    exact call to action (Register / Upgrade / My Pass), and two
+                    of them stacked read as a mistake. On the phone it lives in
+                    the hero and the hamburger menu instead. */}
                 {headerCta.action === 'register' ? (
                   <button
                     onClick={() => openRegister()}
                     data-cursor="JOIN"
-                    className="font-accent inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
+                    className="font-accent hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
                   >
                     <Ticket size={13} className="hidden sm:block" />
                     {headerCta.short}
@@ -233,7 +242,7 @@ export default function Navbar() {
                   <Link
                     to={headerCta.to ?? '/pass'}
                     data-cursor="PASS"
-                    className="font-accent inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
+                    className="font-accent hidden min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
                   >
                     <span className="hidden sm:block">
                       {entitlement === 'basic' ? <Star size={13} /> : <Ticket size={13} />}
@@ -247,22 +256,22 @@ export default function Navbar() {
                  outlined. The old bare text link beside a gold pill read as an
                  afterthought bolted onto the bar. */
               <>
+                {/* On a phone this is the bar's only account action: the gold
+                    Register button is hidden below `sm` because the hero right
+                    beneath it already says "Register Now", and two of them read
+                    as a mistake. Register still lives in the hero and in the
+                    hamburger menu. From `sm` up the pair returns. */}
                 <Link
                   to="/sign-in"
                   data-cursor="SIGN IN"
-                  className="font-accent hidden shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-[0.78rem] uppercase tracking-wide2 text-parchment/85 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 sm:inline-block"
+                  className="font-accent inline-block shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[0.72rem] uppercase tracking-wide2 text-parchment/85 ring-1 ring-inset ring-gold/40 transition-colors hover:text-gold-bright hover:ring-gold/80 sm:px-5 sm:text-[0.78rem]"
                 >
                   Sign in
                 </Link>
-                {/* Present at every width. Nine visitors in ten arrive on a
-                    phone, and below `sm` the bar used to offer them a hamburger
-                    and nothing else: the one thing the site is asking them to do
-                    was two taps deep from the moment they scrolled past the
-                    hero. The label shortens rather than the button vanishing. */}
                 <button
                   onClick={() => openRegister()}
                   data-cursor="JOIN"
-                  className="font-accent inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:min-h-0 sm:px-5 sm:text-[0.78rem]"
+                  className="font-accent hidden min-h-10 shrink-0 items-center whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex sm:min-h-0 sm:px-5 sm:text-[0.78rem]"
                 >
                   <span className="sm:hidden">Register</span>
                   <span className="hidden sm:inline">Register Now</span>

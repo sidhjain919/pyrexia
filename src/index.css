@@ -54,6 +54,28 @@ html {
   background: var(--color-abyss);
 }
 
+/*
+ * The atmospheric backdrop.
+ *
+ * This used to be `background-attachment: fixed` on <body>, which forces the
+ * browser to repaint the whole four-layer gradient on every scroll frame — the
+ * single biggest cause of the stutter on phones. A fixed pseudo-element is
+ * promoted to its own layer and composited instead of repainted, so it holds
+ * the same "stationary backdrop" look while the page scrolls over it smoothly.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 12% 6%, rgba(47, 165, 143, 0.12), transparent 62%),
+    radial-gradient(70% 55% at 90% 3%, rgba(138, 90, 147, 0.14), transparent 62%),
+    radial-gradient(90% 65% at 50% 112%, rgba(224, 96, 63, 0.12), transparent 60%),
+    radial-gradient(120% 90% at 50% -10%, #123742 0%, var(--color-ocean) 44%, var(--color-abyss) 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -62,12 +84,7 @@ html {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(70% 55% at 12% 6%, rgba(47, 165, 143, 0.12), transparent 62%),
-    radial-gradient(70% 55% at 90% 3%, rgba(138, 90, 147, 0.14), transparent 62%),
-    radial-gradient(90% 65% at 50% 112%, rgba(224, 96, 63, 0.12), transparent 60%),
-    radial-gradient(120% 90% at 50% -10%, #123742 0%, var(--color-ocean) 44%, var(--color-abyss) 100%);
-  background-attachment: fixed;
+  background: var(--color-abyss);
   color: var(--color-offwhite);
   font-family: var(--font-body);
   /* EB Garamond sets a much smaller x-height than the sans it replaced, so every

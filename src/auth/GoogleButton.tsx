@@ -195,11 +195,24 @@ export default function GoogleButton({
   return (
     <div
       aria-busy={disabled}
-      className={`mx-auto flex w-full max-w-[400px] justify-center ${
-        disabled ? 'pointer-events-none opacity-50' : ''
-      }`}
+      className={`mx-auto w-full max-w-[400px] ${disabled ? 'pointer-events-none opacity-50' : ''}`}
     >
-      <div ref={holder} className="w-full" />
+      {/*
+       * A themed inset for Google's button.
+       *
+       * Google draws two different buttons in this iframe: a dark `filled_black`
+       * pill for most people, and, for anyone already signed into Google, a
+       * personalised "Continue as …" card that Google renders on a light
+       * background we are not allowed to recolour. Bare on the page, that light
+       * card reads as a stray white slab. Sitting it in this rounded dark inset
+       * — padded, never clipped — makes it read as a deliberate control that
+       * belongs to the page, and the ordinary dark button blends into it. The
+       * inset owns the padding, so `draw()` still measures the true width and
+       * nothing is sliced.
+       */}
+      <div className="flex justify-center rounded-2xl border border-gold/15 bg-ocean/50 p-2">
+        <div ref={holder} className="w-full" />
+      </div>
     </div>
   )
 }

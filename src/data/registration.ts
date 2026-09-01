@@ -267,12 +267,12 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
 
   /* Sinfonia */
   Tarang: { participation: 'solo', teamSize: undefined },
-  Metallica: { participation: 'solo', teamSize: undefined },
-  Euphonia: {
+  Metallica: {
     participation: 'solo',
     teamSize: undefined,
     fields: [F.instrument, F.performanceTitle, F.duration],
   },
+  Euphonia: { participation: 'solo', teamSize: undefined },
   'Battle of Bands': {
     participation: 'team',
     teamSize: { min: 3, max: 8 },
@@ -281,7 +281,6 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   'Rhythm Revolution': { participation: 'solo', teamSize: undefined, fields: [F.genre, F.language] },
 
   /* Thespians */
-  'Comic Combat': { participation: 'solo', teamSize: undefined, fields: [F.duration, F.language] },
   'Echoes of Expression': { participation: 'solo', teamSize: undefined, fields: [F.duration] },
   'Nukkad Natak': { participation: 'team', teamSize: { min: 5, max: 20 } },
 
@@ -306,8 +305,6 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   },
   Taboo: { participation: 'duo', teamSize: { min: 2, max: 2 }, fields: [] },
   'Literary Escape Room': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
-  'Biocrux Jr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Biocrux Sr.': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
   Cognizzia: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
   Cineholics: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
   'Anime no Tatakai': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },

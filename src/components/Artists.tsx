@@ -58,7 +58,10 @@ export default function Artists() {
           </div>
         </Reveal>
 
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {/* Eight cards: two even rows of four from `sm` up (and 2×4 on a
+            phone), so the block fills its width instead of leaving four empty
+            slots on a six-column row. */}
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {pastLegends.map((a, i) => (
             <Reveal key={a.name} delay={i * 0.05}>
               <div className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-gold/15">

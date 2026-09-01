@@ -12,6 +12,7 @@ import {
 } from '../api/client'
 import { ANNOUNCEMENT_CHANNEL } from '../data/site'
 import { openCheckout, PaymentCancelled } from './razorpay'
+import { refreshEntitlement } from './useEntitlement'
 import DocumentUpload from './DocumentUpload'
 import { Field, Select, TextInput } from './fields'
 
@@ -149,6 +150,10 @@ export default function DelegateForm() {
 
       const confirmed = await waitForConfirmation(created.orderId)
       if (confirmed) {
+        // Tell the shared entitlement store so the header, hero and chart CTAs
+        // stop saying "Register Now" the moment payment lands, rather than only
+        // after the next full page load.
+        refreshEntitlement()
         setPhase({
           name: 'done',
           publicCode: created.publicCode ?? '',

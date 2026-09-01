@@ -5,7 +5,6 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import Cursor from './components/Cursor'
 import Loader from './components/Loader'
 import Navbar from './components/Navbar'
-import PaymentModeBanner from './components/PaymentModeBanner'
 import Footer from './components/Footer'
 import RegisterModal from './components/RegisterModal'
 import VoyageProgress from './components/VoyageProgress'
@@ -57,7 +56,6 @@ export default function App() {
         {!loaded && !isAccountScreen && <Loader onDone={() => setLoaded(true)} />}
       </AnimatePresence>
       <ScrollManager />
-      <PaymentModeBanner />
       <VoyageProgress />
       <Navbar />
 

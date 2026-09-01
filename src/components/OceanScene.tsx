@@ -69,9 +69,14 @@ export default function OceanScene() {
          * The painting is 1.71:1 and a phone is 0.46:1, so `cover` shows about
          * a quarter of its width. Centred, that quarter is open water: the
          * island is off the left edge, and the ship and the moon — the two
-         * things that say "pirates" — are both off the right. Anchoring at 81%
-         * puts the ship mid-frame, the moon upper-right and the island's palms
-         * at the left edge, which is the whole scene in a portrait window.
+         * things that say "pirates" — are both off the right. Anchoring toward
+         * the right of the plate keeps the ship, the moon upper-right and the
+         * island's palms all in a portrait window.
+         *
+         * At 81% the ship landed dead centre, straight behind the title block.
+         * Panning left to 68% slides it clear to the right of the type while
+         * still keeping the whole of it in frame, which is what "shift the boat
+         * a little right" means once the text stays centred.
          *
          * The 7% drop is what stops the moon landing behind the Register
          * button: it is painted a ninth of the way down the plate, which on a
@@ -79,7 +84,7 @@ export default function OceanScene() {
          * top is the same near-black the plate's own sky starts at, and the
          * star layer runs over both.
          */
-        className="parallax-layer absolute left-0 right-0 top-[7%] h-[107%] w-full scale-[1.02] object-cover object-[81%_50%] sm:top-0 sm:h-full sm:object-center"
+        className="parallax-layer absolute left-0 right-0 top-[7%] h-[107%] w-full scale-[1.02] object-cover object-[68%_50%] sm:top-0 sm:h-full sm:object-center"
       />
 
       {/* Twinkle. Sparse, and only across the upper sky where the plate is

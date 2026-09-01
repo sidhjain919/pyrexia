@@ -78,7 +78,6 @@ export const SOCIAL = [
     icon: 'Youtube',
     href: 'https://youtube.com/@aiimsrishikeshstudents3795',
   },
-  { label: 'Facebook', handle: 'PYREXIA', icon: 'Facebook', href: '#' },
 ]
 
 /** Stats reference the 5.0 edition breadth. Deliberately qualitative, no fabricated numbers. */

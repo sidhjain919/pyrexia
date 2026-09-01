@@ -19,7 +19,7 @@ const picks: Pick[] = [
   { code: 'chronos', event: 'Mr. & Ms. PYREXIA' },
   { code: 'thunderbolt', event: 'BGMI' },
   { code: 'alfresco', event: 'Squid Game' },
-  { code: 'littmania', event: 'Biocrux Jr & Sr' },
+  { code: 'littmania', event: 'Cognizzia' },
   { code: 'kalakriti', event: 'Fantasy Faces' },
   { code: 'auriga', event: 'The Pro Nights' },
 ]
@@ -63,11 +63,15 @@ export default function FeaturedEvents() {
         </div>
       </div>
 
-      <Reveal>
-        <div
-          ref={track}
-          className="mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-px-6 px-6 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+      {/* Capped to the same width as the heading and centred, so the first
+          card lines up with "Marquee Events" instead of running to the screen
+          edge on a wide desktop. The row still scrolls within that width. */}
+      <div className="mx-auto max-w-6xl">
+        <Reveal>
+          <div
+            ref={track}
+            className="mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-px-6 px-6 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
           {picks.map((p, i) => {
             const t = territories.find((x) => x.id === p.code)!
             const sub = t.events.find((e) => e.name === p.event)
@@ -143,8 +147,9 @@ export default function FeaturedEvents() {
             <span className="font-log text-[0.6rem] uppercase tracking-cinema">60+ events await</span>
             <ArrowRight size={18} />
           </button>
-        </div>
-      </Reveal>
+          </div>
+        </Reveal>
+      </div>
     </section>
   )
 }

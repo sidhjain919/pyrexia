@@ -86,8 +86,8 @@ export const territories: Territory[] = [
     accent: '#5aa9d0',
     events: [
       { name: 'Tarang', tag: 'Indian / Classical Singing' },
-      { name: 'Metallica', tag: 'Western Singing' },
-      { name: 'Euphonia', tag: 'Instrumental Music' },
+      { name: 'Metallica', tag: 'Instrumental Music' },
+      { name: 'Euphonia', tag: 'Western Singing' },
       { name: 'Battle of Bands', tag: 'Band Competition' },
       { name: 'Rhythm Revolution', tag: 'Rap & Beatboxing' },
     ],
@@ -107,7 +107,6 @@ export const territories: Territory[] = [
     map: { x: 65.5, y: 13.0 },
     accent: '#b06fd0',
     events: [
-      { name: 'Comic Combat', tag: 'Stand-up Comedy' },
       { name: 'Echoes of Expression', tag: 'Monoact & Mime' },
       { name: 'mADD Angle', tag: 'Drama bhi, Deal bhi' },
       { name: 'Nukkad Natak', tag: 'Street Play' },
@@ -184,8 +183,6 @@ export const territories: Territory[] = [
       { name: 'Logophilia', tag: 'For the word-obsessed' },
       { name: 'Cognizzia', tag: 'General Trivia' },
       { name: 'Cineholics', tag: 'Fandom Quiz' },
-      { name: 'Biocrux Jr.', tag: 'Pre-Clinical Quiz' },
-      { name: 'Biocrux Sr.', tag: 'Clinical Quiz' },
       { name: 'Anime no Tatakai', tag: 'Anime Quiz' },
     ],
     contacts: [

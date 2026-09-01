@@ -100,18 +100,21 @@ export default function EventsGrid() {
               {searching ? ' found' : ` in ${cat}`}
             </span>
             {filtered.length > 1 && (
-              <span className="flex items-center gap-1.5 text-parchment/45 sm:hidden">
-                Swipe <MoveHorizontal size={12} />
+              <span className="flex items-center gap-1.5 text-parchment/45">
+                <span className="sm:hidden">Swipe</span>
+                <span className="hidden sm:inline">Scroll</span>
+                <MoveHorizontal size={12} />
               </span>
             )}
           </div>
         </div>
 
-        {/* On mobile the cards ride a swipeable rail, a 60-event column is an
-            endless scroll otherwise. From sm up it goes back to a grid. */}
+        {/* A swipeable rail at every width: the cards scroll horizontally on
+            desktop too, rather than stacking into a grid, so a territory reads
+            as one row you slide through. */}
         <motion.div
           layout
-          className="-mx-6 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-6 px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+          className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <AnimatePresence mode="popLayout">
             {filtered.map((r, i) => (
@@ -122,7 +125,7 @@ export default function EventsGrid() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.4, delay: Math.min(i * 0.02, 0.25) }}
-                className="group relative flex w-[78vw] max-w-[320px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-gold/12 bg-navy/50 sm:w-auto sm:max-w-none sm:shrink"
+                className="group relative flex w-[78vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-gold/12 bg-navy/50 sm:w-[300px]"
               >
                 {/* photo */}
                 <div className="relative aspect-[16/10] overflow-hidden">
