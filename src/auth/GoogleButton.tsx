@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * "Continue with Google".
@@ -72,12 +72,47 @@ export default function GoogleButton({
   disabled?: boolean
 }) {
   const holder = useRef<HTMLDivElement>(null)
+  /** The width the current iframe was drawn for, so a resize can tell if it moved. */
+  const drawnAt = useRef(0)
   const [failed, setFailed] = useState(false)
 
   // Held in a ref so re-renders don't tear down and re-render Google's iframe,
   // which flickers and loses the button's own loading state.
   const callback = useRef(onCredential)
   callback.current = onCredential
+
+  /*
+   * Draw the button at the width it will actually occupy.
+   *
+   * `renderButton` takes a pixel width and lays the button out to exactly
+   * that, so a hard-coded 400 on a container that turned out to be 384 had
+   * Google drawing eight pixels of pill past each end, where `overflow-hidden`
+   * sliced straight through the rounded caps. On a phone the gap is wider and
+   * so is the damage. Measuring first is the only version of this that is
+   * right at every width.
+   *
+   * Google clamps to 400 itself, so the max is theirs, not ours.
+   */
+  const draw = useCallback(() => {
+    const id = window.google?.accounts?.id
+    const node = holder.current
+    if (!id || !node) return
+
+    const width = Math.round(node.getBoundingClientRect().width)
+    if (width < 200) return // not laid out yet; the observer will call back
+
+    node.replaceChildren()
+    id.renderButton(node, {
+      type: 'standard',
+      theme: 'filled_black',
+      size: 'large',
+      shape: 'pill',
+      text: 'continue_with',
+      logo_alignment: 'center',
+      width: Math.min(width, 400),
+    })
+    drawnAt.current = width
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -102,26 +137,34 @@ export default function GoogleButton({
           cancel_on_tap_outside: true,
         })
 
-        holder.current.replaceChildren()
-        id.renderButton(holder.current, {
-          type: 'standard',
-          theme: 'filled_black',
-          size: 'large',
-          shape: 'pill',
-          text: 'continue_with',
-          logo_alignment: 'center',
-          // Google's maximum. The wrapper below is sized to match.
-          width: 400,
-        })
+        draw()
       })
       .catch(() => {
         if (!cancelled) setFailed(true)
       })
 
+    /*
+     * Rotating a phone, or the scrollbar appearing, changes the width the
+     * button was drawn for. Re-drawing is the only way to change it: the
+     * width is baked into the iframe's URL. Guarded on a real change of whole
+     * pixels, because tearing down Google's iframe on every sub-pixel reflow
+     * flickers and loses its pressed state.
+     */
+    const node = holder.current
+    if (!node) return
+
+    const observer = new ResizeObserver(() => {
+      if (cancelled) return
+      const width = Math.round(node.getBoundingClientRect().width)
+      if (width >= 200 && Math.abs(width - drawnAt.current) > 1) draw()
+    })
+    observer.observe(node)
+
     return () => {
       cancelled = true
+      observer.disconnect()
     }
-  }, [])
+  }, [draw])
 
   // A blocked script, an ad blocker, a network that filters Google, none of
   // these should look like a broken page. Email and password still works, and
@@ -135,30 +178,28 @@ export default function GoogleButton({
   }
 
   /*
-   * Google renders the button into a cross-origin iframe, and it draws two
-   * different buttons in there: a plain "Continue with Google" pill when
-   * nobody is signed in, and a taller personalised one - avatar, name, address
-   * on a second line - when somebody is. Both honour `filled_black`, and both
-   * arrive at whatever height they please.
+   * No frame, no clipping, no background of our own.
    *
-   * So there is no frame around it. Every attempt at one made it worse: a
-   * fixed height sliced the personalised button in half, and a contrasting
-   * plate turned a button that already matches this page into something with
-   * a rim drawn round it. The wrapper is now the button's own dark, sized to
-   * whatever Google sends, clipped to the same radius so nothing of the
-   * iframe's own ground shows at the corners.
+   * Every previous attempt here was compensating for a button drawn to the
+   * wrong width: a fixed height that sliced the personalised button, then a
+   * plate to hide edges that only existed because the pill was overflowing.
+   * Drawn to the width it actually has, the button needs none of it - it is
+   * already `filled_black` on a dark page, which is the whole reason that
+   * theme exists.
    *
-   * `#131314` is Google's own `filled_black` surface. Matching it exactly is
-   * what makes the seam invisible whichever of the two buttons turns up.
+   * The iframe runs about ten pixels wider and two taller than the pill it
+   * contains; that margin is transparent and Google sets `color-scheme: dark`
+   * on it, so nothing shows through. Height is left alone entirely, because
+   * the personalised button is taller and only Google knows by how much.
    */
   return (
     <div
       aria-busy={disabled}
-      className={`mx-auto flex w-full max-w-[400px] items-center justify-center overflow-hidden rounded-full bg-[#131314] ${
+      className={`mx-auto flex w-full max-w-[400px] justify-center ${
         disabled ? 'pointer-events-none opacity-50' : ''
       }`}
     >
-      <div ref={holder} className="flex w-full items-center justify-center" />
+      <div ref={holder} className="w-full" />
     </div>
   )
 }
