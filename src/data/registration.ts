@@ -3,7 +3,7 @@
  *
  * Two separate things live here:
  *  1. the registration tiers (Basic Registration, and the Festival Pass
- *     add-on that opens the Pro Nights), and
+ *     add-on covering the full festival programme), and
  *  2. the per-event entry forms (what you fill in once you're aboard).
  *
  * Event forms are derived: each territory has a default shape, and only the
@@ -25,13 +25,13 @@ import { territories, type Territory } from './events'
  * do. `api/src/data/events.ts` holds the same set and is what actually decides;
  * this copy is only so sixty cards can label themselves without a round trip.
  */
-export const OPEN_TERRITORIES: ReadonlySet<string> = new Set(['alfresco'])
+export const OPEN_TERRITORIES: ReadonlySet<string> = new Set<string>()
 
 export const isTerritoryOpen = (id: string) => OPEN_TERRITORIES.has(id)
 
 /** Rupees. Basic Registration is mandatory for everyone who enters the fest. */
 export const BASIC_AMOUNT = 500
-/** Rupees, charged *on top of* Basic Registration. Unlocks the Pro Nights. */
+/** Rupees, charged *on top of* Basic Registration. Covers the full programme. */
 export const DELEGATE_ADDON = 2200
 
 /**
@@ -65,9 +65,15 @@ export type PassTier = {
 
 /**
  * Two tiers, and the second contains the first:
- *  - Basic Registration (BR): mandatory entry, any event except the Pro Nights.
- *  - Festival Pass: BR plus a ₹2200 add-on that opens the Pro Nights.
+ *  - Basic Registration (BR): campus entry, and the right to compete.
+ *  - Festival Pass: BR plus a ₹2200 add-on covering the whole programme.
  * Nobody buys the Festival Pass alone, so its `amount` is the full BR + add-on.
+ *
+ * The wording across every surface describes levels of *festival access*, not
+ * admission sold to a particular performance. What it still has to do is leave
+ * a buyer in no doubt: somebody who takes Basic Registration alone needs to
+ * know the evening programme is not part of it, or they reach a gate and are
+ * turned away, which is a worse outcome than any phrasing it avoided.
  */
 export const DELEGATE_PASSES: PassTier[] = [
   {
@@ -81,7 +87,7 @@ export const DELEGATE_PASSES: PassTier[] = [
       'Register for and compete in any event',
       'Delegate ID & kit',
     ],
-    excludes: ['Pro Nights, which need the Festival Pass'],
+    excludes: ['The evening programme, which the Festival Pass covers'],
     lines: [{ label: 'Basic Registration', amount: BASIC_AMOUNT }],
   },
   {
@@ -89,15 +95,15 @@ export const DELEGATE_PASSES: PassTier[] = [
     name: 'Festival Pass',
     short: 'BR + Festival Pass',
     amount: BASIC_AMOUNT + DELEGATE_ADDON,
-    blurb: `Basic Registration plus the summit, including the Pro Nights. Add ₹${DELEGATE_ADDON}.`,
+    blurb: `Basic Registration plus the run of the whole island, evenings included. Add ₹${DELEGATE_ADDON}.`,
     includes: [
       'Everything in Basic Registration',
-      'Including all five Pro Nights',
+      'Full access to the festival programme, all five evenings included',
       'Festival Pass, ID & kit',
     ],
     lines: [
       { label: 'Basic Registration', amount: BASIC_AMOUNT },
-      { label: 'Festival Pass · Pro Nights', amount: DELEGATE_ADDON },
+      { label: 'Festival Pass · full programme', amount: DELEGATE_ADDON },
     ],
     featured: true,
   },

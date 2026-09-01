@@ -6,3 +6,9 @@ RAZORPAY_WEBHOOK_SECRET=xxxxxxxxxxxxxxxx
 PASS_SIGNING_KEY_V1=
 SESSION_SECRET=
 DOC_ENCRYPTION_KEY=
+
+# Email. Leave MAIL_PROVIDER unset locally and every message is written to the
+# console, which is enough to read a verification code out of the log.
+# MAIL_PROVIDER=zeptomail
+# ZEPTOMAIL_TOKEN=
+# ZEPTOMAIL_REGION=in

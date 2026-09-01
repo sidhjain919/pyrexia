@@ -116,8 +116,8 @@ function ReelCard({ reel }: { reel: Reel }) {
             className="group absolute inset-0 flex flex-col items-center justify-center gap-4"
           >
             {cover}
-            <span className="relative flex items-center gap-1.5 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_10px_rgba(3,11,15,0.95)]">
-              <Icon name="Instagram" size={12} />
+            <span className="relative flex items-center gap-2 font-log text-[0.6rem] uppercase tracking-cinema text-parchment/85 [text-shadow:0_2px_10px_rgba(3,11,15,0.95)]">
+              <Icon name="Instagram" size={12} className="icon-caps shrink-0" />
               Watch on Instagram
             </span>
           </a>
@@ -135,9 +135,11 @@ function ReelCard({ reel }: { reel: Reel }) {
             href={reel.url}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1.5 font-log text-[0.58rem] uppercase tracking-wide2 text-parchment/45 transition-colors hover:text-gold-bright"
+            /* `min-h-11`: the link's own line box is fifteen pixels tall, which
+               is a target nobody hits with a thumb. */
+            className="-my-1 mt-2 inline-flex min-h-11 items-center gap-2 font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/45 transition-colors hover:text-gold-bright"
           >
-            <Icon name="Instagram" size={11} />
+            <Icon name="Instagram" size={12} className="icon-caps shrink-0" />
             Also on Instagram
           </a>
         )}

@@ -45,6 +45,23 @@ export const NAV = [
   { label: 'Navigator', to: '/#contact', meaning: 'Contact & FAQ' },
 ] as const
 
+/**
+ * The crew's announcement channel, from the brochure.
+ *
+ * Separate from `SOCIAL` because it is not a profile to follow for pictures:
+ * it is where schedule changes go during the five days, and the brochure asks
+ * people to unmute it. It belongs beside the noticeboard, not in a row of
+ * social icons.
+ */
+export const ANNOUNCEMENT_CHANNEL = {
+  label: 'WhatsApp announcements',
+  note: 'Schedule changes and results, straight from the crew. Channels are muted by default — unmute it.',
+  href: 'https://whatsapp.com/channel/0029VbCwmsD7Noa8sdKrYm32',
+} as const
+
+/** Registration queries go to the PR team, per the brochure. */
+export const REGISTRATION_HELP = { name: 'Sudhanshu', phone: '7068231271' } as const
+
 export const SOCIAL = [
   {
     label: 'Instagram',
@@ -52,7 +69,12 @@ export const SOCIAL = [
     icon: 'Instagram',
     href: 'https://www.instagram.com/pyrexiaaiims/',
   },
-  { label: 'YouTube', handle: 'PYREXIA AIIMS Rishikesh', icon: 'Youtube', href: '#' },
+  {
+    label: 'YouTube',
+    handle: 'AIIMS Rishikesh Students',
+    icon: 'Youtube',
+    href: 'https://youtube.com/@aiimsrishikeshstudents3795',
+  },
   { label: 'Facebook', handle: 'PYREXIA', icon: 'Facebook', href: '#' },
 ]
 

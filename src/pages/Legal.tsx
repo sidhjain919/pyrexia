@@ -35,7 +35,7 @@ export default function Legal() {
     : terms()
 
   return (
-    <section className="relative px-6 py-24 sm:py-28">
+    <section className="relative px-6 pb-24 pt-[calc(var(--header-h,7rem)+2rem)] sm:pb-28">
       <div className="mx-auto max-w-2xl">
         <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
           {SITE.name} {SITE.year} · {SITE.dates}
@@ -124,7 +124,8 @@ function terms() {
           <P>
             <strong className="text-parchment">The Festival Pass (a further {rupees(DELEGATE_ADDON)})</strong>{' '}
             can be bought with your Basic Registration or added later at the same price. It is the
-            only way to attend the Pro Nights. Basic Registration alone does not admit you to them.
+            access to the full festival programme, including the evening events. Basic
+            Registration alone does not cover those.
           </P>
           <P>
             <strong className="text-parchment">Individual event entry fees.</strong> Some events

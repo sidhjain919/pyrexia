@@ -94,6 +94,33 @@ async function requireVerifiedEmail(env: Env, registrationId: string): Promise<v
   }
 }
 
+/**
+ * No paying without the college ID.
+ *
+ * The ₹500 is a student rate, and the student card is the only evidence we
+ * ever see for it. Collected before the money rather than after: afterwards is
+ * asking a favour of somebody who already has what they came for, and the desk
+ * is then checking a claim nobody documented. The government photo ID is a
+ * convenience for the desk and stays optional.
+ *
+ * Enforced here and not only in the form, because the form is JavaScript
+ * somebody else's browser is running.
+ */
+async function requireStudentId(env: Env, registrationId: string): Promise<void> {
+  const row = await env.DB.prepare(
+    "SELECT 1 AS ok FROM documents WHERE registration_id = ? AND kind = 'student_id' LIMIT 1",
+  )
+    .bind(registrationId)
+    .first<{ ok: number }>()
+
+  if (!row) {
+    throw new ApiError(
+      'student_id_required',
+      'Upload your college ID before paying. A photo from your phone is fine.',
+    )
+  }
+}
+
 registrations.post('/registrations', async (c) => {
   const endpoint = 'POST /registrations'
   const body = (await readJson(c)) as Record<string, unknown>
@@ -105,6 +132,7 @@ registrations.post('/registrations', async (c) => {
   }
 
   await requireVerifiedEmail(c.env, session.registrationId)
+  await requireStudentId(c.env, session.registrationId)
 
   const seen = await idem.check(c.env, { key, endpoint, body })
   if (seen.state === 'replay') {

@@ -46,7 +46,7 @@ export default function Footer() {
                 <li key={n.to}>
                   <button
                     onClick={() => navTo(n.to)}
-                    className="text-left text-[0.85rem] text-parchment/65 transition-colors hover:text-gold-bright"
+                    className="flex min-h-10 items-center text-left text-[0.85rem] text-parchment/65 transition-colors hover:text-gold-bright sm:min-h-0"
                   >
                     {n.label}
                   </button>
@@ -79,7 +79,7 @@ export default function Footer() {
           <div>
             <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
-              Basic Registration and the Festival Pass, which opens the Pro Nights, are both on the
+              Basic Registration and the Festival Pass, which covers the full programme, are both on the
               official PYREXIA website. You see the price when you register.
             </p>
             <button
@@ -103,7 +103,11 @@ export default function Footer() {
             ['/refunds', 'Refunds'],
             ['/contact', 'Contact'],
           ].map(([to, label]) => (
-            <Link key={to} to={to} className="text-parchment/50 transition-colors hover:text-gold-bright">
+            <Link
+              key={to}
+              to={to}
+              className="inline-flex min-h-10 items-center text-parchment/50 transition-colors hover:text-gold-bright sm:min-h-0"
+            >
               {label}
             </Link>
           ))}

@@ -8,23 +8,39 @@ import {
   useSpring,
 } from 'framer-motion'
 import { Phone, Ticket } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { territories } from '../data/events'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { TerritoryGlyph } from '../lib/art'
 import { asset } from '../lib/asset'
 import { Reveal, SectionTitle } from './primitives'
+import { isTerritoryOpen } from '../data/registration'
 import { useRegistration } from '../registration/context'
+import { passCta, useEntitlement } from '../registration/useEntitlement'
 
 /** The chart's own proportions: the frame matches them so the torn border is never cropped. */
 const CHART = '1536 / 1024'
-/** How long the ship takes to cross; the wake keeps pace with it. */
-const SAIL = { type: 'spring', stiffness: 42, damping: 16, mass: 0.9 } as const
+/**
+ * How long the ship takes to cross; the wake keeps pace with it.
+ *
+ * Heavy and slack rather than stiff: at the old settings the galleon crossed
+ * the whole archipelago in under a second, which read as a cursor jumping
+ * between pins instead of a ship making way. Overdamped, so it arrives and
+ * settles rather than overshooting the island and drifting back.
+ */
+const SAIL = { type: 'spring', stiffness: 16, damping: 15, mass: 1.5 } as const
 /** Keeps the drawn route readable instead of scribbling over the whole chart. */
 const TRAIL_MAX = 7
+/** The galleon's width as a share of the chart; the sprite is square. */
+const SHIP = { min: 52, pct: 0.105, max: 132 }
+/** Half the ship's idle bob, in px: the clamp has to leave room for it. */
+const BOB = 3
 
 export default function IslandMap() {
   const reduce = useReducedMotion()
   const { openRegister, openDelegate } = useRegistration()
+  const { state: entitlement } = useEntitlement()
+  const passLabel = passCta(entitlement)
 
   const [activeId, setActiveId] = useState('chorea')
   const [trail, setTrail] = useState<string[]>(['chorea'])
@@ -40,10 +56,36 @@ export default function IslandMap() {
   const rawY = useMotionValue(active.map.y)
   const shipX = useSpring(rawX, reduce ? { duration: 0 } : SAIL)
   const shipY = useSpring(rawY, reduce ? { duration: 0 } : SAIL)
+
+  /* The ship is anchored *above* the island it has reached, so on the top row
+     — Rhythm Reef, Siren's Harbor, Masquerade Bay, all at y≈12 — it sailed
+     straight off the top edge of a chart that clips. `shipFloor` is the
+     lowest `top` at which the whole sprite still fits, measured rather than
+     guessed: the sprite's size is a clamp on the chart's width, so the share
+     of the chart it covers is different on a phone and on a desktop. */
+  const chartRef = useRef<HTMLDivElement>(null)
+  const shipFloor = useMotionValue(24)
+
+  useEffect(() => {
+    const el = chartRef.current
+    if (!el) return
+    const measure = () => {
+      const { width, height } = el.getBoundingClientRect()
+      if (!height) return
+      const ship = Math.min(Math.max(SHIP.min, width * SHIP.pct), SHIP.max)
+      shipFloor.set(((ship * 1.04 + BOB + 2) / height) * 100)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [shipFloor])
+
   const shipLeft = useMotionTemplate`${shipX}%`
-  const shipTop = useMotionTemplate`${shipY}%`
+  const shipTop = useMotionTemplate`max(${shipY}%, ${shipFloor}%)`
 
   const prevX = useRef(active.map.x)
+  const railRef = useRef<HTMLDivElement>(null)
 
   const sailTo = (id: string) => {
     if (id === activeId) return
@@ -60,6 +102,21 @@ export default function IslandMap() {
     rawX.set(active.map.x)
     rawY.set(active.map.y)
   }, [active.map.x, active.map.y, rawX, rawY])
+
+  /* Tapping an island on the chart has to move the rail too, or the two
+     controls disagree about where the ship is. The rail is scrolled directly
+     rather than by `scrollIntoView`, which walks every scrollable ancestor:
+     on first paint that would drag a visitor who is still reading the hero
+     all the way down to the chart. */
+  useEffect(() => {
+    const rail = railRef.current
+    const chip = rail?.querySelector<HTMLElement>('[data-on="true"]')
+    if (!rail || !chip) return
+    rail.scrollTo({
+      left: chip.offsetLeft - rail.clientWidth / 2 + chip.offsetWidth / 2,
+      behavior: 'smooth',
+    })
+  }, [activeId])
 
   // Segments already sailed, plus the one being drawn behind the ship right now.
   const sailed = trail.slice(0, -1).map((id, i) => ({ from: byId(id), to: byId(trail[i + 1]) }))
@@ -95,8 +152,13 @@ export default function IslandMap() {
 
         <div className="mt-12 grid items-start gap-8 lg:grid-cols-[1.25fr_0.75fr]">
           {/* ------------------------------- CHART ------------------------------- */}
-          <Reveal>
+          {/* `min-w-0`: a grid item defaults to `min-width: auto`, so the
+              territory rail below — eleven `whitespace-nowrap` chips in a row —
+              sized this column to its own 1600px min-content and dragged the
+              chart out to match, despite scrolling inside its own box. */}
+          <Reveal className="min-w-0">
             <div
+              ref={chartRef}
               className="relative -mx-6 w-[calc(100%+3rem)] overflow-hidden shadow-cinema sm:mx-0 sm:w-full sm:rounded-lg"
               style={{ aspectRatio: CHART }}
             >
@@ -150,7 +212,7 @@ export default function IslandMap() {
                 style={{
                   left: shipLeft,
                   top: shipTop,
-                  width: 'clamp(56px, 12%, 150px)',
+                  width: `clamp(${SHIP.min}px, ${SHIP.pct * 100}%, ${SHIP.max}px)`,
                   transform: 'translate(-50%, -104%)',
                 }}
               >
@@ -177,7 +239,7 @@ export default function IslandMap() {
                     data-cursor="SAIL"
                     aria-label={`${t.code}: ${t.territory}`}
                     aria-current={on ? 'true' : undefined}
-                    className="group absolute z-10 flex flex-col items-center p-2.5 sm:p-1"
+                    className="group absolute z-10 flex flex-col items-center p-3.5 sm:p-1"
                     style={{
                       left: `${t.map.x}%`,
                       top: `${t.map.y}%`,
@@ -226,11 +288,55 @@ export default function IslandMap() {
 
               </div>
 
+              {/* The chart is the map; below `lg` this rail is the control.
+                  At 390px wide the archipelago is 260px tall, the eleven names
+                  are lettered at about six pixels and the markers are a
+                  thumb-width apart — fine to look at, impossible to aim at.
+                  The rail names every territory at a readable size and gives
+                  each one a full-height target, and the ship answers it exactly
+                  as it answers the chart. */}
+              <div
+                ref={railRef}
+                className="relative -mx-6 mt-3 flex snap-x gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
+              >
+                {territories.map((t) => {
+                  const on = t.id === activeId
+                  return (
+                    <button
+                      key={t.id}
+                      data-on={on}
+                      onClick={() => sailTo(t.id)}
+                      aria-current={on ? 'true' : undefined}
+                      className={`min-h-11 shrink-0 snap-center rounded-xl border px-3.5 py-2 text-left transition-colors ${
+                        on
+                          ? 'border-gold/70 bg-gold/12'
+                          : 'border-gold/20 bg-navy/40 active:border-gold/50'
+                      }`}
+                    >
+                      <span
+                        className={`block whitespace-nowrap font-display text-[0.86rem] leading-none ${
+                          on ? 'text-gold-bright' : 'text-offwhite/85'
+                        }`}
+                      >
+                        {t.territory}
+                      </span>
+                      <span
+                        className={`mt-1 block whitespace-nowrap font-log text-[0.55rem] uppercase tracking-wide2 ${
+                          on ? 'text-gold/80' : 'text-parchment/45'
+                        }`}
+                      >
+                        {t.code}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
               {/* The key, and the wardens. Both sit under the chart so the two
                   columns finish on roughly the same line: the panel opposite is
                   always taller than a fixed-ratio map, and the gap it left
                   underneath was the emptiest part of the page. */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-lg border border-gold/15 bg-navy/35 px-4 py-2.5 font-log text-[0.55rem] uppercase tracking-wide2 text-parchment/55 sm:text-[0.6rem]">
+              <div className="mt-4 hidden flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-lg border border-gold/15 bg-navy/35 px-4 py-2.5 font-log text-[0.55rem] uppercase tracking-wide2 text-parchment/55 sm:text-[0.6rem] lg:flex">
                 <span className="flex items-center gap-1.5">
                   <img src={asset('map/marker-chest.webp')} alt="" className="h-4 w-auto" />
                   You are here
@@ -259,7 +365,10 @@ export default function IslandMap() {
                         key={c.phone}
                         href={`tel:${c.phone}`}
                         data-cursor="CALL"
-                        className="flex items-center gap-2 text-[0.8rem] text-parchment/70 transition-colors hover:text-gold-bright"
+                        /* A 19px-tall row is a poor thing to aim a thumb at,
+                           and during the fest this is the number somebody is
+                           trying to dial in a crowd. */
+                        className="flex min-h-11 items-center gap-2 text-[0.85rem] text-parchment/70 transition-colors hover:text-gold-bright sm:min-h-0 sm:text-[0.8rem]"
                       >
                         <Phone size={12} className="shrink-0 text-gold/60" />
                         <span className="truncate text-offwhite/90">{c.name}</span>
@@ -280,7 +389,7 @@ export default function IslandMap() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0, y: -12 }}
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="glass sticky top-24 overflow-hidden rounded-xl"
+                className="glass overflow-hidden rounded-xl lg:sticky lg:top-[calc(var(--header-h,7rem)+1.5rem)]"
               >
                 {/* territory photo */}
                 <div className="relative h-40 overflow-hidden">
@@ -317,16 +426,27 @@ export default function IslandMap() {
                     </p>
                   ) : (
                     <div>
+                      {/* "Pick an event to enter" in front of a territory whose
+                          entries are not open yet sends people into a form that
+                          can only turn them away. The chips stay — they are the
+                          list of what runs here — but they stop promising a
+                          door that is shut. */}
                       <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
-                        Pick an event to enter
+                        {isTerritoryOpen(active.id) ? 'Pick an event to enter' : 'What runs here'}
                       </div>
+                      {!isTerritoryOpen(active.id) && (
+                        <p className="mt-1.5 text-[0.78rem] leading-relaxed text-parchment/55">
+                          Entries for {active.code} open closer to the fest. Your Festival Pass is
+                          what gets you in when they do.
+                        </p>
+                      )}
                       <div className="mt-2 flex flex-wrap gap-2">
                         {active.events.map((e) => (
                           <button
                             key={e.name}
                             onClick={() => openRegister(e.name)}
                             data-cursor="REGISTER"
-                            className="rounded-full border border-gold/20 bg-ocean/50 px-3 py-1.5 text-[0.72rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright"
+                            className="inline-flex min-h-10 items-center rounded-full border border-gold/20 bg-ocean/50 px-3.5 py-1.5 text-[0.76rem] text-parchment/85 transition-colors hover:border-gold/60 hover:text-gold-bright sm:min-h-0 sm:text-[0.72rem]"
                             title={`Register for ${e.name} · ${e.tag}`}
                           >
                             {e.name}
@@ -338,14 +458,25 @@ export default function IslandMap() {
 
                   {/* Every entry needs a pass first, so the primary CTA sells the pass;
                       the chips above take you into a specific event's form. */}
-                  <button
-                    onClick={openDelegate}
-                    data-cursor="REGISTER"
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
-                  >
-                    <Ticket size={14} />
-                    Get your Festival Pass
-                  </button>
+                  {passLabel.action === 'register' ? (
+                    <button
+                      onClick={openDelegate}
+                      data-cursor="REGISTER"
+                      className="mt-6 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                    >
+                      <Ticket size={14} />
+                      Get your Festival Pass
+                    </button>
+                  ) : (
+                    <Link
+                      to={passLabel.to ?? '/pass'}
+                      data-cursor="PASS"
+                      className="mt-6 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 text-[0.7rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                    >
+                      <Ticket size={14} />
+                      {passLabel.label}
+                    </Link>
+                  )}
                 </div>
               </motion.div>
             </AnimatePresence>

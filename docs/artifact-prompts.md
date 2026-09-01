@@ -38,6 +38,14 @@ it is large, light, and surrounded by dark.
 
 `public/art/hero-sea.webp` · 2400 × 1400 · JPEG or WebP, no transparency
 
+> **The delivered plate came in at 1642 × 958, not the 2400 × 1400 asked for.**
+> Full-bleed on a retina desktop that is close to a 2x enlargement, and it
+> showed. `hero-sea@2x.webp` (2880 × 1680) is that same file resampled with
+> lanczos and lightly sharpened, served by `srcset` to anything that needs the
+> pixels; the small one still goes to phones. It is a resample, not detail that
+> was ever there. **If the plate is ever redrawn, deliver it at 2400 × 1400 or
+> larger and regenerate both files from that.**
+
 The hero ocean is SVG and CSS today. It holds together, but a painted plate would
 lift the first thing every visitor sees.
 

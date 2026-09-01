@@ -122,21 +122,36 @@ export default function CaptainsLog() {
                 /* An empty day is a blank page in the log, not an empty
                    panel. The ruled paper says "nothing written here yet" more
                    plainly than any copy can. */
-                <div
-                  className="mt-8 flex flex-col items-center justify-center gap-3 px-10 py-16 text-center sm:px-16 sm:py-20"
-                  style={{
-                    backgroundImage: `url(${art.logbook})`,
-                    backgroundSize: '100% 100%',
-                    backgroundRepeat: 'no-repeat',
-                    filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.5))',
-                  }}
-                >
-                  <Hourglass size={22} className="text-wood/50" />
-                  <p className="font-display text-2xl text-wood">Coming Soon</p>
-                  <p className="max-w-sm text-[0.85rem] leading-relaxed text-wood/75">
-                    The crew is still charting {active.title}'s hour-by-hour log for{' '}
-                    {active.date} 2026. It'll drop here closer to the fest.
-                  </p>
+                /* `background-size: 100% 100%` was painting the book into
+                   whatever box the copy happened to make. On a phone that is
+                   nearly the book's own shape and it looked right; across a
+                   1152px column it was three lines of type wide and a hand
+                   tall, and the drawing came out as a stretched slab. The book
+                   keeps its own proportions now and the copy is laid over it,
+                   which is the way round it should always have been. */
+                <div className="mt-8 flex justify-center">
+                  <div
+                    className="relative w-full max-w-[34rem]"
+                    style={{ aspectRatio: '1100 / 805' }}
+                  >
+                    <img
+                      src={art.logbook}
+                      alt=""
+                      aria-hidden
+                      className="absolute inset-0 h-full w-full object-contain"
+                      style={{ filter: 'drop-shadow(0 18px 40px rgba(0,0,0,0.5))' }}
+                    />
+                    {/* Inset to the right-hand page: the left one carries the
+                        ink blots and the spine. */}
+                    <div className="absolute inset-x-[12%] inset-y-[18%] flex flex-col items-center justify-center gap-2 text-center sm:gap-3">
+                      <Hourglass size={20} className="text-wood/50 sm:size-[22px]" />
+                      <p className="font-display text-xl text-wood sm:text-2xl">Coming Soon</p>
+                      <p className="max-w-[22rem] text-[0.78rem] leading-relaxed text-wood/75 sm:text-[0.85rem]">
+                        The crew is still charting {active.title}'s hour-by-hour log for{' '}
+                        {active.date} 2026. It'll drop here closer to the fest.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </motion.div>

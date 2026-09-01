@@ -82,7 +82,7 @@ export default function EventsGrid() {
                 <button
                   key={c}
                   onClick={() => setCat(c)}
-                  className={`font-accent shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-[0.78rem] uppercase tracking-wide2 transition-all ${
+                  className={`font-accent inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-[0.78rem] uppercase tracking-wide2 transition-all sm:min-h-0 ${
                     cat === c
                       ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                       : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'
@@ -153,7 +153,7 @@ export default function EventsGrid() {
                     <button
                       onClick={() => openRegister(r.name)}
                       data-cursor={isTerritoryOpen(r.terrId) ? 'REGISTER' : 'SOON'}
-                      className="group/btn flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                      className="group/btn flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
                       {isTerritoryOpen(r.terrId) ? (
                         <>

@@ -11,6 +11,7 @@ import { asset } from './asset'
 export const art = {
   parchment: asset('art/parchment.webp'),
   heroSea: asset('art/hero-sea.webp'),
+  heroSea2x: asset('art/hero-sea@2x.webp'),
   compass: asset('art/compass.webp'),
   rope: asset('art/rope.webp'),
   logbook: asset('art/logbook.webp'),

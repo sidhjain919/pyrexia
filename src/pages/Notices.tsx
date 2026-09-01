@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, Loader2, Pin } from 'lucide-react'
 
 import { ApiError, api, type Notice } from '../api/client'
+import { ANNOUNCEMENT_CHANNEL, REGISTRATION_HELP } from '../data/site'
 import { Markdown } from '../lib/markdown'
 import { art } from '../lib/art'
 
@@ -38,29 +39,45 @@ export default function Notices() {
   }, [])
 
   return (
-    <section className="mx-auto min-h-[80svh] max-w-3xl px-5 py-24 sm:px-8">
+    <section className="mx-auto min-h-[80svh] max-w-3xl px-5 pb-24 pt-[calc(var(--header-h,7rem)+2rem)] sm:px-8">
       {/* The board itself, planks and all. The page is the one people open
           every morning of the fest, and it used to look like a settings
           screen. */}
-      <div
-        className="flex flex-col items-center justify-center px-8 py-12 text-center sm:px-14 sm:py-16"
-        style={{
-          backgroundImage: `url(${art.noticeBoard})`,
-          backgroundSize: '100% 100%',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 16px 36px rgba(0,0,0,0.55))',
-        }}
-      >
-        <div className="font-log text-[0.62rem] uppercase tracking-cinema text-parchment/80 [text-shadow:0_2px_8px_rgba(0,0,0,0.95)]">
-          PYREXIA 2026
+      <div className="relative">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${art.noticeBoard})`,
+            backgroundSize: '100% 100%',
+            backgroundRepeat: 'no-repeat',
+            filter: 'drop-shadow(0 16px 36px rgba(0,0,0,0.55))',
+          }}
+        />
+        {/* The planks run from near-black to bleached grey, and the bleached
+            run goes straight through the middle of the board — which is where
+            the type is. Pale text on it was legible over some planks and gone
+            over others. This darkens the middle of the board only, leaving the
+            grain and the rope corners as they are. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-[8%] inset-y-[12%] rounded-[2rem]"
+          style={{
+            background:
+              'radial-gradient(70% 78% at 50% 50%, rgba(14,9,5,0.82) 0%, rgba(14,9,5,0.66) 55%, rgba(14,9,5,0) 100%)',
+          }}
+        />
+        <div className="relative flex flex-col items-center justify-center px-8 py-12 text-center sm:px-14 sm:py-16">
+          <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold-bright/90 [text-shadow:0_1px_6px_rgba(0,0,0,1)]">
+            PYREXIA 2026
+          </div>
+          <h1 className="mt-2 font-display text-3xl text-offwhite [text-shadow:0_2px_10px_rgba(0,0,0,1)] sm:text-4xl">
+            Noticeboard
+          </h1>
+          <p className="mt-3 max-w-md text-[0.9rem] leading-relaxed text-parchment [text-shadow:0_1px_8px_rgba(0,0,0,1)]">
+            Schedule changes, results and announcements from the crew. Worth a look
+            each morning of the fest.
+          </p>
         </div>
-        <h1 className="mt-2 font-display text-3xl text-offwhite drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] sm:text-4xl">
-          Noticeboard
-        </h1>
-        <p className="mt-3 max-w-md text-[0.9rem] leading-relaxed text-parchment/85 [text-shadow:0_2px_8px_rgba(0,0,0,0.95)]">
-          Schedule changes, results and announcements from the crew. Worth a look
-          each morning of the fest.
-        </p>
       </div>
 
       {error && (
@@ -131,6 +148,34 @@ export default function Notices() {
             </div>
           </article>
         ))}
+      </div>
+
+      {/* The board is checked when somebody is already looking for news, which
+          is exactly the moment to offer the channel that pushes it to them.
+          The brochure asks people to unmute it, so this says so too. */}
+      <div className="mt-10 grid gap-3 sm:grid-cols-2">
+        <a
+          href={ANNOUNCEMENT_CHANNEL.href}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-h-11 flex-col justify-center rounded-xl border border-gold/25 bg-navy/40 px-5 py-4 transition-colors hover:border-gold/60"
+        >
+          <span className="font-display text-[1rem] text-offwhite">
+            {ANNOUNCEMENT_CHANNEL.label}
+          </span>
+          <span className="mt-1 text-[0.8rem] leading-relaxed text-parchment/60">
+            {ANNOUNCEMENT_CHANNEL.note}
+          </span>
+        </a>
+        <a
+          href={`tel:${REGISTRATION_HELP.phone}`}
+          className="flex min-h-11 flex-col justify-center rounded-xl border border-gold/15 bg-navy/40 px-5 py-4 transition-colors hover:border-gold/50"
+        >
+          <span className="font-display text-[1rem] text-offwhite">Registration trouble?</span>
+          <span className="mt-1 text-[0.8rem] leading-relaxed text-parchment/60">
+            {REGISTRATION_HELP.name} on {REGISTRATION_HELP.phone}, from the PR crew.
+          </span>
+        </a>
       </div>
 
       <Link

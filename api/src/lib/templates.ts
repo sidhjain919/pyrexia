@@ -219,7 +219,7 @@ export function upgradeConfirmed(args: {
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
 
   const html = shell(
-    h1('The Pro Nights are yours') +
+    h1('The full programme is yours') +
       p(
         `${esc(first)}, your <strong style="color:${BRAND.parchment};">Festival Pass</strong> is confirmed. ` +
           `We received ${esc(amount)} on top of your Basic Registration.`,
@@ -230,11 +230,11 @@ export function upgradeConfirmed(args: {
           'so anything you have already printed still works at the gate.',
       ) +
       button(args.passUrl, 'View my pass') +
-      p('All five Pro Nights are open to you. See you on the island.'),
+      p('Every event and every evening on the island is open to you. See you there.'),
     `Festival Pass confirmed · ${args.publicCode}`,
   )
 
-  const text = `The Pro Nights are yours
+  const text = `The full programme is yours
 
 ${first}, your Festival Pass is confirmed. We received ${amount} on top of your Basic Registration.
 

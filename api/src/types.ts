@@ -21,6 +21,24 @@ export type Env = {
   SES_SECRET_ACCESS_KEY: string
   SES_REGION: string
   SES_TOPIC_ARN: string
+  /** ZeptoMail (Zoho). Verifies with TXT records only — no MX anywhere. */
+  ZEPTOMAIL_TOKEN: string
+  ZEPTOMAIL_REGION: string
+  /** Mailgun. MX is only needed to *receive*; sending verifies on TXT alone. */
+  MAILGUN_API_KEY: string
+  MAILGUN_DOMAIN: string
+  MAILGUN_REGION: string
+  /**
+   * Plain SMTP through a mailbox that already exists. No signup, no approval,
+   * no DNS: the launch-day escape hatch when a hosted provider is still
+   * verifying. Port 587 (STARTTLS) or 465 (TLS); 25 is blocked by Cloudflare.
+   */
+  SMTP_HOST: string
+  SMTP_PORT: string
+  SMTP_USER: string
+  SMTP_PASS: string
+  /** Only if the mailbox can send as another address; otherwise SMTP_USER is the sender. */
+  SMTP_FROM: string
   GOOGLE_CLIENT_ID: string
   /** Which signing key new passes are minted with. */
   PASS_KEY_ID: string

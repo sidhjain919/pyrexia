@@ -33,6 +33,7 @@ export const eventPhoto: Record<string, string> = {
   "Caffeine Creations": p('events/caffeine-creations.webp'),
   "Contrast Chronicles": p('events/contrast-chronicles.webp'),
   "Cupful of Doodles": p('events/cupful-of-doodles.webp'),
+  "Art Roulette": p('events/art-roulette.webp'),
   "Fantasy Faces": p('events/fantasy-faces.webp'),
   "Mould It Up": p('events/mould-it-up.webp'),
   "Splash Tees": p('events/splash-tees.webp'),
@@ -84,6 +85,9 @@ export const artistPhoto: Record<string, string> = {
   "Amit Mishra": p('artists/amit-mishra.webp'),
   Ravator: p('artists/ravator.webp'),
   Maadhyam: p('artists/maadhyam.webp'),
+  "Mohit Chauhan": p('artists/mohit-chauhan.webp'),
+  "B Praak": p('artists/b-praak.webp'),
+  "Aditi Singh Sharma": p('artists/aditi-singh-sharma.webp'),
 }
 
 /** Opening-ceremony frames, doubling as section backdrops. */

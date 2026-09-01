@@ -374,7 +374,7 @@ export default function SignIn() {
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex min-h-[80svh] items-center justify-center px-6 py-24">
+    <section className="flex min-h-[80svh] items-center justify-center px-6 pb-24 pt-[calc(var(--header-h,7rem)+2rem)]">
       <div className="w-full max-w-sm text-center">
         <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
           PYREXIA 2026

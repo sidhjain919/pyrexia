@@ -17,18 +17,15 @@ import { Field, Select, TextInput } from './fields'
 /**
  * Registration.
  *
- * Three steps, the middle one skippable.
+ * Three steps. The middle one used to be skippable and is not any more.
  *
- * Identity documents were originally removed from this form entirely and left
- * to the pass page, because blocking a ₹500 payment on someone finding a photo
- * of their college ID loses registrations for no benefit, the desk checks the
- * physical card either way. That reasoning still holds, so the step is here but
- * has a Skip beside Continue, and the same upload remains on the pass page for
- * anyone who passes it by.
- *
- * The result is that most people upload while they are already filling in
- * forms, and nobody is stopped from paying because they are away from their
- * documents.
+ * The argument for skipping was that blocking a ₹500 payment on somebody
+ * finding a photo of their college ID loses registrations, and the desk checks
+ * the physical card anyway. What that missed is *which* document: the college
+ * ID is the evidence for the student rate the whole price is built on, and
+ * collecting it after the money is collecting it from people who no longer
+ * have a reason to answer. So the college ID is required here, and the
+ * government ID stays optional exactly as it was.
  */
 
 const STEPS = ['Your details', 'Documents', 'Registration & payment'] as const
@@ -53,6 +50,9 @@ export default function DelegateForm() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [wantsDelegate, setWantsDelegate] = useState(false)
+  /** Which documents the server already holds, reported by the upload step. */
+  const [heldDocs, setHeldDocs] = useState<string[]>([])
+  const hasStudentId = heldDocs.includes('student_id')
 
   const [form, setForm] = useState<RegistrationInput>({
     name: '',
@@ -121,6 +121,13 @@ export default function DelegateForm() {
           return
         }
         if (err.code === 'already_registered') {
+          setFatal(err.message)
+          return
+        }
+        // The server enforces the college ID too. Land them on the step that
+        // fixes it rather than on the payment screen with a red box.
+        if (err.code === 'student_id_required') {
+          setStep(1)
           setFatal(err.message)
           return
         }
@@ -371,11 +378,17 @@ export default function DelegateForm() {
               <div>
                 <h3 className="font-display text-lg text-offwhite">Identity documents</h3>
                 <p className="mt-1.5 text-[0.85rem] text-parchment/55">
-                  Optional. Skip if you haven’t got them to hand. You can add
-                  them later from your pass.
+                  Your college ID is needed before you can pay — it is what the
+                  student rate is based on. A government photo ID is optional.
                 </p>
               </div>
-              <DocumentUpload />
+              <DocumentUpload onChange={(held) => setHeldDocs(held)} />
+              {!hasStudentId && (
+                <p className="flex items-start gap-2 rounded-lg border border-gold/25 bg-ocean/40 p-3 text-[0.82rem] text-parchment/70">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0 text-gold-bright" />
+                  Upload your college ID to continue. A photo taken on your phone is fine.
+                </p>
+              )}
             </div>
           )}
 
@@ -385,8 +398,8 @@ export default function DelegateForm() {
                 <Star size={17} className="mt-0.5 shrink-0 text-gold-bright" />
                 <p className="text-[0.82rem] leading-relaxed text-parchment/80">
                   Basic Registration is compulsory for everyone and lets you enter{' '}
-                  <strong className="text-parchment">any event</strong>. The Pro Nights are the one
-                  exception: they need the Festival Pass.
+                  <strong className="text-parchment">any event</strong>. The Festival Pass adds the
+                  rest of the programme, including the evenings on the main stage.
                 </p>
               </div>
 
@@ -413,7 +426,7 @@ export default function DelegateForm() {
                   )}
                   <li className="flex items-center gap-2 text-[0.78rem] text-parchment/45">
                     <X size={12} className="shrink-0 text-coral/70" />
-                    Pro Nights, which need the Festival Pass
+                    The evening programme, which the Festival Pass covers
                   </li>
                 </ul>
               </div>
@@ -437,8 +450,8 @@ export default function DelegateForm() {
                   </span>
                 </div>
                 <p className="mt-1 text-[0.82rem] text-parchment/65">
-                  The only way into all five Pro Nights. You can also add this later, and it costs
-                  exactly the same.
+                  Full access to everything the island runs, all five evenings included. You can
+                  also add this later, and it costs exactly the same.
                 </p>
               </button>
 
@@ -449,7 +462,7 @@ export default function DelegateForm() {
                 </div>
                 {wantsDelegate && (
                   <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
-                    <span>Festival Pass · Pro Nights</span>
+                    <span>Festival Pass · full programme</span>
                     <span>{rupees(delegate?.amountPaise ?? 220000)}</span>
                   </div>
                 )}
@@ -467,8 +480,8 @@ export default function DelegateForm() {
               </div>
 
               <p className="text-[0.75rem] leading-relaxed text-parchment/50">
-                You'll upload your college ID after payment, from your pass page. Registration fees
-                are non-refundable.
+                Registration fees are non-refundable. You can add or replace a government photo ID
+                later from your pass.
               </p>
             </div>
           )}
@@ -492,22 +505,11 @@ export default function DelegateForm() {
             <ArrowLeft size={13} /> Back
           </button>
         )}
-        {/* Skip sits beside Continue rather than hiding in small print: the
-            step is genuinely optional and pretending otherwise costs
-            registrations from people who are not near their documents. */}
-        {step === 1 && (
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-parchment/55 transition-colors hover:text-gold-bright"
-          >
-            Skip
-          </button>
-        )}
         <button
           type="button"
+          disabled={step === 1 && !hasStudentId}
           onClick={() => (step === 2 ? submit() : setStep((n) => n + 1))}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01]"
+          className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
         >
           {step === 2 ? (
             <>

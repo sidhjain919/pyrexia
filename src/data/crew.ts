@@ -28,11 +28,7 @@ export const faqs: FAQ[] = [
   },
   {
     q: 'How do I join the crew?',
-    a: 'Everything happens on this website. Start with Basic Registration (BR), which is your boarding pass to the island. Alfresco entries are open now; the other territories open through the season.',
-  },
-  {
-    q: 'What is the difference between BR and the Festival Pass?',
-    a: 'Basic Registration (₹500) is campus entry. It is compulsory for everyone entering the fest and it lets you register for and compete in any event. The Festival Pass is an add-on of ₹2200 on top of BR (₹2700 in all), and it covers everything BR does including the Pro Nights. Payment gateway charges of 2.36% are added at checkout.',
+    a: 'Everything happens on this website — registration for the fest and for every event. Start with Basic Registration (BR), which is your boarding pass to the island. Individual event entries open through the season; the noticeboard says when each territory opens.',
   },
   {
     q: 'Is basic registration mandatory?',

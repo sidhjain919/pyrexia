@@ -62,13 +62,21 @@ export default function Artists() {
           {pastLegends.map((a, i) => (
             <Reveal key={a.name} delay={i * 0.05}>
               <div className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-gold/15">
-                {/* star-night frame */}
-                <img
-                  src={asset(a.photo)}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover object-[50%_32%] transition-transform duration-700 group-hover:scale-110"
-                />
+                {/* star-night frame, where there is one */}
+                {a.photo ? (
+                  <img
+                    src={asset(a.photo)}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover object-[50%_32%] transition-transform duration-700 group-hover:scale-110"
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{ background: `radial-gradient(120% 90% at 50% 15%, ${a.accent}3d, #071820 70%)` }}
+                  />
+                )}
                 <div
                   className="absolute inset-0"
                   style={{ background: `linear-gradient(to top, #030b0f 8%, rgba(3,11,15,0.35) 45%, ${a.accent}22 100%)` }}
@@ -87,7 +95,7 @@ export default function Artists() {
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <div className="font-display text-sm leading-tight text-offwhite">{a.name}</div>
                   <div className="mt-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/70">
-                    {a.role} · {a.year}
+                    {a.year ? `${a.role} · ${a.year}` : a.role}
                   </div>
                 </div>
               </div>

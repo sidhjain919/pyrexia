@@ -205,7 +205,7 @@ export default function Admin() {
             <StatTile
               label="Festival Passes"
               value={stats.delegates}
-              hint="Pro Nights access"
+              hint="Full programme access"
             />
             <StatTile
               label="Accounts"
@@ -380,6 +380,6 @@ export default function Admin() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <section className="mx-auto min-h-[80svh] max-w-6xl px-5 py-24 sm:px-8">{children}</section>
+    <section className="mx-auto min-h-[80svh] max-w-6xl px-5 pb-24 pt-[calc(var(--header-h,7rem)+2rem)] sm:px-8">{children}</section>
   )
 }

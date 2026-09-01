@@ -433,10 +433,21 @@ export type EventInfo = {
 export const api = {
   products: () => request<{ products: Product[] }>('/api/products').then((r) => r.products),
 
+  /**
+   * `auth: true` is not optional here.
+   *
+   * `POST /registrations` requires a session — it fills in the detail columns
+   * on the row that signing up already created, and it reads the email off the
+   * session rather than the form. Without the bearer token the server saw an
+   * anonymous request and answered "Sign in or create an account to register",
+   * which is what everybody hit on the last step of checkout while plainly
+   * signed in.
+   */
   register: (input: RegistrationInput & { products: string[] }, idempotencyKey: string) =>
     request<OrderCreated>('/api/registrations', {
       method: 'POST',
       body: input,
+      auth: true,
       idempotencyKey,
     }),
 

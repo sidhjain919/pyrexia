@@ -60,7 +60,7 @@ export default function Gallery() {
                 key={c}
                 onClick={() => setFilter(c)}
                 data-cursor="FILTER"
-                className={`font-accent shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 ${
+                className={`font-accent inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 py-2 text-[0.76rem] uppercase tracking-wide2 transition-all duration-300 sm:min-h-0 ${
                   filter === c
                     ? 'bg-gradient-to-b from-gold-bright to-gold-deep text-abyss'
                     : 'bg-ocean/40 text-parchment/75 ring-1 ring-inset ring-gold/45 hover:text-gold-bright hover:ring-gold/85'

@@ -99,7 +99,9 @@ export default function Announcements() {
         to="/notices"
         data-cursor="NOTICES"
         aria-live="polite"
-        className={`pointer-events-auto group flex max-w-full items-center gap-2.5 overflow-hidden rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors sm:px-4 ${
+        /* `min-h-10` on a phone: at `py-1.5` this was a 32px-tall target, and
+           it is the strip that carries schedule changes during the fest. */
+        className={`pointer-events-auto group flex min-h-10 max-w-full items-center gap-2.5 overflow-hidden rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors sm:min-h-0 sm:px-4 ${
           current.urgent
             ? 'border-coral/55 bg-coral/15 hover:border-coral'
             : 'border-gold/35 bg-abyss/70 hover:border-gold/70'

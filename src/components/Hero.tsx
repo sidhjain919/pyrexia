@@ -6,11 +6,17 @@ import { Compass, MagneticButton } from './primitives'
 import { SITE } from '../data/site'
 import { asset } from '../lib/asset'
 import { useRegistration } from '../registration/context'
+import { passCta, useEntitlement } from '../registration/useEntitlement'
 
 export default function Hero() {
   const scope = useRef<HTMLElement>(null)
   const reduce = useReducedMotion()
   const { openRegister } = useRegistration()
+  // The hero's primary button offers the next thing somebody needs, not the
+  // first thing: a delegate who already holds the Festival Pass is shown the
+  // way to their pass rather than invited to buy it again.
+  const { state } = useEntitlement()
+  const cta = passCta(state)
 
   // Mouse parallax across depth layers
   useEffect(() => {
@@ -62,11 +68,13 @@ export default function Hero() {
     <section
       id="home"
       ref={scope}
-      /* On a phone the content stacks from under the header rather than being
-         centred, which leaves the bottom of the frame to the ocean and the
-         ship instead of dropping the type on top of them. Desktop keeps the
-         centred composition, which has the height to spare. */
-      className="grain relative flex min-h-[100svh] flex-col items-center justify-start overflow-hidden pb-4 pt-[8.5rem] sm:justify-center sm:pb-0 sm:pt-0"
+      /* Padded clear of the measured header at every width, with the title
+         block centred in whatever is left by `my-auto` rather than by
+         `justify-center`. An auto margin collapses to zero when the space runs
+         out; `justify-center` overflows both ways, which is how the
+         announcement pill ended up printed across "AIIMS RISHIKESH PRESENTS"
+         on any screen shorter than about 800px. */
+      className="grain relative flex min-h-[100svh] flex-col items-center overflow-hidden pb-16 pt-[calc(var(--header-h,7rem)+1rem)] sm:pb-20 sm:pt-[calc(var(--header-h,7rem)+1.5rem)]"
     >
       <OceanScene />
 
@@ -99,7 +107,7 @@ export default function Hero() {
       />
 
       {/* Title block */}
-      <div className="relative z-10 flex flex-col items-center px-6 text-center">
+      <div className="relative z-10 my-auto flex flex-col items-center px-6 text-center">
         <motion.p
           custom={0}
           variants={rise}
@@ -127,9 +135,12 @@ export default function Hero() {
           <img
             src={asset('logo-full.webp')}
             alt="PYREXIA 2026"
-            /* Capped by height as well as width: on a short phone the width
-               rule alone let the logo eat the room the tagline needed. */
-            className="anim-float relative w-[min(58vw,400px)] max-h-[20svh] object-contain sm:max-h-none"
+            /* Capped by height as well as width at every size, not just on a
+               phone. The width rule alone draws it 287px tall, which on a
+               720px-tall laptop pushed the dates off the bottom of the frame;
+               `svh` gives the cap back to whatever screen is actually there
+               and does nothing at all on a tall one. */
+            className="anim-float relative max-h-[20svh] w-[min(58vw,400px)] object-contain sm:max-h-[34svh]"
             style={{ filter: 'drop-shadow(0 10px 26px rgba(0,0,0,0.5))' }}
           />
         </motion.div>
@@ -174,10 +185,17 @@ export default function Hero() {
           animate="show"
           className="mt-5 flex w-full max-w-[17rem] flex-col items-center gap-2 sm:mt-9 sm:w-auto sm:max-w-none sm:flex-row sm:gap-3"
         >
-          <MagneticButton onClick={() => openRegister()} dataCursor="JOIN">
-            <Ticket size={16} />
-            Register Now
-          </MagneticButton>
+          {cta.action === 'register' ? (
+            <MagneticButton onClick={() => openRegister()} dataCursor="JOIN">
+              <Ticket size={16} />
+              {cta.label}
+            </MagneticButton>
+          ) : (
+            <MagneticButton href={cta.to ?? '/pass'} dataCursor="PASS">
+              <Ticket size={16} />
+              {cta.label}
+            </MagneticButton>
+          )}
           <MagneticButton href="#legend" variant="ghost" dataCursor="ENTER" className="group">
             Enter the Island
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />

@@ -46,7 +46,7 @@ export default function Enter() {
   }, [token, next, navigate])
 
   return (
-    <section className="flex min-h-[70svh] items-center justify-center px-6 py-24">
+    <section className="flex min-h-[70svh] items-center justify-center px-6 pb-24 pt-[calc(var(--header-h,7rem)+2rem)]">
       <div className="w-full max-w-sm text-center">
         {error ? (
           <>

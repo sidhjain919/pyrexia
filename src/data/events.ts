@@ -61,10 +61,10 @@ export const territories: Territory[] = [
     map: { x: 13.5, y: 13.0 },
     accent: '#d05a8a',
     events: [
-      { name: 'Adaptune', tag: 'Extempore Dance' },
       { name: 'Nritya Sangam', tag: 'Classical / Folk' },
       { name: 'Street Blaze', tag: 'Street Dance' },
       { name: 'Ballismus', tag: 'Western Dance' },
+      { name: 'Adaptune', tag: 'Extempore Dance' },
     ],
     contacts: [
       { name: 'Ritika', phone: '9302596114' },
@@ -154,10 +154,8 @@ export const territories: Territory[] = [
     accent: '#e6c25e',
     events: [{ name: 'Mr. & Ms. PYREXIA', tag: 'Personality Showcase' }],
     contacts: [
-      { name: 'Tanmaydeep', phone: '8699381231' },
-      { name: 'Ananya', phone: '9663038303' },
-      { name: 'Ridhima', phone: '9877963460' },
-      { name: 'Asmita', phone: '9915198162' },
+      { name: 'Ritika Sijaria', phone: '9302596114' },
+      { name: 'Mudassir', phone: '8861384164' },
     ],
   },
   {
@@ -211,6 +209,7 @@ export const territories: Territory[] = [
       { name: 'Mould It Up', tag: 'Clay Sculpting' },
       { name: 'Stone Painting', tag: 'Paint on stone' },
       { name: 'Cupful of Doodles', tag: 'Cup Doodling' },
+      { name: 'Art Roulette', tag: 'Draw what you are dealt' },
     ],
     contacts: [
       { name: 'Mudassir', phone: '8861384164' },

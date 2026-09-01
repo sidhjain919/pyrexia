@@ -4,13 +4,18 @@ import { Compass, StaggerWords } from './primitives'
 import { SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
 import { EARLY_BIRD } from '../data/site'
+import { Link } from 'react-router-dom'
+
 import { useRegistration } from '../registration/context'
+import { passCta, useEntitlement } from '../registration/useEntitlement'
 import { useNavTo } from './routing'
 
 export default function CTA() {
   const reduce = useReducedMotion()
   const { openRegister } = useRegistration()
   const navTo = useNavTo()
+  const { state } = useEntitlement()
+  const cta = passCta(state)
   return (
     <section id="register" className="grain relative overflow-hidden py-20 sm:py-28 lg:py-32">
       {/* photo atmosphere */}
@@ -74,7 +79,7 @@ export default function CTA() {
           <div className="glass rounded-xl border-gold/40 p-4">
             <div className="font-display text-[1.05rem] text-offwhite">Festival Pass</div>
             <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
-              On top of BR. The only way into the five Pro Nights.
+              On top of BR. The run of the whole island, every evening included.
             </p>
           </div>
         </motion.div>
@@ -100,14 +105,25 @@ export default function CTA() {
           transition={{ delay: 0.32, duration: 0.8 }}
           className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <button
-            onClick={() => openRegister()}
-            data-cursor="JOIN"
-            className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
-          >
-            Register Now
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-          </button>
+          {cta.action === 'register' ? (
+            <button
+              onClick={() => openRegister()}
+              data-cursor="JOIN"
+              className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
+            >
+              {cta.label}
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            </button>
+          ) : (
+            <Link
+              to={cta.to ?? '/pass'}
+              data-cursor="PASS"
+              className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
+            >
+              {cta.label}
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          )}
           <button
             onClick={() => navTo('/#island')}
             data-cursor="EVENTS"

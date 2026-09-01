@@ -108,7 +108,7 @@ export default function FeaturedEvents() {
                     <button
                       onClick={() => openRegister(p.event)}
                       data-cursor={isTerritoryOpen(t.id) ? 'REGISTER' : 'SOON'}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.66rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                      className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.66rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
                       {isTerritoryOpen(t.id) ? (
                         <>
@@ -123,7 +123,7 @@ export default function FeaturedEvents() {
                     <button
                       onClick={() => navTo('/#island')}
                       data-cursor="DISCOVER"
-                      className="rounded-full px-3.5 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-inset ring-gold/35 hover:text-gold-bright hover:ring-gold/80"
+                      className="min-h-11 rounded-full px-4 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/60 ring-1 ring-inset ring-gold/35 hover:text-gold-bright hover:ring-gold/80"
                     >
                       Info
                     </button>

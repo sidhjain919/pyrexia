@@ -14,7 +14,6 @@ import {
   type Me,
   type PassView,
 } from '../api/client'
-import { art } from '../lib/art'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
 import { useRegistration } from '../registration/context'
 
@@ -132,7 +131,7 @@ export default function Pass() {
 
   if (error) {
     return (
-      <section className="flex min-h-[70svh] items-center justify-center px-6 py-24">
+      <section className="flex min-h-[70svh] items-center justify-center px-6 pb-24 pt-[calc(var(--header-h,7rem)+2rem)]">
         <div className="max-w-sm text-center">
           <AlertCircle size={22} className="mx-auto text-coral" />
           <p className="mt-4 text-parchment/75">{error}</p>
@@ -152,7 +151,7 @@ export default function Pass() {
   const isDelegate = me.tier === 1
 
   return (
-    <section className="relative px-6 py-24 sm:py-28">
+    <section className="relative px-6 pb-24 pt-[calc(var(--header-h,7rem)+2rem)] sm:pb-28">
       <div className="mx-auto max-w-lg">
         <div className="text-center">
           <div className="font-log text-[0.62rem] uppercase tracking-cinema text-gold/70">
@@ -192,16 +191,17 @@ export default function Pass() {
         {/* The pass */}
         {me.hasRegistration && pass && qr ? (
           <div
-            /* A printed ticket rather than a CSS card. This is the thing people
-               screenshot and hold up at the gate, so it is worth it looking
-               like something that was printed. */
-            className="mt-9 px-7 py-8 sm:px-10 sm:py-10"
-            style={{
-              backgroundImage: `url(${art.passCard})`,
-              backgroundSize: '100% 100%',
-              backgroundRepeat: 'no-repeat',
-              filter: 'drop-shadow(0 20px 44px rgba(0,0,0,0.55))',
-            }}
+            /*
+             * Back to the drawn parchment surface.
+             *
+             * The printed-ticket plate was stretched to whatever box the
+             * contents made — `background-size: 100% 100%` on an image with a
+             * 16:9 engraved border, filled with a tall QR card. The border came
+             * out smeared and the perforated stub landed in the middle of the
+             * code. The CSS surface has no fixed proportions to violate, which
+             * is exactly why it survived every screen size.
+             */
+            className="parchment mt-9 rounded-2xl p-6 shadow-cinema sm:p-8"
           >
             {/* The date line gets its own row: sharing one with the tier badge
                 left both it and the name wrapping on a narrow phone. */}
@@ -271,8 +271,8 @@ export default function Pass() {
               </span>
             </div>
             <p className="mt-1.5 text-[0.85rem] leading-relaxed text-parchment/65">
-              The only way into all five Pro Nights. Your pass stays the same, and anything you've
-              already printed keeps working.
+              Full access to everything the island runs, all five evenings included. Your pass
+              stays the same, and anything you've already printed keeps working.
             </p>
             <button
               onClick={() => void upgrade()}
@@ -280,7 +280,7 @@ export default function Pass() {
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss disabled:opacity-60"
             >
               {upgrading ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
-              {upgrading ? 'Working…' : 'Unlock the Pro Nights'}
+              {upgrading ? 'Working…' : 'Open the full programme'}
             </button>
           </div>
         )}
@@ -289,7 +289,7 @@ export default function Pass() {
           <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-aqua/35 bg-aqua/10 px-4 py-3">
             <Check size={15} className="shrink-0 text-aqua" />
             <span className="text-[0.86rem] text-parchment/80">
-              All five Pro Nights are open to you.
+              The full festival programme is open to you.
             </span>
           </div>
         )}

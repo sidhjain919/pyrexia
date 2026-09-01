@@ -101,6 +101,20 @@ body {
   background: linear-gradient(var(--color-gold), var(--color-gold-deep));
 }
 
+/*
+ * Anchor targets clear the header.
+ *
+ * The nav scrolls by `scrollIntoView({ block: 'start' })`, which puts the
+ * section's top edge at the top of the viewport — underneath a header that is
+ * fixed over it. Every section heading arrived hidden behind the bar, which is
+ * worst on a phone, where the header is a larger share of the screen and the
+ * mobile menu is the main way anyone navigates. `--header-h` is published by
+ * the header itself; the fallback covers the first paint.
+ */
+section[id] {
+  scroll-margin-top: calc(var(--header-h, 7rem) + 0.75rem);
+}
+
 /* Focus visibility (accessibility floor) */
 :focus-visible {
   outline: 2px solid var(--color-gold-bright);
@@ -127,6 +141,17 @@ body {
   .font-log { font-family: var(--font-log); font-size-adjust: none; }
   .font-accent { font-family: var(--font-accent); font-size-adjust: none; }
   .font-body { font-family: var(--font-body); font-size-adjust: 0.5; }
+
+  /*
+   * An icon set beside small caps.
+   *
+   * `items-center` centres the icon on the text's line box, but Special Elite
+   * puts its caps high in that box and leaves the descender space empty
+   * underneath, so a box-centred icon sits visibly low against a line that has
+   * no descenders in it at all. This lifts the icon onto the cap line. Pair it
+   * with `items-center`, not instead of it.
+   */
+  .icon-caps { transform: translateY(-0.14em); }
 
   .tracking-cinema { letter-spacing: 0.28em; }
   .tracking-wide2 { letter-spacing: 0.16em; }

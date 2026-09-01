@@ -47,10 +47,39 @@ export default function OceanScene() {
           on a portrait screen; on a wide one it fills the frame centred. */}
       <img
         src={art.heroSea}
+        /* The plate is 1642px wide. Full-bleed on a retina desktop that is a
+           1.8x enlargement, which is what made the first thing anyone sees
+           look soft. `@2x` is the same painting resampled and re-encoded at
+           2880px; a phone never downloads it, because 51KB over 143KB matters
+           far more there than the sharpness does at 390px wide. */
+        srcSet={`${art.heroSea} 1642w, ${art.heroSea2x} 2880w`}
+        sizes="100vw"
         alt=""
         aria-hidden
         data-depth="3"
-        className="parallax-layer absolute inset-0 h-full w-full scale-[1.06] object-cover object-[50%_58%] sm:object-center"
+        fetchPriority="high"
+        decoding="async"
+        /* 1.02 rather than 1.06: the parallax drifts this layer by about three
+           pixels, so that is all the bleed it needs, and every percent of
+           scale is another percent of enlargement on an already-stretched
+           plate. */
+        /*
+         * The phone crop is art direction, not a default.
+         *
+         * The painting is 1.71:1 and a phone is 0.46:1, so `cover` shows about
+         * a quarter of its width. Centred, that quarter is open water: the
+         * island is off the left edge, and the ship and the moon — the two
+         * things that say "pirates" — are both off the right. Anchoring at 81%
+         * puts the ship mid-frame, the moon upper-right and the island's palms
+         * at the left edge, which is the whole scene in a portrait window.
+         *
+         * The 7% drop is what stops the moon landing behind the Register
+         * button: it is painted a ninth of the way down the plate, which on a
+         * phone is exactly where the header sits. The strip it uncovers at the
+         * top is the same near-black the plate's own sky starts at, and the
+         * star layer runs over both.
+         */
+        className="parallax-layer absolute left-0 right-0 top-[7%] h-[107%] w-full scale-[1.02] object-cover object-[81%_50%] sm:top-0 sm:h-full sm:object-center"
       />
 
       {/* Twinkle. Sparse, and only across the upper sky where the plate is

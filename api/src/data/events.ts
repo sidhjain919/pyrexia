@@ -19,7 +19,7 @@ import { territories, type Territory } from './territories.ts'
  * The site keeps its own copy in `src/data/registration.ts`, and this one is
  * what actually decides: `POST /api/me/events` checks it before writing.
  */
-export const OPEN_TERRITORIES: ReadonlySet<string> = new Set(['alfresco'])
+export const OPEN_TERRITORIES: ReadonlySet<string> = new Set<string>()
 
 export function isTerritoryOpen(id: string): boolean {
   return OPEN_TERRITORIES.has(id)

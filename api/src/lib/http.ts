@@ -21,6 +21,9 @@ export type ErrorCode =
   // The address hasn't been proved yet: the client should show the code
   // screen rather than an error.
   | 'verification_required'
+  // The college ID is missing: the client should send them back to the
+  // documents step rather than showing a generic failure.
+  | 'student_id_required'
   | 'invalid_code'
   | 'too_many_attempts'
   | 'unavailable'
@@ -39,6 +42,7 @@ const STATUS: Record<ErrorCode, number> = {
   unauthorised: 401,
   forbidden: 403,
   verification_required: 403,
+  student_id_required: 422,
   invalid_code: 400,
   too_many_attempts: 429,
   unavailable: 503,
