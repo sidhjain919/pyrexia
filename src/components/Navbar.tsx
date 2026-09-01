@@ -112,8 +112,22 @@ export default function Navbar() {
         >
           {/* Wordmark reads directly on the dark bar */}
           <Link to="/" data-cursor="TOP" className="flex shrink-0 items-center gap-2.5 py-1">
-            <img src={asset('logo-wordmark.webp')} alt="PYREXIA" className="h-8 w-auto sm:h-10" />
-            <span className="hidden whitespace-nowrap font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 2xl:block">
+            <img
+              src={asset('logo-wordmark.webp')}
+              alt="PYREXIA"
+              /* h-7 below `sm`: on a 360px phone, signed in, the row is a
+                 dozen pixels over and this is the only element that can give
+                 them up without losing information. */
+              className="h-7 w-auto sm:h-10"
+            />
+            <span
+              className={`hidden whitespace-nowrap font-log text-[0.68rem] uppercase tracking-cinema text-parchment/70 ${
+                // Signing in adds a greeting and a gold button to a row that
+                // was already full at this width. This is the only thing in it
+                // that is pure decoration, so it is the thing that goes.
+                signedIn ? '' : '2xl:block'
+              }`}
+            >
               {SITE.year}
               <br />
               AIIMS Rishikesh
@@ -159,19 +173,34 @@ export default function Navbar() {
           <div className="flex min-w-0 items-center gap-2">
             {signedIn ? (
               <>
-                {/* The greeting is the whole point on a phone: without it the
-                    header looks identical signed in and signed out. It is the
-                    link to the pass at every width, and the gold button joins
-                    it only where there is room. */}
+                {/*
+                    Two states, not one squashed continuum.
+
+                    This was `min-w-0` with a truncating name, so when the bar
+                    ran out of room - which signing in guarantees, because the
+                    greeting is added to a row that was already full - the name
+                    truncated to nothing and left the pill's right padding
+                    wrapped around the avatar as a collapsed oval sitting under
+                    the gold button.
+
+                    So it does not shrink. It is a circle holding the initial,
+                    and only where the row can genuinely spare 9rem does it
+                    open out into the greeting.
+                */}
                 <Link
                   to="/pass"
                   data-cursor="PASS"
-                  className="flex min-w-0 items-center gap-2 rounded-full border border-gold/35 py-1 pl-1 pr-3 transition-colors hover:border-gold/70"
+                  aria-label={who ? `Signed in as ${who}. Open my pass` : 'Open my pass'}
+                  /* Gone below 360px, where the row is over by more than this
+                     is wide. Nothing is lost: the menu behind the hamburger
+                     names whoever is signed in, and the gold button is the
+                     thing that must survive. */
+                  className="hidden shrink-0 items-center gap-2 rounded-full border border-gold/35 p-1 transition-colors hover:border-gold/70 min-[360px]:flex 2xl:pr-3.5"
                 >
                   <span className="font-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep text-[0.72rem] text-abyss">
                     {(who ?? 'P').charAt(0).toUpperCase()}
                   </span>
-                  <span className="truncate text-[0.78rem] text-parchment/85 sm:text-[0.84rem]">
+                  <span className="hidden max-w-[9rem] truncate text-[0.84rem] text-parchment/85 2xl:block">
                     Hi,{' '}
                     <span className="text-gold-bright">{who ?? 'voyager'}</span>
                   </span>
@@ -186,18 +215,20 @@ export default function Navbar() {
                   <button
                     onClick={() => openRegister()}
                     data-cursor="JOIN"
-                    className="font-accent hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex"
+                    className="font-accent inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
                   >
-                    <Ticket size={13} />
+                    <Ticket size={13} className="hidden sm:block" />
                     {headerCta.short}
                   </button>
                 ) : (
                   <Link
                     to={headerCta.to ?? '/pass'}
                     data-cursor="PASS"
-                    className="font-accent hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 text-[0.82rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:inline-flex"
+                    className="font-accent inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-4 py-2.5 text-[0.7rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03] sm:min-h-0 sm:px-5 sm:text-[0.82rem]"
                   >
-                    {entitlement === 'basic' ? <Star size={13} /> : <Ticket size={13} />}
+                    <span className="hidden sm:block">
+                      {entitlement === 'basic' ? <Star size={13} /> : <Ticket size={13} />}
+                    </span>
                     {headerCta.short}
                   </Link>
                 )}
