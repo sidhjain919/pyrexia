@@ -433,6 +433,10 @@ export type EventInfo = {
 export const api = {
   products: () => request<{ products: Product[] }>('/api/products').then((r) => r.products),
 
+  /** 'test' means the gateway takes no money. The site says so, loudly. */
+  paymentMode: () =>
+    request<{ paymentMode: 'test' | 'live' }>('/api/config').then((r) => r.paymentMode),
+
   /**
    * `auth: true` is not optional here.
    *

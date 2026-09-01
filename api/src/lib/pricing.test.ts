@@ -115,3 +115,19 @@ test('formatPaise renders rupees for display only', () => {
   assert.equal(formatPaise(270000), '₹2,700')
   assert.equal(formatPaise(43938), '₹439.38')
 })
+
+test('the payment mode is derived from the key, not from a flag somebody sets', () => {
+  // A separate switch would be a second thing to remember, and the thing to
+  // remember is exactly what fails. The key id already says which account the
+  // money goes to, so that is what the banner reads.
+  const mode = (keyId: string | undefined) =>
+    keyId?.startsWith('rzp_live_') ? 'live' : 'test'
+
+  assert.equal(mode('rzp_live_ABC123'), 'live')
+  assert.equal(mode('rzp_test_ABC123'), 'test')
+  // Anything unset or unrecognised is treated as test: the banner appearing
+  // when it should not is a nuisance, missing when it should be there is a
+  // fest that took no money for a day.
+  assert.equal(mode(undefined), 'test')
+  assert.equal(mode(''), 'test')
+})

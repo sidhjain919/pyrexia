@@ -42,8 +42,17 @@ export default function Navbar() {
   useEffect(() => {
     const el = headerRef.current
     if (!el) return
-    const publish = () =>
-      document.documentElement.style.setProperty('--header-h', `${Math.round(el.getBoundingClientRect().height)}px`)
+    const publish = () => {
+      // Anything clearing the header has to clear whatever is stacked above it
+      // too, which today is the test-mode banner. Read rather than assumed, so
+      // a banner that wraps to two lines on a narrow phone still works.
+      const banner =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--banner-h'),
+        ) || 0
+      const height = Math.round(el.getBoundingClientRect().height + banner)
+      document.documentElement.style.setProperty('--header-h', `${height}px`)
+    }
     publish()
     const ro = new ResizeObserver(publish)
     ro.observe(el)
@@ -89,7 +98,7 @@ export default function Navbar() {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: hidden ? -140 : 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="pointer-events-none fixed inset-x-0 top-0 z-[900] flex flex-col items-center px-4 pt-4"
+        className="pointer-events-none fixed inset-x-0 top-[var(--banner-h,0px)] z-[900] flex flex-col items-center px-4 pt-4"
       >
         {/* A wash of night behind the bar. The hero paints a full moon into the
             top-right corner, which is exactly where Sign in and Register sit,

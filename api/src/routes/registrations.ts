@@ -33,6 +33,20 @@ export const registrations = new Hono<{ Bindings: Env }>()
  * ------------------------------------------------------------------ */
 
 /** What the pricing UI reads, so the browser never hard-codes an amount. */
+/**
+ * Which Razorpay account the money would go to.
+ *
+ * Public because the site puts a banner up when it says `test`, and the whole
+ * point of that banner is that nobody has to remember to check. Nothing here
+ * is a secret: the key *id* ships to the browser inside every checkout anyway,
+ * and this returns only which half of it we are on.
+ */
+registrations.get('/config', (c) =>
+  c.json({
+    paymentMode: c.env.RAZORPAY_KEY_ID?.startsWith('rzp_live_') ? 'live' : 'test',
+  }),
+)
+
 registrations.get('/products', async (c) => {
   const products = await loadProducts(c.env)
   return c.json({
