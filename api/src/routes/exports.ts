@@ -1,8 +1,14 @@
 /**
- * CSV exports.
+ * Excel exports.
  *
- * These become the printed sheets your team ticks names off at events and Star
- * Nights, so two things matter more than they would for a normal download:
+ * Three workbooks, one per thing the committee asks for:
+ *
+ *   /admin/export/registrations   two tabs: every login, then everyone who paid
+ *                                 with everything they typed into the form
+ *   /admin/export/payments        every payment attempt, whatever became of it
+ *   /admin/export/events          every confirmed event entry, plus a per-event count
+ *
+ * Two things matter more here than for a normal download:
  *
  *  - **Every sheet carries the time it was generated.** A list printed on day
  *    one won't contain anyone who registered on day two, and the only way a
@@ -10,6 +16,9 @@
  *
  *  - **Sorted by name, not by when they registered.** Nobody finds "Meera" in
  *    a list ordered by signup time.
+ *
+ * Amounts land in numeric cells so they sum in Excel; text lands in typed
+ * string cells, so a name beginning `=` is never a formula.
  */
 
 import { Hono } from 'hono'
@@ -17,6 +26,7 @@ import { Hono } from 'hono'
 import type { Env } from '../types.ts'
 import { ApiError } from '../lib/http.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
+import { xlsxResponse, type Cell, type Sheet } from '../lib/xlsx.ts'
 import * as audit from '../lib/audit.ts'
 
 export const exports_ = new Hono<{ Bindings: Env }>()
@@ -44,203 +54,216 @@ exports_.use('/admin/export/*', async (c, next) => {
   await next()
 })
 
-/**
- * Escape one cell.
- *
- * The leading-quote guard is not paranoia: a value starting with `=`, `+`, `-`
- * or `@` is executed as a formula when the file is opened in Excel, and names
- * and team names come from the public. Prefixing a quote makes it text.
- */
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return ''
-  let s = String(value)
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+const stamp = () => new Date().toISOString().replace('T', ' ').slice(0, 16)
+
+/** A tab: a title row, a blank row, the headers, then the data. */
+function tab(name: string, title: string, headers: string[], rows: Cell[][]): Sheet {
+  return {
+    name,
+    rows: [[`${title} — generated ${stamp()} UTC — PYREXIA 2026`], [], headers, ...rows],
+  }
 }
 
-function csv(title: string, headers: string[], rows: unknown[][]): string {
-  const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16)
-  return [
-    // A title row above the headers, so a printout is never anonymous.
-    cell(`${title}: generated ${stamp} UTC: PYREXIA 2026`),
-    '',
-    headers.map(cell).join(','),
-    ...rows.map((r) => r.map(cell).join(',')),
-  ].join('\r\n')
+function workbook(sheets: Sheet[], filename: string): Response {
+  const day = new Date().toISOString().slice(0, 10)
+  return xlsxResponse(sheets, `pyrexia-${filename}-${day}.xlsx`)
 }
 
-function download(body: string, filename: string): Response {
-  const stamp = new Date().toISOString().slice(0, 10)
-  return new Response(`﻿${body}`, {
-    headers: {
-      // The BOM makes Excel read it as UTF-8, without which ₹ and any
-      // non-English name arrive as mojibake.
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="pyrexia-${filename}-${stamp}.csv"`,
-      'Cache-Control': 'no-store',
-    },
-  })
-}
+/** Paise → a rupee amount as a real number (2 dp), for a numeric Excel cell. */
+const rupees = (paise: unknown) => (typeof paise === 'number' ? Math.round(paise) / 100 : 0)
 
-const rupees = (paise: unknown) =>
-  typeof paise === 'number' ? (paise / 100).toFixed(2) : '0.00'
+const yesNo = (v: unknown) => (v ? 'Yes' : 'No')
+
+const tierName = (tier: unknown) => (tier === 1 ? 'Festival Pass' : 'Basic')
+
+/** "basic,delegate" → "Basic + Festival Pass". */
+function bought(products: unknown, kind: unknown, eventName: unknown): string {
+  if (kind === 'event') return `Event entry: ${String(eventName ?? '')}`
+  const ids = String(products ?? '').split(',').filter(Boolean)
+  const names = ids.map((p) => (p === 'basic' ? 'Basic Registration' : p === 'delegate' ? 'Festival Pass' : p))
+  return names.join(' + ')
+}
 
 /* ------------------------------------------------------------------ *
- * Everyone
+ * Registrations: logins, then the paid people with their form answers
  * ------------------------------------------------------------------ */
 
 exports_.get('/admin/export/registrations', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT r.public_code, r.name, r.email, r.phone, r.gender, r.college, r.city,
-            r.course, r.year, r.emergency_name, r.emergency_phone, r.status,
-            r.verification, t.tier, r.created_at,
-            (SELECT coalesce(sum(o.amount_paise), 0) FROM orders o
-              WHERE o.registration_id = r.id AND o.status = 'paid') AS paid
+  const { results: logins } = await c.env.DB.prepare(
+    `SELECT r.public_code, r.name, r.email, r.phone, r.email_verified, r.created_at,
+            EXISTS (SELECT 1 FROM entitlements e
+                     WHERE e.registration_id = r.id AND e.product_id = 'basic'
+                       AND e.revoked_at IS NULL) AS registered,
+            t.tier
        FROM registrations r JOIN registration_tier t ON t.registration_id = r.id
-      WHERE r.status = 'confirmed'
+      ORDER BY r.created_at DESC`,
+  ).all<Record<string, unknown>>()
+
+  const { results: paid } = await c.env.DB.prepare(
+    `SELECT r.public_code, r.name, r.email, r.phone, r.gender, r.college, r.city,
+            r.course, r.year, r.emergency_name, r.emergency_phone, r.created_at, t.tier,
+            EXISTS (SELECT 1 FROM documents d
+                     WHERE d.registration_id = r.id AND d.kind = 'student_id'
+                       AND d.purged_at IS NULL)                                   AS has_id,
+            EXISTS (SELECT 1 FROM documents d
+                     WHERE d.registration_id = r.id AND d.kind = 'aadhaar'
+                       AND d.purged_at IS NULL)                                   AS has_govt_id,
+            (SELECT coalesce(sum(o.amount_paise), 0) FROM orders o
+              WHERE o.registration_id = r.id AND o.status = 'paid')              AS paid,
+            (SELECT min(o.paid_at) FROM orders o
+              WHERE o.registration_id = r.id AND o.status = 'paid')              AS first_paid_at,
+            (SELECT count(*) FROM event_entries ev
+              WHERE ev.registration_id = r.id AND ev.status = 'confirmed')       AS entries
+       FROM registrations r JOIN registration_tier t ON t.registration_id = r.id
+      WHERE EXISTS (SELECT 1 FROM entitlements e
+                     WHERE e.registration_id = r.id AND e.product_id = 'basic'
+                       AND e.revoked_at IS NULL)
       ORDER BY r.name COLLATE NOCASE`,
   ).all<Record<string, unknown>>()
 
-  return download(
-    csv(
-      'All registrations',
-      ['Registration No', 'Name', 'Email', 'Mobile', 'Gender', 'College', 'City',
-       'Course', 'Year', 'Emergency Name', 'Emergency Mobile', 'Tier',
-       'Documents', 'Paid (INR)', 'Registered On'],
-      results.map((r) => [
-        r.public_code, r.name, r.email, r.phone, r.gender, r.college, r.city,
-        r.course, r.year, r.emergency_name, r.emergency_phone,
-        r.tier === 1 ? 'Delegate' : 'Basic',
-        r.verification, rupees(r.paid), r.created_at,
-      ]),
-    ),
+  return workbook(
+    [
+      tab(
+        'Logins',
+        'Every account',
+        ['Registration No', 'Name', 'Email', 'Mobile', 'Email confirmed', 'Has paid', 'Tier', 'Account created'],
+        logins.map((r) => [
+          r.public_code, r.name, r.email, r.phone,
+          yesNo(r.email_verified), yesNo(r.registered),
+          r.registered ? tierName(r.tier) : '',
+          r.created_at,
+        ] as Cell[]),
+      ),
+      tab(
+        'Registrations',
+        'Everyone who paid, with what they entered on the form',
+        ['Registration No', 'Name', 'Email', 'Mobile', 'Gender', 'College', 'City',
+         'Course', 'Year', 'Emergency Name', 'Emergency Mobile', 'Tier',
+         'College ID uploaded', 'Govt ID uploaded', 'Event entries',
+         'Paid (INR)', 'First paid on', 'Account created'],
+        paid.map((r) => [
+          r.public_code, r.name, r.email, r.phone, r.gender, r.college, r.city,
+          r.course, r.year, r.emergency_name, r.emergency_phone, tierName(r.tier),
+          yesNo(r.has_id), yesNo(r.has_govt_id), r.entries,
+          rupees(r.paid), r.first_paid_at, r.created_at,
+        ] as Cell[]),
+      ),
+    ],
     'registrations',
   )
 })
 
 /* ------------------------------------------------------------------ *
- * Pro Nights: who may come in
- * ------------------------------------------------------------------ */
-
-exports_.get('/admin/export/delegates', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT r.public_code, r.name, r.college, r.phone
-       FROM registrations r
-       JOIN entitlements e ON e.registration_id = r.id
-      WHERE e.product_id = 'delegate' AND e.revoked_at IS NULL
-        AND r.status = 'confirmed'
-      ORDER BY r.name COLLATE NOCASE`,
-  ).all<Record<string, unknown>>()
-
-  return download(
-    csv(
-      'Pro Nights: Festival Pass holders',
-      ['Registration No', 'Name', 'College', 'Mobile', 'Checked in'],
-      // A blank final column, because this sheet exists to be written on.
-      results.map((r) => [r.public_code, r.name, r.college, r.phone, '']),
-    ),
-    'delegates',
-  )
-})
-
-/* ------------------------------------------------------------------ *
- * One event
- * ------------------------------------------------------------------ */
-
-exports_.get('/admin/export/event', async (c) => {
-  const name = (c.req.query('name') ?? '').trim()
-  if (!name) throw new ApiError('bad_request', 'Which event? Pass ?name=…')
-
-  const { results } = await c.env.DB.prepare(
-    `SELECT r.public_code, r.name, r.college, r.phone, r.course, r.year,
-            ev.participation, ev.team_name, ev.answers, ev.created_at, t.tier
-       FROM event_entries ev
-       JOIN registrations r ON r.id = ev.registration_id
-       JOIN registration_tier t ON t.registration_id = r.id
-      WHERE ev.event_name = ? AND ev.status = 'confirmed'
-      ORDER BY coalesce(ev.team_name, '') COLLATE NOCASE, r.name COLLATE NOCASE`,
-  )
-    .bind(name)
-    .all<Record<string, unknown>>()
-
-  // Every event asks different questions, so the columns are whatever this
-  // event's entrants actually answered rather than a fixed shape.
-  const answerKeys: string[] = []
-  const parsed = results.map((r) => {
-    let a: Record<string, string> = {}
-    try {
-      a = JSON.parse(String(r.answers ?? '{}'))
-    } catch {
-      /* a malformed row should cost one cell, not the whole sheet */
-    }
-    for (const k of Object.keys(a)) if (!answerKeys.includes(k)) answerKeys.push(k)
-    return { row: r, answers: a }
-  })
-
-  return download(
-    csv(
-      `${name}: entries`,
-      ['Registration No', 'Name', 'College', 'Mobile', 'Course', 'Year', 'Tier',
-       'Solo/Team', 'Team Name', ...answerKeys, 'Present'],
-      parsed.map(({ row, answers }) => [
-        row.public_code, row.name, row.college, row.phone, row.course, row.year,
-        row.tier === 1 ? 'Delegate' : 'Basic',
-        row.participation, row.team_name ?? '',
-        ...answerKeys.map((k) => answers[k] ?? ''),
-        '',
-      ]),
-    ),
-    `event-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
-  )
-})
-
-/* ------------------------------------------------------------------ *
- * Everything, for accounting
+ * Payments: every attempt, whatever happened to it
  * ------------------------------------------------------------------ */
 
 exports_.get('/admin/export/payments', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT o.id, r.public_code, r.name, r.email, o.amount_paise, o.fee_paise,
-            o.tax_paise, o.method, o.status, o.razorpay_payment_id, o.paid_at,
-            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items
+    `SELECT o.id, r.public_code, r.name, r.email, r.phone, o.kind,
+            o.amount_paise, o.convenience_paise, o.fee_paise, o.tax_paise,
+            o.method, o.status, o.razorpay_order_id, o.razorpay_payment_id,
+            o.created_at, o.paid_at, o.failure_reason,
+            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items,
+            (SELECT ev.event_name FROM event_entries ev WHERE ev.id = o.event_entry_id) AS event_name
        FROM orders o JOIN registrations r ON r.id = o.registration_id
       ORDER BY o.created_at DESC`,
   ).all<Record<string, unknown>>()
 
-  return download(
-    csv(
-      'Payments',
-      ['Order', 'Registration No', 'Name', 'Email', 'Bought', 'Amount (INR)',
-       'Razorpay Fee', 'GST on Fee', 'Net (INR)', 'Method', 'Status',
-       'Razorpay Payment ID', 'Paid At'],
-      results.map((r) => {
-        const amount = Number(r.amount_paise ?? 0)
-        const fee = Number(r.fee_paise ?? 0) + Number(r.tax_paise ?? 0)
-        return [
-          r.id, r.public_code, r.name, r.email, r.items,
-          rupees(amount), rupees(r.fee_paise), rupees(r.tax_paise),
-          rupees(r.status === 'paid' ? amount - fee : 0),
-          r.method, r.status, r.razorpay_payment_id, r.paid_at,
-        ]
-      }),
-    ),
+  return workbook(
+    [
+      tab(
+        'Payments',
+        'Every payment attempt',
+        ['Order', 'Registration No', 'Name', 'Email', 'Mobile', 'Bought',
+         'Amount charged (INR)', 'of which gateway charge (INR)',
+         'Razorpay fee (INR)', 'GST on fee (INR)', 'Net to fest (INR)',
+         'Method', 'Status', 'Razorpay Order ID', 'Razorpay Payment ID',
+         'Started', 'Paid at', 'Failure reason'],
+        results.map((r) => {
+          const amount = Number(r.amount_paise ?? 0)
+          const fee = Number(r.fee_paise ?? 0) + Number(r.tax_paise ?? 0)
+          return [
+            r.id, r.public_code, r.name, r.email, r.phone,
+            bought(r.items, r.kind, r.event_name),
+            rupees(amount), rupees(r.convenience_paise),
+            rupees(r.fee_paise), rupees(r.tax_paise),
+            rupees(r.status === 'paid' ? amount - fee : 0),
+            r.method, r.status, r.razorpay_order_id, r.razorpay_payment_id,
+            r.created_at, r.paid_at, r.failure_reason,
+          ] as Cell[]
+        }),
+      ),
+    ],
     'payments',
   )
 })
 
-/** Which events have entries at all: so nobody prints sixty empty sheets. */
-exports_.get('/admin/export/event-list', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT event_name, territory_code, count(*) AS entries
-       FROM event_entries WHERE status = 'confirmed'
-      GROUP BY event_name ORDER BY territory_code, event_name`,
-  ).all<{ event_name: string; territory_code: string; entries: number }>()
+/* ------------------------------------------------------------------ *
+ * Events: every confirmed entry, and a count per event
+ * ------------------------------------------------------------------ */
 
-  return c.json({
-    events: results.map((r) => ({
-      name: r.event_name,
-      territory: r.territory_code,
-      entries: r.entries,
-    })),
-  })
+exports_.get('/admin/export/events', async (c) => {
+  const { results: entries } = await c.env.DB.prepare(
+    `SELECT ev.event_name, ev.territory_code, ev.participation, ev.team_name,
+            ev.answers, ev.fee_paise, ev.fee_variant, ev.created_at,
+            r.public_code, r.name, r.email, r.phone, r.college, r.course, r.year, t.tier
+       FROM event_entries ev
+       JOIN registrations r ON r.id = ev.registration_id
+       JOIN registration_tier t ON t.registration_id = r.id
+      WHERE ev.status = 'confirmed'
+      ORDER BY ev.territory_code, ev.event_name, coalesce(ev.team_name, '') COLLATE NOCASE,
+               r.name COLLATE NOCASE`,
+  ).all<Record<string, unknown>>()
+
+  const { results: summary } = await c.env.DB.prepare(
+    `SELECT event_name, territory_code, count(*) AS entries,
+            sum(CASE WHEN participation = 'team' THEN 1 ELSE 0 END) AS team_entries,
+            coalesce(sum(fee_paise), 0) AS fees_paise
+       FROM event_entries WHERE status = 'confirmed'
+      GROUP BY event_name, territory_code ORDER BY territory_code, event_name`,
+  ).all<Record<string, unknown>>()
+
+  // Every event asks different questions, so the answers are flattened into
+  // one readable cell rather than a shifting set of columns.
+  const answers = (raw: unknown): string => {
+    try {
+      const a = JSON.parse(String(raw ?? '{}')) as Record<string, string>
+      return Object.entries(a)
+        .filter(([, v]) => String(v ?? '').trim())
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+    } catch {
+      return ''
+    }
+  }
+
+  return workbook(
+    [
+      tab(
+        'Entries',
+        'Every confirmed event entry',
+        ['Event', 'Territory', 'Registration No', 'Name', 'Email', 'Mobile', 'College',
+         'Course', 'Year', 'Tier', 'Solo/Team', 'Team name', 'Fee (INR)', 'Fee band',
+         'Answers', 'Entered on'],
+        entries.map((r) => [
+          r.event_name, r.territory_code, r.public_code, r.name, r.email, r.phone, r.college,
+          r.course, r.year, tierName(r.tier), r.participation, r.team_name ?? '',
+          rupees(r.fee_paise), r.fee_variant ?? '', answers(r.answers), r.created_at,
+        ] as Cell[]),
+      ),
+      tab(
+        'Summary',
+        'Entries per event',
+        ['Event', 'Territory', 'Entries', 'of which teams', 'Entry fees collected (INR)'],
+        summary.map((r) => [
+          r.event_name, r.territory_code, r.entries, r.team_entries, rupees(r.fees_paise),
+        ] as Cell[]),
+      ),
+    ],
+    'events',
+  )
 })

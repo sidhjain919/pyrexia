@@ -28,7 +28,11 @@ jobs:
         with:
           enablement: true
       - run: npm ci
+      # The API lives on its own domain rather than workers.dev, which many
+      # Indian mobile networks and in-app browsers block outright.
       - run: npm run build
+        env:
+          VITE_API_URL: https://api.pyrexia-api.com
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist

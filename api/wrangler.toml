@@ -14,8 +14,23 @@ compatibility_flags = ["nodejs_compat"]
 
 account_id = "b6452bda3212f32c46d28a0dff0c50f4"
 
+# Adding a custom domain (below) switches the workers.dev address off unless
+# this says otherwise. It must stay on: Razorpay's webhook is registered
+# against it, and the site keeps calling it until the next deploy lands.
+# Top-level on purpose: inside a [[routes]] table it is a different setting.
+workers_dev = true
+
 [observability]
 enabled = true
+
+# The API's own address. `*.workers.dev` is blocked on many Indian mobile
+# networks and inside Instagram's in-app browser, which is exactly where
+# students open the site; a custom domain on a zone we control is not. The
+# workers.dev address keeps working alongside it (Razorpay's webhook still
+# points there), so nothing has to move at once.
+[[routes]]
+pattern = "api.pyrexia-api.com"
+custom_domain = true
 
 [[d1_databases]]
 binding = "DB"

@@ -288,6 +288,138 @@ section[id] {
   .will-parallax { will-change: transform; }
 }
 
+/* ------------------------------------------------------------------ *
+ * The admin console
+ * ------------------------------------------------------------------ *
+ *
+ * The public site is a film poster; the dashboard is the ship's instrument
+ * panel. It keeps the dark hull and the brass, but everything that has to be
+ * read quickly - figures, axes, labels - is set in the system sans with plain
+ * sentence-case text, and every series colour below was checked by the
+ * palette validator against this surface rather than picked by eye.
+ */
+.console {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size-adjust: none;
+
+  --cs-surface: #0c1a21;
+  --cs-surface-2: #10222b;
+  --cs-ink: #f2ede1;
+  --cs-ink-2: #b9b3a4;
+  --cs-ink-3: #7f8a8d;
+  --cs-hair: rgba(242, 237, 225, 0.09);
+  --cs-grid: #1c2e36;
+
+  /* One hue, many steps. The page is brass through and through: the Festival
+     Pass is the bright step and Basic the deeper one (a tier is an ordered
+     thing, so a light-to-dark ramp is the honest encoding), single-series bars
+     take the mid step, and anything that is context rather than a category is
+     drawn in parchment. Every step was checked by the palette validator on
+     this surface; the darkest, #7e5f1e, is the last one that still clears it. */
+  --cs-festival: #e0bb55;
+  --cs-basic: #a67f2c;
+  --cs-third: #c89b3c;
+  --cs-deep: #7e5f1e;
+  --cs-bar: #a67f2c;
+  --cs-peak: #f3dc95;
+  --cs-line: #e8d5ae;
+  --cs-track: rgba(232, 213, 174, 0.07);
+
+  /* Ordinal ramp for the funnel, light -> dark. */
+  --cs-f1: #f3dc95;
+  --cs-f2: #e0bb55;
+  --cs-f3: #c89b3c;
+  --cs-f4: #a67f2c;
+  --cs-f5: #7e5f1e;
+
+  /* The one accent for anything that needs a hand: a brass tint, not an alarm. */
+  --cs-attn-bg: rgba(224, 187, 85, 0.10);
+  --cs-attn-line: rgba(224, 187, 85, 0.35);
+
+  color: var(--cs-ink);
+}
+
+.console .card {
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-hair);
+  border-radius: 14px;
+  box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.9);
+}
+
+.console .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.console .ink-2 { color: var(--cs-ink-2); }
+.console .ink-3 { color: var(--cs-ink-3); }
+
+/* A hover readout. Values lead; the series name follows. */
+.console .tip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  min-width: 9rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: #061017;
+  border: 1px solid var(--cs-hair);
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.9);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--cs-ink);
+}
+
+.console .tip .row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.console .tip .key {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.console .ghost {
+  border: 1px solid var(--cs-hair);
+  color: var(--cs-ink-2);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.74rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.console .ghost:hover {
+  border-color: rgba(230, 194, 94, 0.55);
+  color: var(--cs-ink);
+}
+.console .ghost[aria-pressed='true'] {
+  border-color: rgba(230, 194, 94, 0.7);
+  color: var(--cs-ink);
+  background: rgba(230, 194, 94, 0.08);
+}
+
+.console table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.console table.data th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--cs-ink-3);
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--cs-hair);
+}
+.console table.data td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--cs-hair);
+  color: var(--cs-ink-2);
+}
+.console table.data td.n, .console table.data th.n { text-align: right; }
+
 /* Film grain overlay (applied via .grain::after) */
 .grain::after {
   content: '';

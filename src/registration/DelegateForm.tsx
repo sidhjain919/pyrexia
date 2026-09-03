@@ -309,7 +309,9 @@ export default function DelegateForm() {
           transition={{ duration: 0.28 }}
         >
           {step === 0 && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            // `items-start`, so a field with a hint under it (Gender) does not
+            // stretch its neighbour's row and leave the grid ragged.
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Field label="Full name" required error={errors.name}>
                   <TextInput
@@ -343,7 +345,6 @@ export default function DelegateForm() {
                   options={['Female', 'Male', 'Other', 'Prefer not to say']}
                 />
               </Field>
-              <div className="hidden sm:block" />
 
               <Field label="College / institution" required error={errors.college}>
                 <TextInput

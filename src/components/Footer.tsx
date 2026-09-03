@@ -147,6 +147,18 @@ export default function Footer() {
             Charted with fever · Pirates of the Lost Island
           </p>
         </div>
+
+        {/* The maker's mark: the last line on the page, centred, at the level
+            of the small print. It only brightens for someone who goes looking. */}
+        <p className="pb-6 text-center">
+          <a
+            href="mailto:sidh.jain.1809@gmail.com?subject=Website%20enquiry"
+            className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/30 transition-colors hover:text-gold-bright"
+            title="Want a website like this? Get in touch."
+          >
+            Developed by Sidh
+          </a>
+        </p>
       </div>
     </footer>
   )

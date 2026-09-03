@@ -62,62 +62,228 @@ admin.get('/admin/me', (c) => {
  * The numbers
  * ------------------------------------------------------------------ */
 
+/**
+ * Every day-grouping here is in IST, not UTC.
+ *
+ * The fest and its team are in India, so "today" and each bar have to mean an
+ * IST calendar day: grouping by the raw UTC timestamp would move a late-evening
+ * sign-up onto tomorrow and make the dashboard disagree with the clock on the
+ * wall. `datetime(col,'+5 hours','+30 minutes')` shifts the stored UTC value to
+ * IST before the date is taken. The frontend builds its 14-day axis in IST too,
+ * so the keys line up exactly.
+ */
+const IST = "'+5 hours', '+30 minutes'"
+
+/** "Today" and rolling windows, all as IST calendar days. */
+const TODAY = `date('now', ${IST})`
+const SINCE_7 = `date('now', ${IST}, '-6 days')`
+const SINCE_14 = `date('now', ${IST}, '-13 days')`
+/** A registration that actually holds Basic Registration. */
+const HOLDS_BASIC = `EXISTS (SELECT 1 FROM entitlements e
+                      WHERE e.registration_id = r.id AND e.product_id = 'basic'
+                        AND e.revoked_at IS NULL)`
+
 admin.get('/admin/stats', async (c) => {
-  const totals = await c.env.DB.prepare(
+  const db = c.env.DB
+
+  const totals = await db.prepare(
     `SELECT
        (SELECT count(*) FROM registrations)                                        AS accounts,
-       (SELECT count(*) FROM registrations WHERE status = 'confirmed')             AS registered,
+       (SELECT count(*) FROM registrations WHERE email_verified = 1)               AS verified,
+       (SELECT count(DISTINCT registration_id) FROM documents
+          WHERE kind = 'student_id' AND purged_at IS NULL)                         AS id_uploaded,
        (SELECT count(*) FROM entitlements WHERE product_id = 'basic'    AND revoked_at IS NULL) AS basic,
        (SELECT count(*) FROM entitlements WHERE product_id = 'delegate' AND revoked_at IS NULL) AS delegate,
        (SELECT count(*) FROM event_entries WHERE status = 'confirmed')             AS entries,
        (SELECT count(*) FROM passes WHERE revoked_at IS NULL)                      AS passes,
        (SELECT count(*) FROM orders WHERE status = 'created'
           AND created_at < datetime('now', '-30 minutes'))                         AS stuck,
+       (SELECT count(*) FROM orders WHERE status = 'paid')                         AS paid_orders,
+       (SELECT count(*) FROM orders WHERE status = 'failed')                       AS failed_orders,
+       (SELECT count(*) FROM orders WHERE status = 'refunded')                     AS refunded_orders,
        (SELECT coalesce(sum(amount_paise), 0) FROM orders WHERE status = 'paid')   AS collected_paise,
-       (SELECT coalesce(sum(fee_paise + tax_paise), 0) FROM orders WHERE status = 'paid') AS fees_paise`,
+       (SELECT coalesce(sum(amount_paise), 0) FROM orders
+          WHERE status = 'paid' AND date(paid_at, ${IST}) = ${TODAY})              AS collected_today,
+       (SELECT coalesce(sum(amount_paise), 0) FROM orders
+          WHERE status = 'paid' AND date(paid_at, ${IST}) >= ${SINCE_7})           AS collected_week,
+       (SELECT coalesce(sum(convenience_paise), 0) FROM orders WHERE status = 'paid') AS gateway_paise,
+       (SELECT coalesce(sum(amount_paise - convenience_paise), 0) FROM orders
+          WHERE status = 'paid' AND kind = 'event')                                AS event_fees_paise,
+       (SELECT coalesce(sum(i.amount_paise), 0) FROM order_items i
+          JOIN orders o ON o.id = i.order_id
+          WHERE o.status = 'paid' AND i.product_id = 'basic')                      AS basic_paise,
+       (SELECT coalesce(sum(i.amount_paise), 0) FROM order_items i
+          JOIN orders o ON o.id = i.order_id
+          WHERE o.status = 'paid' AND i.product_id = 'delegate')                   AS festival_paise,
+       (SELECT count(*) FROM registrations
+          WHERE date(created_at, ${IST}) = ${TODAY})                               AS accounts_today,
+       (SELECT count(*) FROM passes
+          WHERE revoked_at IS NULL AND date(issued_at, ${IST}) = ${TODAY})         AS passes_today,
+       (SELECT count(DISTINCT registration_id) FROM sessions
+          WHERE revoked_at IS NULL
+            AND date(coalesce(last_seen_at, created_at), ${IST}) = ${TODAY})       AS signed_in_today,
+       (SELECT count(*) FROM passes
+          WHERE revoked_at IS NULL AND date(issued_at, ${IST}) >= ${SINCE_7})      AS passes_last7,
+       (SELECT count(*) FROM passes
+          WHERE revoked_at IS NULL AND date(issued_at, ${IST}) >= ${SINCE_14}
+            AND date(issued_at, ${IST}) < ${SINCE_7})                              AS passes_prev7,
+       (SELECT count(*) FROM registrations
+          WHERE date(created_at, ${IST}) >= ${SINCE_7})                            AS accounts_last7,
+       (SELECT count(*) FROM registrations
+          WHERE date(created_at, ${IST}) >= ${SINCE_14}
+            AND date(created_at, ${IST}) < ${SINCE_7})                             AS accounts_prev7`,
   ).first<Record<string, number>>()
 
-  // Registrations per day, for the sparkline. Two weeks is enough to see a
-  // launch spike without turning into a wall of numbers.
-  const { results: daily } = await c.env.DB.prepare(
-    `SELECT date(paid_at) AS day, count(*) AS n
-       FROM orders
-      WHERE status = 'paid' AND paid_at >= date('now', '-13 days')
+  // Accounts created per day: the top of the funnel, whether or not anyone paid.
+  const { results: accountsDaily } = await db.prepare(
+    `SELECT date(created_at, ${IST}) AS day, count(*) AS n
+       FROM registrations
+      WHERE created_at >= datetime('now', '-31 days')
       GROUP BY day ORDER BY day`,
   ).all<{ day: string; n: number }>()
 
-  // Grouped case- and whitespace-insensitively. People type their own college
-  // name, so "AIIMS Rishikesh" and "AIIMS RISHIKESH" arrive as different
-  // strings and would otherwise appear as two colleges, which turns the
-  // ranking into nonsense once there are thousands of entries from dozens of
-  // institutions. `min()` picks one spelling to show, deterministically.
-  const { results: colleges } = await c.env.DB.prepare(
-    `SELECT min(college) AS college, count(*) AS n FROM registrations
-      WHERE status = 'confirmed' AND trim(college) != ''
-      GROUP BY lower(trim(college)) ORDER BY n DESC LIMIT 8`,
-  ).all<{ college: string; n: number }>()
+  // Passes issued per day, split by what the holder currently owns: a Festival
+  // Pass (delegate) or Basic only. `tier` is read live, so an upgrade moves a
+  // pass from the Basic column to the Festival column on the day it was issued.
+  const { results: passesDaily } = await db.prepare(
+    `SELECT date(p.issued_at, ${IST}) AS day,
+            sum(CASE WHEN t.tier = 1 THEN 1 ELSE 0 END) AS festival,
+            sum(CASE WHEN t.tier = 0 THEN 1 ELSE 0 END) AS basic
+       FROM passes p JOIN registration_tier t ON t.registration_id = p.registration_id
+      WHERE p.revoked_at IS NULL AND p.issued_at >= datetime('now', '-31 days')
+      GROUP BY day ORDER BY day`,
+  ).all<{ day: string; festival: number; basic: number }>()
 
-  const { results: topEvents } = await c.env.DB.prepare(
+  // Money received per day, for the sparkline under the headline figure.
+  const { results: revenueDaily } = await db.prepare(
+    `SELECT date(paid_at, ${IST}) AS day, coalesce(sum(amount_paise), 0) AS paise
+       FROM orders
+      WHERE status = 'paid' AND paid_at >= datetime('now', '-31 days')
+      GROUP BY day ORDER BY day`,
+  ).all<{ day: string; paise: number }>()
+
+  // What hour of the day people pay, in IST: tells the team when a post lands.
+  const { results: hourly } = await db.prepare(
+    `SELECT CAST(strftime('%H', issued_at, ${IST}) AS INTEGER) AS hour, count(*) AS n
+       FROM passes WHERE revoked_at IS NULL
+      GROUP BY hour ORDER BY hour`,
+  ).all<{ hour: number; n: number }>()
+
+  const { results: methods } = await db.prepare(
+    `SELECT coalesce(method, 'unknown') AS method, count(*) AS n
+       FROM orders WHERE status = 'paid' GROUP BY method ORDER BY n DESC`,
+  ).all<{ method: string; n: number }>()
+
+  // For accommodation and logistics, over registered people only.
+  const { results: gender } = await db.prepare(
+    `SELECT CASE WHEN trim(coalesce(r.gender, '')) = '' THEN 'Not given' ELSE r.gender END AS label,
+            count(*) AS n
+       FROM registrations r WHERE ${HOLDS_BASIC}
+      GROUP BY label ORDER BY n DESC`,
+  ).all<{ label: string; n: number }>()
+
+  const { results: years } = await db.prepare(
+    `SELECT CASE WHEN trim(coalesce(r.year, '')) = '' THEN 'Not given' ELSE r.year END AS label,
+            count(*) AS n
+       FROM registrations r WHERE ${HOLDS_BASIC}
+      GROUP BY label ORDER BY n DESC`,
+  ).all<{ label: string; n: number }>()
+
+  const { results: topEvents } = await db.prepare(
     `SELECT event_name, count(*) AS n FROM event_entries
       WHERE status = 'confirmed' GROUP BY event_name ORDER BY n DESC LIMIT 8`,
   ).all<{ event_name: string; n: number }>()
 
+  // The last few payments, so the page has a pulse.
+  const { results: recent } = await db.prepare(
+    `SELECT r.name, r.public_code, o.amount_paise, o.paid_at, o.kind,
+            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS products
+       FROM orders o JOIN registrations r ON r.id = o.registration_id
+      WHERE o.status = 'paid'
+      ORDER BY o.paid_at DESC LIMIT 8`,
+  ).all<{
+    name: string
+    public_code: string
+    amount_paise: number
+    paid_at: string
+    kind: string
+    products: string | null
+  }>()
+
+  const t = totals ?? {}
+  const n = (k: string) => Number(t[k] ?? 0)
+  const registered = n('basic')
+  const festival = n('delegate')
+
   return c.json({
-    accounts: totals?.accounts ?? 0,
-    registered: totals?.registered ?? 0,
-    basicOnly: (totals?.basic ?? 0) - (totals?.delegate ?? 0),
-    delegates: totals?.delegate ?? 0,
-    eventEntries: totals?.entries ?? 0,
-    passes: totals?.passes ?? 0,
-    // Payments started but never resolved. Should be near zero, the
-    // reconciliation sweep clears them: so anything here wants a look.
-    stuckPayments: totals?.stuck ?? 0,
-    collectedPaise: totals?.collected_paise ?? 0,
-    feesPaise: totals?.fees_paise ?? 0,
-    netPaise: (totals?.collected_paise ?? 0) - (totals?.fees_paise ?? 0),
-    daily,
-    colleges,
+    // Money. Exact paise; the browser formats. Gross of everything received
+    // via Razorpay across paid orders; refunds excluded (a refunded order is no
+    // longer 'paid').
+    collectedPaise: n('collected_paise'),
+    collectedTodayPaise: n('collected_today'),
+    collectedWeekPaise: n('collected_week'),
+    composition: {
+      basicPaise: n('basic_paise'),
+      festivalPaise: n('festival_paise'),
+      eventFeesPaise: n('event_fees_paise'),
+      gatewayPaise: n('gateway_paise'),
+    },
+    revenueDaily,
+
+    // People. `registered` means holds Basic Registration, the same basis as
+    // the People table's flag, so the headline and the list never disagree.
+    accounts: n('accounts'),
+    accountsToday: n('accounts_today'),
+    registered,
+    delegates: festival,
+    basicOnly: Math.max(0, registered - festival),
+    passes: n('passes'),
+    passesToday: n('passes_today'),
+    signedInToday: n('signed_in_today'),
+    eventEntries: n('entries'),
+
+    funnel: {
+      accounts: n('accounts'),
+      verified: n('verified'),
+      idUploaded: n('id_uploaded'),
+      paid: registered,
+      festival,
+    },
+
+    accountsDaily,
+    passesDaily,
+
+    momentum: {
+      passesLast7: n('passes_last7'),
+      passesPrev7: n('passes_prev7'),
+      accountsLast7: n('accounts_last7'),
+      accountsPrev7: n('accounts_prev7'),
+    },
+
+    hourly,
+
+    payments: {
+      paid: n('paid_orders'),
+      failed: n('failed_orders'),
+      refunded: n('refunded_orders'),
+      stuck: n('stuck'),
+      methods,
+    },
+    // Kept for the alert strip.
+    stuckPayments: n('stuck'),
+
+    gender,
+    years,
     topEvents,
+
+    recent: recent.map((r) => ({
+      name: r.name,
+      publicCode: r.public_code,
+      amountPaise: r.amount_paise,
+      paidAt: r.paid_at,
+      kind: r.kind,
+      products: (r.products ?? '').split(',').filter(Boolean),
+    })),
   })
 })
 
@@ -158,6 +324,9 @@ admin.get('/admin/registrations', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT r.id, r.public_code, r.name, r.email, r.phone, r.college, r.course, r.year,
             r.status, r.verification, r.created_at, t.tier,
+            EXISTS (SELECT 1 FROM entitlements e
+                     WHERE e.registration_id = r.id AND e.product_id = 'basic'
+                       AND e.revoked_at IS NULL)                            AS registered,
             (SELECT count(*) FROM event_entries ev
               WHERE ev.registration_id = r.id AND ev.status = 'confirmed') AS entries,
             (SELECT coalesce(sum(o.amount_paise), 0) FROM orders o
@@ -192,6 +361,10 @@ admin.get('/admin/registrations', async (c) => {
       status: r.status,
       verification: r.verification,
       tier: r.tier,
+      // Whether they actually hold Basic Registration. Without this the table
+      // cannot tell "paid Basic" from "made an account and paid nothing", and
+      // both showed as "Basic".
+      registered: !!r.registered,
       entries: r.entries,
       paidPaise: r.paid_paise,
       createdAt: r.created_at,

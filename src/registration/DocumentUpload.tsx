@@ -117,17 +117,21 @@ export default function DocumentUpload({
   }
 
   const held = (kind: Kind) => docs?.find((d) => d.kind === kind)
-  const approved = verification === 'approved'
+  // Nobody reviews these ahead of the fest: they are kept for reference and
+  // shown to the desk if a question comes up. So a document is never locked
+  // and there is no "approved" state to wait for. Upload, pay, done.
+  const approved = false
+  void verification
+  void note
 
   return (
     <div>
       {!compact && (
         <p className="text-[0.88rem] leading-relaxed text-parchment/60">
-          So the registration desk can check that the pass belongs to you. Your
-          college ID is required — the student rate depends on it. A government
-          photo ID is optional and only speeds up the desk. Images or PDF, up to{' '}
-          {MAX_MB} MB each. Bring the physical cards with you as well: the desk
-          checks that your face matches the photograph.
+          Kept on file for the registration desk, in case a question comes up
+          about a pass. Your college ID is required — the student rate depends
+          on it. A government photo ID is optional. Images or PDF, up to{' '}
+          {MAX_MB} MB each. Bring the physical cards with you to the fest.
         </p>
       )}
 
@@ -208,25 +212,11 @@ export default function DocumentUpload({
         </div>
       )}
 
-      {/* The state carries a word, never a colour on its own. */}
-      {verification === 'pending' && docs && docs.length > 0 && (
-        <p className="mt-3 text-[0.82rem] text-parchment/50">
-          Waiting to be checked by the crew. Nothing more to do.
+      {docs && docs.some((d) => d.kind === 'student_id') && (
+        <p className="mt-3 flex items-center gap-2 text-[0.82rem] text-parchment/60">
+          <Check size={14} className="text-gold-bright" />
+          Your college ID is on file. Nothing more to do here.
         </p>
-      )}
-
-      {verification === 'approved' && (
-        <p className="mt-3 flex items-center gap-2 text-[0.82rem] text-aqua">
-          <Check size={14} />
-          Checked and approved.
-        </p>
-      )}
-
-      {verification === 'rejected' && (
-        <div className="mt-3 rounded-lg border border-ember/40 bg-ember/10 p-3 text-[0.82rem] text-ember">
-          <strong className="font-semibold">Needs another look.</strong>{' '}
-          {note ?? 'Please upload a clearer photo.'}
-        </div>
       )}
 
       {!compact && (

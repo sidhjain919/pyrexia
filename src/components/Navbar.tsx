@@ -151,12 +151,17 @@ export default function Navbar() {
           {/* Desktop links */}
           <ul className="hidden items-center gap-3.5 xl:flex 2xl:gap-5">
             {NAV.map((n) => (
-              <li key={n.to}>
+              // Every item is the same box: a flex li holding a leading-none
+              // inline-flex control. The Notices link carries an icon and was
+              // built that way; the section buttons were plain inline text in
+              // a taller line box, which put their caps a couple of pixels
+              // lower than the word beside them.
+              <li key={n.to} className="flex items-center">
                 <button
                   onClick={() => navTo(n.to)}
                   data-cursor="GO"
                   title={n.meaning || undefined}
-                  className={`font-display group relative whitespace-nowrap text-[0.82rem] transition-colors hover:text-offwhite 2xl:text-[0.88rem] ${
+                  className={`font-display group relative inline-flex items-center whitespace-nowrap text-[0.82rem] leading-none transition-colors hover:text-offwhite 2xl:text-[0.88rem] ${
                     isActive(n.to) ? 'text-gold-bright' : 'text-parchment/80'
                   }`}
                 >
@@ -176,9 +181,9 @@ export default function Navbar() {
               <Link
                 to="/notices"
                 data-cursor="NOTICES"
-                className="font-display flex items-center gap-1.5 whitespace-nowrap text-[0.82rem] text-parchment/80 transition-colors hover:text-gold-bright 2xl:text-[0.88rem]"
+                className="font-display inline-flex items-center gap-1.5 whitespace-nowrap text-[0.82rem] leading-none text-parchment/80 transition-colors hover:text-gold-bright 2xl:text-[0.88rem]"
               >
-                <Megaphone size={13} />
+                <Megaphone size={13} className="relative -top-px" />
                 Notices
               </Link>
             </li>

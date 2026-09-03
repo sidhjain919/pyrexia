@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, ChevronDown, Ticket } from 'lucide-react'
+import { ArrowRight, BookOpen, ChevronDown, Ticket } from 'lucide-react'
 import OceanScene from './OceanScene'
 import { Compass, MagneticButton } from './primitives'
 import { SITE } from '../data/site'
@@ -211,6 +211,23 @@ export default function Hero() {
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </MagneticButton>
         </motion.div>
+
+        {/* The brochure, where people actually look. It used to live only in
+            the footer, which is to say nowhere. */}
+        <motion.a
+          custom={4}
+          variants={rise}
+          initial="hidden"
+          animate="show"
+          href={asset('pyrexia-brochure.pdf')}
+          target="_blank"
+          rel="noreferrer"
+          data-cursor="READ"
+          className="mt-5 inline-flex items-center gap-2 font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/65 transition-colors hover:text-gold-bright sm:mt-6"
+        >
+          <BookOpen size={14} className="icon-caps" />
+          Read the 2026 brochure
+        </motion.a>
       </div>
 
       {/* meta strip: in normal flow on mobile so it can't collide with the buttons above; floats at the true bottom from sm up */}

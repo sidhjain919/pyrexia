@@ -15,8 +15,11 @@
  * which the backend already supports.
  */
 
+// The fallback is the real API domain, never workers.dev: that hostname is
+// blocked on many Indian mobile networks and inside Instagram's browser, which
+// is where most students open the site from.
 const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
-  'https://pyrexia-api.pyrexia-api.workers.dev'
+  'https://api.pyrexia-api.com'
 
 const SESSION_KEY = 'pyrexia.session'
 const ACCOUNT_KEY = 'pyrexia.account'
@@ -25,20 +28,64 @@ const ACCOUNT_KEY = 'pyrexia.account'
  * Admin
  * ------------------------------------------------------------------ */
 
+export type DayCount = { day: string; n: number }
+
 export type AdminStats = {
-  accounts: number
-  registered: number
-  basicOnly: number
-  delegates: number
-  eventEntries: number
-  passes: number
-  stuckPayments: number
+  /** Exact money received via Razorpay, gross of everything. Paise. */
   collectedPaise: number
-  feesPaise: number
-  netPaise: number
-  daily: { day: string; n: number }[]
-  colleges: { college: string; n: number }[]
+  collectedTodayPaise: number
+  collectedWeekPaise: number
+  /** Where the collected money came from; the four sum to collectedPaise. */
+  composition: {
+    basicPaise: number
+    festivalPaise: number
+    eventFeesPaise: number
+    gatewayPaise: number
+  }
+  revenueDaily: { day: string; paise: number }[]
+
+  accounts: number
+  accountsToday: number
+  /** Holds Basic Registration. */
+  registered: number
+  delegates: number
+  basicOnly: number
+  passes: number
+  passesToday: number
+  signedInToday: number
+  eventEntries: number
+
+  funnel: { accounts: number; verified: number; idUploaded: number; paid: number; festival: number }
+
+  /** Per IST day, last 30 days (sparse: missing days = zero). */
+  accountsDaily: DayCount[]
+  passesDaily: { day: string; basic: number; festival: number }[]
+
+  momentum: { passesLast7: number; passesPrev7: number; accountsLast7: number; accountsPrev7: number }
+  /** Passes by IST hour of day, 0–23 (sparse). */
+  hourly: { hour: number; n: number }[]
+
+  payments: {
+    paid: number
+    failed: number
+    refunded: number
+    stuck: number
+    methods: { method: string; n: number }[]
+  }
+  stuckPayments: number
+
+  gender: { label: string; n: number }[]
+  years: { label: string; n: number }[]
   topEvents: { event_name: string; n: number }[]
+
+  recent: {
+    name: string
+    publicCode: string
+    amountPaise: number
+    paidAt: string
+    kind: string
+    products: string[]
+  }[]
 }
 
 export type MyDocument = {
@@ -83,6 +130,8 @@ export type AdminRow = {
   status: string
   verification: string
   tier: 0 | 1
+  /** Holds Basic Registration. False = an account that has paid nothing. */
+  registered: boolean
   entries: number
   paidPaise: number
   createdAt: string
@@ -647,14 +696,14 @@ export async function waitForConfirmation(
 }
 
 /**
- * Download one of the CSV sheets.
+ * Download one of the export sheets (.xlsx).
  *
  * A plain link cannot carry the session header, and the export routes are
  * behind the admin check: so the file is fetched, then handed to the browser
  * as a blob. The object URL is revoked straight after; without that, every
  * download in a long admin session stays in memory until the tab closes.
  */
-export async function downloadCsv(path: string, filename: string): Promise<void> {
+export async function downloadFile(path: string, filename: string): Promise<void> {
   const token = getSession()
   const res = await fetch(`${BASE}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
