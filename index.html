@@ -1,6 +1,26 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!--
+      Insist on https, before anything else loads.
+
+      GitHub Pages will happily serve this page over plain http, and a link
+      posted without "https://" (an Instagram story, a WhatsApp forward) opens
+      it that way. On an http origin every call to the API is refused by CORS,
+      which is correct: a session token must never travel in the clear. But
+      the student only sees "Could not reach the island", and Google refuses
+      to sign them in with "origin_mismatch". So: if this is the real site and
+      not https, go to the same page over https. Local development is left
+      alone. Turning on "Enforce HTTPS" in the GitHub Pages settings does the
+      same thing one hop earlier; this makes it true even if that is ever off.
+    -->
+    <script>
+      ;(function (l) {
+        if (l.protocol === 'http:' && /(^|\.)pyrexiaaiims\.com$/.test(l.hostname)) {
+          l.replace('https://' + l.host + l.pathname + l.search + l.hash)
+        }
+      })(window.location)
+    </script>
     <meta charset="UTF-8" />
     <link
       rel="icon"
