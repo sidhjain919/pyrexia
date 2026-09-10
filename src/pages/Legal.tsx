@@ -357,12 +357,20 @@ function refunds() {
         </Block>
 
         <Block>
-          <H>The one exception</H>
+          <H>Two exceptions</H>
           <P>
             If you are <strong className="text-parchment">charged twice for the same
             registration</strong> (a duplicate payment for one person), write to us and we will
             refund the duplicate in full. Send your registration number and the payment reference
             to <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+          </P>
+          <P>
+            If <strong className="text-parchment">we cancel an event you had paid an entry fee
+            for</strong> — a few of the sports brackets say in their rulebooks that too few
+            entries can call the event off — that entry fee is returned. The event's coordinators
+            handle it and will contact everyone who had entered. This covers the entry fee for
+            that event only; your Basic Registration and Festival Pass are unaffected, because
+            they cover the whole fest rather than that one bracket.
           </P>
           <P>
             Approved refunds are returned to the original payment method within 7 working days.

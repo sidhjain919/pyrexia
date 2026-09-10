@@ -1,5 +1,7 @@
 /** Global site + fest constants for PYREXIA 2026 */
 
+import { TOTAL_EVENTS, territories } from './events'
+
 export const SITE = {
   name: 'PYREXIA',
   year: '2026',
@@ -80,10 +82,16 @@ export const SOCIAL = [
   },
 ]
 
-/** Stats reference the 5.0 edition breadth. Deliberately qualitative, no fabricated numbers. */
+/**
+ * The headline numbers.
+ *
+ * Two of the four are counted from the events data rather than typed out, so
+ * a vertical or a sub-event added to `events.ts` can never leave the headline
+ * quietly claiming something smaller than what is on the page.
+ */
 export const VOYAGE_STATS = [
-  { value: '11', label: 'Territories to conquer', suffix: '' },
-  { value: '60', label: 'Events & competitions', suffix: '+' },
+  { value: String(territories.length), label: 'Territories to conquer', suffix: '' },
+  { value: String(TOTAL_EVENTS), label: 'Events & competitions', suffix: '' },
   { value: '5', label: 'Days of the fever', suffix: '' },
   { value: '6', label: 'Editions strong', suffix: 'th' },
 ]

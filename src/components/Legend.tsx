@@ -3,6 +3,7 @@ import WaxSeal from './WaxSeal'
 import { art } from '../lib/art'
 import { SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
+import { TOTAL_EVENTS } from '../data/events'
 
 const chapters = [
   {
@@ -23,7 +24,7 @@ const chapters = [
   {
     n: 'IV',
     title: 'The Challenge',
-    body: 'Crews compete for glory across 60+ events: high-energy showdowns by day, comedy and theatre by dusk, the arena roaring till night.',
+    body: `Crews compete for glory across ${TOTAL_EVENTS} events: high-energy showdowns by day, comedy and theatre by dusk, the arena roaring till night.`,
   },
   {
     n: 'V',

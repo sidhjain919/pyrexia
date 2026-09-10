@@ -14,7 +14,8 @@
 import { Hono } from 'hono'
 
 import type { Env } from '../types.ts'
-import { ApiError, clientIp } from '../lib/http.ts'
+import { ApiError, clientIp, readJson } from '../lib/http.ts'
+import { listOpenings, setOpening } from '../data/openings.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import * as audit from '../lib/audit.ts'
 
@@ -519,4 +520,44 @@ admin.get('/admin/audit', async (c) => {
        FROM audit_log ORDER BY at DESC LIMIT ${limit}`,
   ).all<Record<string, unknown>>()
   return c.json({ rows: results })
+})
+
+/* ------------------------------------------------------------------ *
+ * Opening and closing event registration
+ * ------------------------------------------------------------------ */
+
+/**
+ * The switchboard.
+ *
+ * One row per vertical with a switch, so a coordinator whose rulebook has just
+ * been signed off can take entries tonight rather than after the next deploy.
+ * Closing is the same switch: a category that has filled up, or one that has
+ * to pause while a fixture is re-drawn, goes back to "Coming Soon" without
+ * anybody touching the code.
+ */
+admin.get('/admin/openings', async (c) => c.json({ territories: await listOpenings(c.env) }))
+
+admin.post('/admin/openings', async (c) => {
+  const me = c.get('admin')
+  if (!PRIVILEGED.has(me.role)) {
+    throw new ApiError('forbidden', 'Only the core team can open or close registration.')
+  }
+
+  const body = (await readJson(c)) as Record<string, unknown>
+  const territoryId = String(body.territoryId ?? '').trim()
+  const open = body.open === true
+
+  const changed = await setOpening(c.env, territoryId, open, me.email)
+  if (!changed) throw new ApiError('not_found', "That isn't a vertical we run.")
+
+  await audit.record(c.env, {
+    actorEmail: me.email,
+    action: 'settings.event_openings',
+    entity: 'event_opening',
+    entityId: territoryId,
+    after: { open },
+    ip: clientIp(c),
+  })
+
+  return c.json({ ok: true, territoryId, open })
 })

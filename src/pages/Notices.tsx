@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Loader2, Pin } from 'lucide-react'
+import { AlertTriangle, Compass, Loader2, Megaphone, Pin } from 'lucide-react'
 
 import { ApiError, api, type Notice } from '../api/client'
 import { ANNOUNCEMENT_CHANNEL, REGISTRATION_HELP } from '../data/site'
+import { TOTAL_EVENTS } from '../data/events'
 import { Markdown } from '../lib/markdown'
 import { art } from '../lib/art'
 
@@ -94,11 +95,35 @@ export default function Notices() {
         </div>
       )}
 
+      {/* An empty board is the normal state until the fest starts, so it says
+          what the board is *for* and points at what is live right now. A dead
+          end that reads "nothing yet" makes a working feature look unfinished. */}
       {notices?.length === 0 && (
         <div className="mt-10 rounded-xl border border-gold/15 bg-navy/40 p-8 text-center">
-          <p className="text-[0.94rem] text-parchment/60">
-            Nothing posted yet. Notices will appear here once the fest is closer.
+          <p className="text-[0.94rem] leading-relaxed text-parchment/70">
+            The board is clear. This is where the crew posts schedule changes, results and
+            anything urgent during the five days — worth a look each morning of the fest.
           </p>
+          <p className="mt-3 text-[0.88rem] leading-relaxed text-parchment/55">
+            Everything else is already open: {TOTAL_EVENTS} events with their rulebooks, and
+            Basic Registration.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+            <Link
+              to="/#island"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-5 py-2.5 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss"
+            >
+              <Compass size={14} /> Explore the events
+            </Link>
+            <a
+              href={ANNOUNCEMENT_CHANNEL.href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2.5 font-log text-[0.66rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/45 transition-colors hover:bg-gold/10"
+            >
+              <Megaphone size={14} /> Join the WhatsApp channel
+            </a>
+          </div>
         </div>
       )}
 

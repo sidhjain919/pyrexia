@@ -7,14 +7,15 @@ import {
   useReducedMotion,
   useSpring,
 } from 'framer-motion'
-import { Phone, Ticket } from 'lucide-react'
+import { Phone, Sparkles, Ticket } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { territories } from '../data/events'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { TerritoryGlyph } from '../lib/art'
 import { asset } from '../lib/asset'
 import { Reveal, SectionTitle } from './primitives'
-import { isTerritoryOpen } from '../data/registration'
+import { useOpenings } from '../registration/useOpenings'
+import { useNavTo } from './routing'
 import { useRegistration } from '../registration/context'
 import { passCta, useEntitlement } from '../registration/useEntitlement'
 
@@ -37,6 +38,8 @@ const SHIP = { min: 52, pct: 0.105, max: 132 }
 const BOB = 3
 
 export default function IslandMap() {
+  const { isOpen } = useOpenings()
+  const navTo = useNavTo()
   const reduce = useReducedMotion()
   const { openRegister, openDelegate } = useRegistration()
   const { state: entitlement } = useEntitlement()
@@ -421,9 +424,25 @@ export default function IslandMap() {
                   <div className="my-5 rule-gold" />
 
                   {active.noRegister ? (
-                    <p className="rounded-lg bg-ocean/50 px-3 py-2.5 text-[0.78rem] text-parchment/60">
-                      No registration needed. Every delegate is welcomed in.
-                    </p>
+                    /* Nothing to enter here, so the panel offers the thing a
+                       visitor actually wants: the lineup, or the pass that
+                       gets them in. */
+                    <div>
+                      <p className="text-[0.82rem] leading-relaxed text-parchment/65">
+                        {active.id === 'auriga'
+                          ? 'No entry form. The pro nights are on your Festival Pass — three names are out, two still under wraps.'
+                          : 'No entry form. Every delegate walks into the opening ceremony on their pass.'}
+                      </p>
+                      {active.cta && (
+                        <button
+                          onClick={() => navTo(active.cta!.to)}
+                          data-cursor="LOOK"
+                          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+                        >
+                          <Sparkles size={14} /> {active.cta.label}
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <div>
                       {/* "Pick an event to enter" in front of a territory whose
@@ -432,9 +451,9 @@ export default function IslandMap() {
                           list of what runs here — but they stop promising a
                           door that is shut. */}
                       <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
-                        {isTerritoryOpen(active.id) ? 'Pick an event to enter' : 'What runs here'}
+                        {isOpen(active.id) ? 'Pick an event to enter' : 'What runs here'}
                       </div>
-                      {!isTerritoryOpen(active.id) && (
+                      {!isOpen(active.id) && (
                         <p className="mt-1.5 text-[0.78rem] leading-relaxed text-parchment/55">
                           Entries for {active.code} open closer to the fest. Your Festival Pass is
                           what gets you in when they do.

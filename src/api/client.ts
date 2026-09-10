@@ -416,10 +416,15 @@ export type Me = {
   hasRegistration: boolean
   hasPass: boolean
   entries: {
+    entryId: string
     eventName: string
     territoryCode: string
     participation: string
     teamName: string | null
+    /** The price band, for events that run several. `standard` or null otherwise. */
+    feeVariant: string | null
+    /** People this entry covers, the entrant included. */
+    headCount: number
     enteredAt: string
   }[]
 }
@@ -456,13 +461,30 @@ export type AuthResult = {
   account: Account
 }
 
-/** One price band for an event. `standard` when everyone pays the same. */
-export type FeeVariant = { id: string; label: string; amountPaise: number }
+/**
+ * One price band for an event. `standard` when everyone pays the same.
+ *
+ * `perHead` bands are multiplied by the size of the crew: three of the dance
+ * events price a group that way, so the amount is not known until the squad is.
+ */
+export type FeeVariant = {
+  id: string
+  label: string
+  amountPaise: number
+  perHead?: boolean
+}
+
+/** A team-mate as the person entering listed them. Not an account. */
+export type TeamMemberInput = { name: string; phone: string }
 
 export type EventInfo = {
   name: string
   tag: string
-  territory: { code: string; name: string }
+  territory: { id: string; code: string; name: string }
+  /** Filename under /rulebooks for this vertical's official PDF, or null. */
+  rulebook: string | null
+  /** Set when entry is taken on an external form (every Thunderbolt bracket). */
+  externalForm: string | null
   open: boolean
   /** null when the event costs nothing to enter. */
   fee: { unit: 'person' | 'team'; variants: FeeVariant[] } | null
@@ -476,7 +498,22 @@ export type EventInfo = {
   }
   signedIn: boolean
   eligible: boolean
+  /** True only for a single-band event you already hold a place in. */
   entered: boolean
+  /** Bands you already hold a confirmed place in, for events that run several. */
+  enteredVariants: string[]
+}
+
+/** One vertical on the admin switchboard. */
+export type OpeningRow = {
+  id: string
+  code: string
+  subtitle: string
+  name: string
+  events: number
+  open: boolean
+  updatedAt: string | null
+  updatedBy: string | null
 }
 
 export const api = {
@@ -651,11 +688,29 @@ export const api = {
    * pending until the webhook lands, so the caller opens checkout and then
    * waits on `orderStatus`.
    */
+  /** Which verticals are taking entries. Public, and asked once per page load. */
+  openings: () =>
+    request<{ open: string[]; territories: { id: string; code: string; name: string; events: number; open: boolean }[] }>(
+      '/api/events/openings',
+    ),
+
+  adminOpenings: () =>
+    request<{ territories: OpeningRow[] }>('/api/admin/openings', { auth: true }),
+
+  adminSetOpening: (territoryId: string, open: boolean) =>
+    request<{ ok: boolean; territoryId: string; open: boolean }>('/api/admin/openings', {
+      method: 'POST',
+      body: { territoryId, open },
+      auth: true,
+    }),
+
   enterEvent: (payload: {
     eventName: string
     participation: 'solo' | 'team'
     teamName?: string
     feeVariant?: string
+    /** The crew, captain excluded. Empty for a solo entry. */
+    members?: TeamMemberInput[]
     answers: Record<string, string>
   }) =>
     request<EventEntryCreated>('/api/me/events', {

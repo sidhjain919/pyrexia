@@ -68,6 +68,14 @@ export const eventPhoto: Record<string, string> = {
   FIFA: p('events/fifa.webp'),
   "Mortal Kombat": p('events/mortal-kombat.webp'),
   Tekken: p('events/tekken.webp'),
+  // Three brackets with no frame of their own yet. Rather than the territory
+  // fallback — which would print the same BGMI key art on all three — they
+  // borrow real Thunderbolt tournament shots, and E-Chess borrows the board.
+  "Clash Royale": p('events/tekken.webp'),
+  "Free Fire": p('events/mortal-kombat.webp'),
+  "E-Chess": p('events/chess.webp'),
+  "Biocrux Jr": p('events/biocrux-jr.webp'),
+  "Biocrux Sr": p('events/biocrux-sr.webp'),
   Badminton: p('events/badminton.webp'),
   Basketball: p('events/basketball.webp'),
   Carrom: p('events/carrom.webp'),
@@ -81,8 +89,11 @@ export const eventPhoto: Record<string, string> = {
   Volleyball: p('events/volleyball.webp'),
 }
 
-/** Past headliners, for the Legends section. */
+/** Headliner portraits: the 2026 Pro Nights lineup, then past editions. */
 export const artistPhoto: Record<string, string> = {
+  "Parmish Verma": p('artists/parmish-verma.webp'),
+  "Navjot Ahuja": p('artists/navjot-ahuja.webp'),
+  Nucleya: p('artists/nucleya.webp'),
   "Sonu Nigam": p('artists/sonu-nigam.webp'),
   "Nikita Gandhi": p('artists/nikita-gandhi.webp'),
   "Amit Mishra": p('artists/amit-mishra.webp'),

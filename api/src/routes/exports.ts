@@ -209,7 +209,7 @@ exports_.get('/admin/export/payments', async (c) => {
 exports_.get('/admin/export/events', async (c) => {
   const { results: entries } = await c.env.DB.prepare(
     `SELECT ev.event_name, ev.territory_code, ev.participation, ev.team_name,
-            ev.answers, ev.fee_paise, ev.fee_variant, ev.created_at,
+            ev.members, ev.head_count, ev.answers, ev.fee_paise, ev.fee_variant, ev.created_at,
             r.public_code, r.name, r.email, r.phone, r.college, r.course, r.year, t.tier
        FROM event_entries ev
        JOIN registrations r ON r.id = ev.registration_id
@@ -222,6 +222,7 @@ exports_.get('/admin/export/events', async (c) => {
   const { results: summary } = await c.env.DB.prepare(
     `SELECT event_name, territory_code, count(*) AS entries,
             sum(CASE WHEN participation = 'team' THEN 1 ELSE 0 END) AS team_entries,
+            coalesce(sum(head_count), 0) AS people,
             coalesce(sum(fee_paise), 0) AS fees_paise
        FROM event_entries WHERE status = 'confirmed'
       GROUP BY event_name, territory_code ORDER BY territory_code, event_name`,
@@ -241,26 +242,45 @@ exports_.get('/admin/export/events', async (c) => {
     }
   }
 
+  // A team enters once, so the squad is on the entry rather than on rows of
+  // its own. Flattened into one cell for the same reason the answers are: the
+  // desk needs to read a list of names, not join two sheets on a phone.
+  const squad = (raw: unknown): string => {
+    try {
+      const list = JSON.parse(String(raw ?? '[]')) as { name?: string; phone?: string }[]
+      if (!Array.isArray(list)) return ''
+      return list
+        .map((m) => (m.phone ? `${m.name} (${m.phone})` : String(m.name ?? '')))
+        .filter(Boolean)
+        .join('; ')
+    } catch {
+      return ''
+    }
+  }
+
   return workbook(
     [
       tab(
         'Entries',
         'Every confirmed event entry',
         ['Event', 'Territory', 'Registration No', 'Name', 'Email', 'Mobile', 'College',
-         'Course', 'Year', 'Tier', 'Solo/Team', 'Team name', 'Fee (INR)', 'Fee band',
-         'Answers', 'Entered on'],
+         'Course', 'Year', 'Tier', 'Solo/Team', 'Team name', 'People', 'Team-mates',
+         'Fee (INR)', 'Fee band', 'Answers', 'Entered on'],
         entries.map((r) => [
           r.event_name, r.territory_code, r.public_code, r.name, r.email, r.phone, r.college,
           r.course, r.year, tierName(r.tier), r.participation, r.team_name ?? '',
+          r.head_count ?? 1, squad(r.members),
           rupees(r.fee_paise), r.fee_variant ?? '', answers(r.answers), r.created_at,
         ] as Cell[]),
       ),
       tab(
         'Summary',
         'Entries per event',
-        ['Event', 'Territory', 'Entries', 'of which teams', 'Entry fees collected (INR)'],
+        ['Event', 'Territory', 'Entries', 'of which teams', 'People taking part',
+         'Entry fees collected (INR)'],
         summary.map((r) => [
-          r.event_name, r.territory_code, r.entries, r.team_entries, rupees(r.fees_paise),
+          r.event_name, r.territory_code, r.entries, r.team_entries, r.people,
+          rupees(r.fees_paise),
         ] as Cell[]),
       ),
     ],

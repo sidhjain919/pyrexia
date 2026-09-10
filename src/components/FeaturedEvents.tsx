@@ -1,7 +1,7 @@
 import { useRef } from 'react'
-import { ArrowLeft, ArrowRight, Hourglass, Ticket } from 'lucide-react'
-import { territories } from '../data/events'
-import { isTerritoryOpen } from '../data/registration'
+import { ArrowLeft, ArrowRight, Hourglass, Sparkles, Ticket } from 'lucide-react'
+import { territories, TOTAL_EVENTS } from '../data/events'
+import { useOpenings } from '../registration/useOpenings'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { photoFor } from '../data/photos'
 import { TerritoryGlyph } from '../lib/art'
@@ -27,6 +27,7 @@ const picks: Pick[] = [
 export default function FeaturedEvents() {
   const track = useRef<HTMLDivElement>(null)
   const { openRegister } = useRegistration()
+  const { isOpen } = useOpenings()
   const navTo = useNavTo()
   const scrollBy = (dir: number) => {
     track.current?.scrollBy({ left: dir * 340, behavior: 'smooth' })
@@ -109,12 +110,19 @@ export default function FeaturedEvents() {
                   <p className="mt-1.5 text-[0.82rem] text-parchment/60">{sub?.tag ?? t.subtitle}</p>
 
                   <div className="mt-auto flex items-center gap-2 pt-5">
+                    {/* The pro nights are not a form. Sending somebody at a
+                        "Coming Soon" button for the one card they most want to
+                        click was the worst of both. */}
                     <button
-                      onClick={() => openRegister(p.event)}
-                      data-cursor={isTerritoryOpen(t.id) ? 'REGISTER' : 'SOON'}
+                      onClick={() => (t.cta ? navTo(t.cta.to) : openRegister(p.event))}
+                      data-cursor={t.cta ? 'LOOK' : isOpen(t.id) ? 'REGISTER' : 'SOON'}
                       className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.66rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      {isTerritoryOpen(t.id) ? (
+                      {t.cta ? (
+                        <>
+                          <Sparkles size={13} /> {t.cta.label}
+                        </>
+                      ) : isOpen(t.id) ? (
                         <>
                           <Ticket size={13} /> Register
                         </>
@@ -144,7 +152,7 @@ export default function FeaturedEvents() {
             className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gold/25 text-center text-gold/70 transition-colors hover:border-gold/50 hover:text-gold-bright"
           >
             <span className="font-display text-lg">All Territories</span>
-            <span className="font-log text-[0.6rem] uppercase tracking-cinema">60+ events await</span>
+            <span className="font-log text-[0.6rem] uppercase tracking-cinema">{TOTAL_EVENTS} events await</span>
             <ArrowRight size={18} />
           </button>
           </div>

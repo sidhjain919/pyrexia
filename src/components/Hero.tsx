@@ -212,8 +212,11 @@ export default function Hero() {
           </MagneticButton>
         </motion.div>
 
-        {/* The brochure, where people actually look. It used to live only in
-            the footer, which is to say nowhere. */}
+        {/* The brochure, where people actually look.
+            It used to live only in the footer, which is to say nowhere; then it
+            sat here as a whisper of grey 10px type that nobody could see. It is
+            now the size of a thing you are meant to press, because it is: the
+            full programme, every event, in one PDF. */}
         <motion.a
           custom={4}
           variants={rise}
@@ -223,10 +226,11 @@ export default function Hero() {
           target="_blank"
           rel="noreferrer"
           data-cursor="READ"
-          className="mt-5 inline-flex items-center gap-2 font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/65 transition-colors hover:text-gold-bright sm:mt-6"
+          className="group mt-6 inline-flex min-h-11 items-center gap-2.5 rounded-full border border-gold/45 bg-abyss/45 px-5 py-2.5 font-log text-[0.78rem] uppercase tracking-wide2 text-gold-bright backdrop-blur-sm transition-colors hover:border-gold/90 hover:bg-gold/10 hover:text-foil sm:mt-7 sm:text-[0.82rem]"
         >
-          <BookOpen size={14} className="icon-caps" />
-          Read the 2026 brochure
+          <BookOpen size={16} className="icon-caps shrink-0" />
+          Read the full 2026 brochure
+          <ArrowRight size={14} className="shrink-0 opacity-70 transition-transform group-hover:translate-x-1" />
         </motion.a>
       </div>
 

@@ -1,6 +1,7 @@
 /**
  * Event entry.
  *
+ *   GET    /api/events/openings   which verticals are taking entries
  *   GET    /api/events/:name      what this event needs, costs, and where you stand
  *   POST   /api/me/events         enter one, paying if it charges
  *   DELETE /api/me/events/:name   withdraw
@@ -11,8 +12,15 @@
  * written as `pending`, an order is attached to it, and the webhook is what
  * turns it into a place in the event.
  *
- * The client never sends an amount. It sends a variant id at most, and the
- * price for that id comes from `data/fees.ts`.
+ * The client never sends an amount. It sends a variant id, and the price for
+ * that id comes from `data/fees.ts`. Where a band is priced per head it also
+ * sends a squad — but the *count* is taken from the squad the server stores,
+ * never from a number the client claims.
+ *
+ * Teams enter once. Whoever registers lists their crew, pays, and is done:
+ * there is no invitation, no token and no half-built squad waiting on someone
+ * else to click a link. The names are what the desk checks against, which is
+ * all the rulebooks ask for.
  */
 
 import { Hono } from 'hono'
@@ -20,14 +28,8 @@ import { Hono } from 'hono'
 import type { Env } from '../types.ts'
 import { ApiError, readJson } from '../lib/http.ts'
 import { newEntryId, newOrderId } from '../lib/ids.ts'
-import {
-  OPEN_TERRITORIES,
-  allowsTeam,
-  isTerritoryOpen,
-  openTerritories,
-  requiresTeam,
-  resolveEvent,
-} from '../data/events.ts'
+import { allowsTeam, requiresTeam, resolveEvent } from '../data/events.ts'
+import { isTerritoryOpen, listOpenings, openTerritoryIds } from '../data/openings.ts'
 import { feeFor, priceEntry } from '../data/fees.ts'
 import { conveniencePaise } from '../lib/pricing.ts'
 import { createOrder, razorpayConfig } from '../lib/razorpay.ts'
@@ -36,15 +38,54 @@ import * as audit from '../lib/audit.ts'
 
 export const events = new Hono<{ Bindings: Env }>()
 
+/** A team-mate as the captain listed them. Not an account, just a name to check. */
+type Member = { name: string; phone: string }
+
+/** At most this many people on one entry, whatever the form says. A guard, not a rule. */
+const MAX_MEMBERS = 40
+
+/**
+ * Read the squad off the request body.
+ *
+ * Anything that isn't a usable name is dropped rather than rejected: a captain
+ * who left the last two rows of a fifteen-row squad blank meant to, and losing
+ * their whole submission over it would be absurd.
+ */
+function readMembers(raw: unknown): Member[] {
+  if (!Array.isArray(raw)) return []
+  const out: Member[] = []
+  for (const item of raw.slice(0, MAX_MEMBERS)) {
+    if (!item || typeof item !== 'object') continue
+    const m = item as Record<string, unknown>
+    const name = String(m.name ?? '').trim().slice(0, 120)
+    const phone = String(m.phone ?? '').trim().slice(0, 20)
+    if (name.length < 2) continue
+    out.push({ name, phone })
+  }
+  return out
+}
+
 /**
  * Which territories are taking entries.
  *
- * Public and static: the events grid needs it to choose between "Register" and
- * "Coming soon" for sixty cards, and asking per card would be sixty requests.
+ * Public and cheap: the events grid needs it to choose between "Register" and
+ * "Coming soon" for seventy cards, and asking per card would be seventy
+ * requests.
  */
-events.get('/events/openings', (c) =>
-  c.json({ open: [...OPEN_TERRITORIES], territories: openTerritories() }),
-)
+events.get('/events/openings', async (c) => {
+  const open = await openTerritoryIds(c.env)
+  const rows = await listOpenings(c.env)
+  return c.json({
+    open: [...open],
+    territories: rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      events: r.events,
+      open: r.open,
+    })),
+  })
+})
 
 events.get('/events/:name', async (c) => {
   const name = decodeURIComponent(c.req.param('name'))
@@ -52,11 +93,12 @@ events.get('/events/:name', async (c) => {
   if (!resolved) throw new ApiError('not_found', "That event isn't on the chart.")
 
   const session = await resolveSession(c.env, readToken(c.req.raw.headers))
-  const open = isTerritoryOpen(resolved.territory.id)
+  const open = await isTerritoryOpen(c.env, resolved.territory.id)
   const fee = feeFor(name)
 
-  let entered = false
   let eligible = false
+  /** Bands this person already holds a confirmed place in. */
+  let enteredVariants: string[] = []
 
   if (session) {
     const entitlement = await c.env.DB.prepare(
@@ -67,19 +109,29 @@ events.get('/events/:name', async (c) => {
       .first<{ ok: number }>()
     eligible = !!entitlement
 
-    const existing = await c.env.DB.prepare(
-      `SELECT 1 AS ok FROM event_entries
+    const { results } = await c.env.DB.prepare(
+      `SELECT COALESCE(fee_variant, 'standard') AS variant FROM event_entries
         WHERE registration_id = ? AND event_name = ? AND status = 'confirmed'`,
     )
       .bind(session.registrationId, name)
-      .first<{ ok: number }>()
-    entered = !!existing
+      .all<{ variant: string }>()
+    enteredVariants = results.map((r) => r.variant)
   }
+
+  // An event with one price band can only be entered once, so "entered" is a
+  // yes or no. One with several is entered per band, and the form greys out
+  // only the bands already held.
+  const single = !fee || fee.variants.length === 1
+  const entered = single ? enteredVariants.length > 0 : false
 
   return c.json({
     name: resolved.name,
     tag: resolved.tag,
-    territory: { code: resolved.territory.code, name: resolved.territory.territory },
+    territory: { id: resolved.territory.id, code: resolved.territory.code, name: resolved.territory.territory },
+    /** Filename under the site's /rulebooks, where this vertical's PDF lives. */
+    rulebook: resolved.territory.rulebook ?? null,
+    /** Set for every Thunderbolt bracket: entry happens on the crew's own form. */
+    externalForm: resolved.externalForm ?? null,
     open,
     fee: fee && {
       unit: fee.unit,
@@ -87,6 +139,7 @@ events.get('/events/:name', async (c) => {
         id: v.id,
         label: v.label,
         amountPaise: v.amountPaise,
+        perHead: !!v.perHead,
       })),
     },
     form: {
@@ -100,6 +153,7 @@ events.get('/events/:name', async (c) => {
     signedIn: !!session,
     eligible,
     entered,
+    enteredVariants,
   })
 })
 
@@ -117,9 +171,19 @@ events.post('/me/events', async (c) => {
   const resolved = resolveEvent(name)
   if (!resolved) throw new ApiError('not_found', "That event isn't on the chart.")
 
+  // Thunderbolt's brackets are run and paid for on the e-gaming crew's own
+  // Google Forms. Accepting an entry here would leave somebody believing they
+  // were in a tournament nobody had entered them into.
+  if (resolved.externalForm) {
+    throw new ApiError(
+      'forbidden',
+      `${resolved.name} takes its entries on its own form. Open it from the event card.`,
+    )
+  }
+
   // Checked here as well as on the way in: the client knowing a form is shut
   // is a courtesy, this is the rule.
-  if (!isTerritoryOpen(resolved.territory.id)) {
+  if (!(await isTerritoryOpen(c.env, resolved.territory.id))) {
     throw new ApiError('forbidden', `Entries for ${resolved.territory.code} are not open yet.`)
   }
 
@@ -143,6 +207,9 @@ events.post('/me/events', async (c) => {
   const teamName = String(body.teamName ?? '').trim()
   const answers = (body.answers ?? {}) as Record<string, unknown>
   const variantId = body.feeVariant == null ? null : String(body.feeVariant)
+  const members = asTeam ? readMembers(body.members) : []
+  /** The captain counts. A solo entry covers one person. */
+  const headCount = asTeam ? members.length + 1 : 1
 
   const fieldErrors: Record<string, string> = {}
   for (const field of resolved.form.fields) {
@@ -154,12 +221,22 @@ events.post('/me/events', async (c) => {
   if (requiresTeam(resolved.form) && !asTeam) {
     fieldErrors.participation = 'This event is entered as a team.'
   }
-  if (asTeam && teamName.length < 2) {
-    fieldErrors.teamName = 'Give your crew a name.'
+
+  if (asTeam) {
+    if (teamName.length < 2) fieldErrors.teamName = 'Give your crew a name.'
+
+    const size = resolved.form.teamSize
+    if (size) {
+      if (headCount < size.min) {
+        fieldErrors.members = `This event needs ${size.min}–${size.max} people, you included. Add ${size.min - headCount} more.`
+      } else if (headCount > size.max) {
+        fieldErrors.members = `This event allows at most ${size.max} people, you included.`
+      }
+    }
   }
 
   const fee = feeFor(name)
-  const priced = fee ? priceEntry(name, variantId) : null
+  const priced = fee ? priceEntry(name, variantId, headCount) : null
   if (fee && !priced) {
     fieldErrors.feeVariant = 'Choose which entry applies to you.'
   }
@@ -170,18 +247,31 @@ events.post('/me/events', async (c) => {
     })
   }
 
+  // One confirmed place per person per price band. Somebody playing badminton
+  // singles *and* doubles is entering two different competitions, and used to
+  // be told they were already registered.
+  const bandId = priced?.id ?? 'standard'
   const already = await c.env.DB.prepare(
     `SELECT 1 AS ok FROM event_entries
-      WHERE registration_id = ? AND event_name = ? AND status = 'confirmed'`,
+      WHERE registration_id = ? AND event_name = ?
+        AND COALESCE(fee_variant, 'standard') = ? AND status = 'confirmed'`,
   )
-    .bind(session.registrationId, name)
+    .bind(session.registrationId, name, bandId)
     .first<{ ok: number }>()
-  if (already) throw new ApiError('conflict', `You're already entered for ${resolved.name}.`)
+  if (already) {
+    throw new ApiError(
+      'conflict',
+      priced && fee && fee.variants.length > 1
+        ? `You're already entered for ${resolved.name} — ${priced.label}.`
+        : `You're already entered for ${resolved.name}.`,
+    )
+  }
 
   const entryId = newEntryId()
   const answersJson = JSON.stringify(
     Object.fromEntries(resolved.form.fields.map((f) => [f.id, String(answers[f.id] ?? '').trim()])),
   )
+  const membersJson = JSON.stringify(members)
 
   /* ---------- free: settled here and now ---------- */
 
@@ -189,8 +279,9 @@ events.post('/me/events', async (c) => {
     try {
       await c.env.DB.prepare(
         `INSERT INTO event_entries
-           (id, registration_id, event_name, territory_code, participation, team_name, answers)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+           (id, registration_id, event_name, territory_code, participation, team_name, answers,
+            members, head_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
         .bind(
           entryId,
@@ -200,6 +291,8 @@ events.post('/me/events', async (c) => {
           asTeam ? 'team' : 'solo',
           asTeam ? teamName : null,
           answersJson,
+          membersJson,
+          headCount,
         )
         .run()
     } catch {
@@ -210,7 +303,11 @@ events.post('/me/events', async (c) => {
       action: 'event.enter',
       entity: 'event_entry',
       entityId: entryId,
-      after: { registrationId: session.registrationId, eventName: resolved.name },
+      after: {
+        registrationId: session.registrationId,
+        eventName: resolved.name,
+        headCount,
+      },
     })
 
     return c.json(
@@ -221,13 +318,14 @@ events.post('/me/events', async (c) => {
 
   /* ---------- paid: written pending, confirmed by the webhook ---------- */
 
-  // Any earlier unfinished attempt at this same event is stood down first, so
+  // Any earlier unfinished attempt at this same band is stood down first, so
   // one person never accumulates a drawer of half-paid entries.
   await c.env.DB.prepare(
     `UPDATE event_entries SET status = 'withdrawn'
-      WHERE registration_id = ? AND event_name = ? AND status = 'pending'`,
+      WHERE registration_id = ? AND event_name = ?
+        AND COALESCE(fee_variant, 'standard') = ? AND status = 'pending'`,
   )
-    .bind(session.registrationId, name)
+    .bind(session.registrationId, name, bandId)
     .run()
 
   // Razorpay prefills its form from these; the session does not carry a phone.
@@ -255,8 +353,8 @@ events.post('/me/events', async (c) => {
     c.env.DB.prepare(
       `INSERT INTO event_entries
          (id, registration_id, event_name, territory_code, participation, team_name, answers,
-          fee_paise, fee_variant, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+          members, head_count, fee_paise, fee_variant, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
     ).bind(
       entryId,
       session.registrationId,
@@ -265,6 +363,8 @@ events.post('/me/events', async (c) => {
       asTeam ? 'team' : 'solo',
       asTeam ? teamName : null,
       answersJson,
+      membersJson,
+      headCount,
       priced.amountPaise,
       priced.id,
     ),
@@ -291,6 +391,7 @@ events.post('/me/events', async (c) => {
       eventName: resolved.name,
       feePaise: priced.amountPaise,
       variant: priced.id,
+      headCount,
       status: 'pending',
     },
   })
@@ -314,6 +415,7 @@ events.post('/me/events', async (c) => {
       conveniencePaise: convenience,
       totalPaise,
       feeLabel: priced.label,
+      headCount: priced.headCount,
     },
     201,
   )
@@ -324,13 +426,25 @@ events.delete('/me/events/:name', async (c) => {
   if (!session) throw new ApiError('unauthorised', 'Sign in first.')
 
   const name = decodeURIComponent(c.req.param('name'))
+  // Optional: withdraw one price band rather than every place held in an event
+  // that runs several. Absent means all of them, which is what the pass page
+  // asks for.
+  const variant = c.req.query('variant')
 
-  const result = await c.env.DB.prepare(
-    `UPDATE event_entries SET status = 'withdrawn'
-      WHERE registration_id = ? AND event_name = ? AND status = 'confirmed'`,
-  )
-    .bind(session.registrationId, name)
-    .run()
+  const result = variant
+    ? await c.env.DB.prepare(
+        `UPDATE event_entries SET status = 'withdrawn'
+          WHERE registration_id = ? AND event_name = ?
+            AND COALESCE(fee_variant, 'standard') = ? AND status = 'confirmed'`,
+      )
+        .bind(session.registrationId, name, variant)
+        .run()
+    : await c.env.DB.prepare(
+        `UPDATE event_entries SET status = 'withdrawn'
+          WHERE registration_id = ? AND event_name = ? AND status = 'confirmed'`,
+      )
+        .bind(session.registrationId, name)
+        .run()
 
   if (!result.meta.changes) throw new ApiError('not_found', "You aren't entered for that.")
 
@@ -338,7 +452,7 @@ events.delete('/me/events/:name', async (c) => {
     action: 'event.withdraw',
     entity: 'event_entry',
     entityId: name,
-    after: { registrationId: session.registrationId },
+    after: { registrationId: session.registrationId, variant: variant ?? null },
   })
 
   return c.json({ ok: true })

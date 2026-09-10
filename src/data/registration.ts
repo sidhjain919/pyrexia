@@ -7,8 +7,9 @@
  *  2. the per-event entry forms (what you fill in once you're aboard).
  *
  * Event forms are derived: each territory has a default shape, and only the
- * events that genuinely differ carry an override. That keeps 60+ events
- * maintainable instead of hand-writing 60+ schemas.
+ * events that genuinely differ carry an override. That keeps 70+ events
+ * maintainable instead of hand-writing 70+ schemas. Every team size, round and
+ * question here comes from that vertical's final 2026 rulebook.
  */
 
 import { territories, type Territory } from './events'
@@ -18,16 +19,26 @@ import { territories, type Territory } from './events'
  * ------------------------------------------------------------------ */
 
 /**
- * Which territories are taking event entries.
+ * Which territories are taking event entries, before the server has said.
  *
- * A constant, on purpose. Opening entries is a decision with a rulebook, a fee
- * and a set of coordinators behind it, and it should arrive the same way those
- * do. `api/src/data/events.ts` holds the same set and is what actually decides;
- * this copy is only so sixty cards can label themselves without a round trip.
+ * The real answer lives in the `event_openings` table and arrives from
+ * `GET /api/events/openings`; the committee flips it from the dashboard
+ * without a deploy. This set is what sixty cards label themselves with on
+ * first paint, so a slow network shows the usual state rather than a grid of
+ * "Coming Soon" that turns out to be wrong. Nothing is decided here: entering
+ * a closed event is refused by the server regardless of what this says.
  */
-export const OPEN_TERRITORIES: ReadonlySet<string> = new Set<string>()
-
-export const isTerritoryOpen = (id: string) => OPEN_TERRITORIES.has(id)
+export const DEFAULT_OPEN_TERRITORIES: ReadonlySet<string> = new Set<string>([
+  'alfresco',
+  'chronos',
+  'kalakriti',
+  'littmania',
+  'sinfonia',
+  'chorea',
+  'thespians',
+  'velocity',
+  'thunderbolt',
+])
 
 /** Rupees. Basic Registration is mandatory for everyone who enters the fest. */
 export const BASIC_AMOUNT = 500
@@ -129,7 +140,7 @@ export type Participation = 'solo' | 'duo' | 'team' | 'solo-or-team'
 
 export type EventForm = {
   participation: Participation
-  /** Inclusive bounds on the number of members *besides* nobody, the registrant counts as member 1. */
+  /** Inclusive bounds on the size of the whole crew, the registrant included. */
   teamSize?: { min: number; max: number }
   fields: ExtraField[]
   /** Rendered as a note above the form. */
@@ -153,10 +164,10 @@ const F = {
   },
   trackLink: {
     id: 'trackLink',
-    label: 'Backing track link',
+    label: 'Backing track / karaoke link',
     type: 'url',
     placeholder: 'Google Drive / YouTube link',
-    help: 'Share a link the tech crew can download before the fest.',
+    help: 'MP3, due 24 hours before the event. Bring a pen-drive backup too.',
   },
   language: {
     id: 'language',
@@ -172,32 +183,26 @@ const F = {
     required: true,
     placeholder: 'What do you play?',
   },
-  gamerTag: {
-    id: 'gamerTag',
-    label: 'In-game name / ID',
-    type: 'text',
+  videoLink: {
+    id: 'videoLink',
+    label: 'Screening video link',
+    type: 'url',
     required: true,
-    placeholder: 'Your player ID',
-  },
-  platform: {
-    id: 'platform',
-    label: 'Platform',
-    type: 'select',
-    required: true,
-    options: ['Mobile', 'PC', 'Console'],
+    placeholder: 'Google Drive / YouTube link',
+    help: 'Make sure anyone with the link can view it.',
   },
   sportsPosition: {
     id: 'sportsPosition',
-    label: 'Position / role',
+    label: 'Your position / role',
     type: 'text',
     placeholder: 'e.g. wicket-keeper, striker',
   },
   weightClass: {
     id: 'weightClass',
-    label: 'Weight category (kg)',
-    type: 'number',
+    label: 'Weight category',
+    type: 'select',
     required: true,
-    placeholder: 'e.g. 74',
+    options: ['Up to 65.0 kg', '65.1 – 74.0 kg', '74.1 – 83.0 kg', 'Above 83.0 kg'],
   },
   experience: {
     id: 'experience',
@@ -205,17 +210,76 @@ const F = {
     type: 'textarea',
     placeholder: 'Competitions, years of practice. Keep it short.',
   },
-  materials: {
-    id: 'materials',
-    label: 'Materials you will bring',
-    type: 'textarea',
-    placeholder: 'Brushes, colours, clay… anything you need on the table.',
-  },
   topicPreference: {
     id: 'topicPreference',
     label: 'Preferred side / topic',
     type: 'text',
     placeholder: 'Optional',
+  },
+  batch: {
+    id: 'batch',
+    label: 'Your batch',
+    type: 'text',
+    required: true,
+    placeholder: 'e.g. MBBS 2024',
+  },
+  whatsapp: {
+    id: 'whatsapp',
+    label: 'WhatsApp number',
+    type: 'text',
+    required: true,
+    placeholder: '10-digit mobile',
+    help: 'The quiz group link and every update go here.',
+  },
+  season: {
+    id: 'season',
+    label: 'The season you are dressing as',
+    type: 'select',
+    required: true,
+    options: ['Spring', 'Summer', 'Autumn', 'Winter'],
+  },
+  introVideo: {
+    id: 'introVideo',
+    label: 'Introductory video link (MP4, 30 seconds)',
+    type: 'url',
+    required: true,
+    placeholder: 'Google Drive link',
+    help: 'You on camera, not a voiceover. Name, one word that describes you, and why you chose your outfit. No college or course names.',
+  },
+  talent: {
+    id: 'talent',
+    label: 'Your talent for Round 2',
+    type: 'text',
+    required: true,
+    placeholder: 'One talent, two minutes maximum',
+  },
+  actType: {
+    id: 'actType',
+    label: 'Monoact or mime?',
+    type: 'select',
+    required: true,
+    options: ['Monoact', 'Mime'],
+  },
+  rrFormat: {
+    id: 'rrFormat',
+    label: 'Rap or beatboxing?',
+    type: 'select',
+    required: true,
+    options: ['Rap', 'Beatboxing', 'Both'],
+  },
+  debateLanguage: {
+    id: 'debateLanguage',
+    label: 'You will speak in',
+    type: 'select',
+    required: true,
+    options: ['English', 'Hindi', 'Either'],
+  },
+  poemTitle: {
+    id: 'poemTitle',
+    label: 'Poem title',
+    type: 'text',
+    required: true,
+    placeholder: 'Your own composition',
   },
 } satisfies Record<string, ExtraField>
 
@@ -223,7 +287,7 @@ const F = {
 const territoryDefaults: Record<string, EventForm> = {
   chorea: {
     participation: 'solo-or-team',
-    teamSize: { min: 2, max: 12 },
+    teamSize: { min: 2, max: 22 },
     fields: [F.genre, F.performanceTitle, F.duration, F.trackLink],
   },
   sinfonia: {
@@ -233,87 +297,228 @@ const territoryDefaults: Record<string, EventForm> = {
   },
   thespians: {
     participation: 'team',
-    teamSize: { min: 2, max: 15 },
+    teamSize: { min: 2, max: 20 },
     fields: [F.performanceTitle, F.duration, F.language],
   },
   velocity: {
     participation: 'team',
     teamSize: { min: 5, max: 18 },
-    fields: [F.sportsPosition, F.experience],
+    fields: [F.sportsPosition],
+    note: 'Every player carries a valid college ID to each match. Report 30 minutes before the scheduled time.',
   },
   chronos: {
     participation: 'solo',
-    fields: [F.experience],
-    note: 'Shortlisting happens after this form; the crew will reach out with audition details.',
+    fields: [F.season, F.introVideo, F.talent],
+    note: 'Three rounds: the ramp walk (your video plays, then you walk for 40 seconds), a two-minute talent round, and a surprise round revealed on the day.',
   },
-  littmania: { participation: 'solo', fields: [F.language, F.topicPreference] },
-  kalakriti: { participation: 'solo', fields: [F.materials] },
+  littmania: { participation: 'solo', fields: [] },
+  kalakriti: {
+    participation: 'solo',
+    fields: [],
+    note: 'The theme is announced when the competition starts, and the materials are provided. Just turn up.',
+  },
   alfresco: { participation: 'solo', fields: [] },
-  thunderbolt: {
-    participation: 'team',
-    teamSize: { min: 2, max: 6 },
-    fields: [F.gamerTag, F.platform],
-  },
+  thunderbolt: { participation: 'team', teamSize: { min: 4, max: 6 }, fields: [] },
   fahrenheit: { participation: 'solo', fields: [] },
   auriga: { participation: 'solo', fields: [] },
 }
 
 /** Only events whose shape genuinely differs from their territory's default. */
 const eventOverrides: Record<string, Partial<EventForm>> = {
-  /* Chorea */
-  Adaptune: { participation: 'solo', teamSize: undefined, fields: [F.genre] },
-  'Nritya Sangam': { participation: 'solo-or-team', teamSize: { min: 2, max: 10 } },
-  'Street Blaze': { participation: 'team', teamSize: { min: 4, max: 15 } },
-
-  /* Sinfonia */
-  Tarang: { participation: 'solo', teamSize: undefined },
-  Metallica: {
-    participation: 'solo',
-    teamSize: undefined,
-    fields: [F.instrument, F.performanceTitle, F.duration],
+  /* ---------------- Chorea ---------------- */
+  'Nritya Sangam': {
+    teamSize: { min: 2, max: 22 },
+    note: 'Solo 2–4 min · duet 3–5 min · group 6–10 min. Groups are 4–22 dancers, and the group band is priced per head.',
   },
-  Euphonia: { participation: 'solo', teamSize: undefined },
+  Ballismus: {
+    teamSize: { min: 2, max: 22 },
+    note: 'Solo 2–4 min · duet 3–5 min · group 6–10 min. Groups are 4–22 dancers, and the group band is priced per head.',
+  },
+  'Street Blaze': {
+    teamSize: { min: 2, max: 20 },
+    note: 'Street and urban styles only. Solo 2–4 min · duet 3–5 min · group 5–10 min. Groups are 4–20 dancers, priced per head.',
+  },
+  Adaptune: {
+    teamSize: { min: 2, max: 2 },
+    fields: [],
+    note: 'Nothing to prepare: the song is revealed one minute before you dance, and you get up to three chances to accept the one offered.',
+  },
+
+  /* ---------------- Sinfonia ---------------- */
+  Tarang: { teamSize: { min: 2, max: 8 }, fields: [F.performanceTitle, F.language, F.duration, F.trackLink] },
+  Euphonia: { teamSize: { min: 2, max: 8 } },
+  Metallica: {
+    teamSize: { min: 2, max: 2 },
+    fields: [F.instrument, F.performanceTitle, F.duration],
+    note: 'Drum kit and keyboard are provided if you need them. Nothing else is.',
+  },
   'Battle of Bands': {
     participation: 'team',
-    teamSize: { min: 3, max: 8 },
-    fields: [F.performanceTitle, F.duration, F.genre],
+    teamSize: { min: 4, max: 12 },
+    fields: [F.videoLink, F.genre],
+    note: 'Entering is free. Send a performance video of no more than 5 minutes by 2 October 2026 — the ₹2000 band fee is due only if you clear the screening round. A maximum of 9 members on stage at once.',
   },
-  'Rhythm Revolution': { participation: 'solo', teamSize: undefined, fields: [F.genre, F.language] },
-
-  /* Thespians */
-  'Echoes of Expression': { participation: 'solo', teamSize: undefined, fields: [F.duration] },
-  'Nukkad Natak': { participation: 'team', teamSize: { min: 5, max: 20 } },
-
-  /* Velocity */
-  Cricket: { teamSize: { min: 11, max: 16 } },
-  Football: { teamSize: { min: 11, max: 18 } },
-  Basketball: { teamSize: { min: 5, max: 10 } },
-  Volleyball: { teamSize: { min: 6, max: 12 } },
-  Futsal: { teamSize: { min: 5, max: 10 } },
-  Kabaddi: { teamSize: { min: 7, max: 12 } },
-  'Table Tennis': { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [F.experience] },
-  Badminton: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [F.experience] },
-  Powerlifting: { participation: 'solo', teamSize: undefined, fields: [F.weightClass, F.experience] },
-  Carrom: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [] },
-  Chess: { participation: 'solo', teamSize: undefined, fields: [F.experience] },
-
-  /* Littmania. Team sizes are provisional until the rulebook lands. */
-  Oratio: {
-    participation: 'duo',
+  'Rhythm Revolution': {
     teamSize: { min: 2, max: 2 },
-    fields: [F.language, F.topicPreference],
+    fields: [F.rrFormat, F.trackLink],
+    note: 'Five minutes maximum. Backing beats are allowed, submitted 24 hours ahead in MP3.',
   },
-  Taboo: { participation: 'duo', teamSize: { min: 2, max: 2 }, fields: [] },
-  'Literary Escape Room': { participation: 'team', teamSize: { min: 2, max: 4 }, fields: [] },
-  Cognizzia: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  Cineholics: { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
-  'Anime no Tatakai': { participation: 'team', teamSize: { min: 2, max: 3 }, fields: [] },
 
-  /* Alfresco, straight from the 2026 informals rulebook. */
+  /* ---------------- Thespians ---------------- */
+  'Echoes of Expression': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 8 },
+    fields: [F.actType, F.performanceTitle, F.duration, F.language],
+    note: 'One act, no breaks, ten minutes maximum. Credit the writer if the script is adapted.',
+  },
+  'mADD Angle': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    fields: [],
+    note: 'Priced per head. Nothing to prepare — you get a random prop and one minute, then five minutes to sell it or stage it.',
+  },
+  'Nukkad Natak': {
+    teamSize: { min: 6, max: 20 },
+    note: 'Teams of 6–20, and the limit is hard. Eighteen minutes maximum, Hindi or English, original work only. No fire, no water, no electronic instruments.',
+  },
+
+  /* ---------------- Velocity ---------------- */
+  Basketball: {
+    teamSize: { min: 3, max: 10 },
+    fields: [],
+    note: '5v5 squads are up to 10 players; 3v3 squads are up to 4. Only UG students and interns may play. FIBA rules.',
+  },
+  Volleyball: { teamSize: { min: 6, max: 12 }, fields: [] },
+  Cricket: {
+    teamSize: { min: 11, max: 15 },
+    fields: [],
+    note: 'Squad of 15 (11 + 4). Twenty overs, knockout. Contact the organisers before registering to confirm dates and spot availability.',
+  },
+  Football: { teamSize: { min: 11, max: 16 }, fields: [] },
+  Futsal: { teamSize: { min: 5, max: 9 }, fields: [] },
+  Kabaddi: {
+    teamSize: { min: 7, max: 12 },
+    fields: [],
+    note: 'Batch 2021 or later only. Kabaddi shoes are provided during play and must be returned afterwards.',
+  },
+  'Table Tennis': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 2 },
+    fields: [],
+    note: 'Bring your own racquet and your college ID. Report 15 minutes before your match.',
+  },
+  Badminton: {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 2 },
+    fields: [],
+    note: 'Entries are limited and filled first come, first served. Playing more than one category? Enter each one separately — the site keeps them apart.',
+  },
+  Chess: {
+    participation: 'solo-or-team',
+    teamSize: { min: 4, max: 6 },
+    fields: [],
+    note: 'Four tournaments run: one team event and three individual time controls. You may enter as many as you like — pick a band, then come back and enter another. Batch 2021 or later only.',
+  },
+  Carrom: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [] },
+  Powerlifting: {
+    participation: 'solo',
+    teamSize: undefined,
+    fields: [F.weightClass, F.experience],
+    note: 'Squat, bench and deadlift, three attempts each. Open to male participants. Belt, wrist wraps, knee sleeves and chalk are allowed.',
+  },
+
+  /* ---------------- Littmania ---------------- */
+  'Biocrux Jr': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    fields: [F.batch, F.whatsapp],
+    note: 'Open to MBBS 2023, 2024 and 2025 batches. Online prelims on 19 September 2026; the top 20 teams reach the finale at PYREXIA. One entry per team, through the team leader — inter-college teams are fine.',
+  },
+  'Biocrux Sr': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    fields: [F.batch, F.whatsapp],
+    note: 'Open from the MBBS 2025 batch to interns, maximum one intern per team. Online prelims on 26 September 2026; the top 20 teams reach the finale. One entry per team, through the team leader.',
+  },
+  Cognizzia: {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    note: 'Four rounds, starting with a pen-and-paper screening that picks six teams. Phones away.',
+  },
+  Cineholics: {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    note: 'Four rounds, starting with a pen-and-paper screening. Entering alone is fine — the organisers pair lone wolves on the day.',
+  },
+  'Anime no Tatakai': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 4 },
+    note: 'Four rounds — trivia, picture, audio, and a final round where you set your own stake. Mainstream and current series; little to no manga.',
+  },
+  JAM: { note: 'Sixty seconds on a topic you draw from a chit. No hesitation, no deviation, no repetition.' },
+  Oratio: {
+    participation: 'solo',
+    teamSize: undefined,
+    fields: [F.debateLanguage, F.topicPreference],
+    note: 'Enter as an individual: the two sides of four are drawn up an hour before the debate. Speak in English or Hindi.',
+  },
+  'Literary Escape Room': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    note: 'Teams of 1–3. Four timed rounds of riddles, puzzles and clues, with eliminations along the way.',
+  },
+  Storysmiths: {
+    participation: 'team',
+    teamSize: { min: 3, max: 3 },
+    note: 'Teams of 3, writing one story in relay. No team? Contact the coordinators — individual entrants are paired on the day of the event.',
+  },
+  Taboo: { participation: 'team', teamSize: { min: 2, max: 4 } },
+  'Poetic Reveries': { fields: [F.poemTitle], note: 'The poem must be exclusively self-written. Five minutes maximum.' },
+  Kavyotsav: { fields: [F.poemTitle], note: 'Hindi poetry, five minutes maximum. Theme is yours to choose.' },
+  Logophilia: {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 3 },
+    note: 'Teams of 2 preferred; lone wolves welcome, at the same fee.',
+  },
+  Declamation: { fields: [F.topicPreference], note: 'Four to seven minutes on one of the topics given beforehand.' },
+
+  /* ---------------- Kalakriti ---------------- */
+  'Fantasy Faces': {
+    participation: 'team',
+    teamSize: { min: 2, max: 2 },
+    note: 'Teams of two: one of you is the canvas, the other the artist. Roles cannot swap once the clock starts. 1.5 hours; colours and brushes provided.',
+  },
+  'Art Roulette': {
+    participation: 'team',
+    teamSize: { min: 2, max: 2 },
+    note: 'One canvas, two artists, two minutes each in turn, and no discussing what to paint. 1 hour.',
+  },
+  'Splash Tees': { note: '1.5 hours. T-shirts, paints and brushes provided; bring your own materials except the T-shirt.' },
+  'Contrast Chronicles': { note: '2 hours of black-and-white sketching. Sheets and pencils provided; charcoal and the like are welcome.' },
+  'Acrylic Odyssey': { note: '2 hours. Canvas, paints and brushes provided; bring your own materials except the canvas.' },
+  'Cupful of Doodles': { note: '1 hour of doodling on paper cups. Cups and sketch pens provided.' },
+  'Caffeine Creations': { note: '1 hour, coffee only. Pencils, paints and every other medium are out.' },
+  'Brushless Strokes': { note: '1.5 hours. Sponges and knives welcome; brushes are strictly prohibited.' },
+  'Stone Painting': { note: '1.5 hours. Stones, paints and brushes provided; no ready-made or pre-painted stones.' },
+  'Mould It Up': { note: '1 hour. Only clay is provided, and decorative extras are not allowed.' },
+
+  /* ---------------- Alfresco, from the 2026 informals rulebook ---------------- */
   // Singles are paired by the organisers, so a solo entry is a real option.
-  'Evening Amore': { participation: 'solo-or-team', teamSize: { min: 2, max: 2 } },
-  'Capture and Conquer': { participation: 'solo-or-team', teamSize: { min: 2, max: 4 } },
-  'Grab O Mania': { participation: 'team', teamSize: { min: 4, max: 4 } },
+  'Evening Amore': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 2 },
+    note: 'Couples and singles both welcome; singles are paired by a randomised system. Come well groomed — lounge wear is not the look. No refunds once a partner is assigned.',
+  },
+  'Capture and Conquer': {
+    participation: 'solo-or-team',
+    teamSize: { min: 2, max: 4 },
+    note: 'Teams of 1–4, one price. Sixty minutes, no vehicles, and nobody leaves campus.',
+  },
+  'Grab O Mania': {
+    participation: 'team',
+    teamSize: { min: 4, max: 4 },
+    note: 'Teams of exactly 4: one of you can see, the other three are blindfolded and talked through the tasks.',
+  },
   'Squid Game': { participation: 'solo', teamSize: undefined },
   Pictionary: { participation: 'team', teamSize: { min: 3, max: 5 } },
   'Paper Dance': { participation: 'duo', teamSize: { min: 2, max: 2 } },
@@ -326,13 +531,6 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   'Drape It': { participation: 'duo', teamSize: { min: 2, max: 2 } },
   'Dumb Charades': { participation: 'team', teamSize: { min: 3, max: 5 } },
   'Swift Mingle': { participation: 'solo', teamSize: undefined },
-
-  /* Thunderbolt */
-  BGMI: { participation: 'team', teamSize: { min: 4, max: 5 } },
-  FIFA: { participation: 'solo', teamSize: undefined },
-  'COD: Mobile': { participation: 'team', teamSize: { min: 4, max: 5 } },
-  Tekken: { participation: 'solo', teamSize: undefined },
-  'Mortal Kombat': { participation: 'solo', teamSize: undefined },
 }
 
 export type ResolvedEvent = {
@@ -340,11 +538,13 @@ export type ResolvedEvent = {
   tag: string
   territory: Territory
   form: EventForm
+  /** Set when entry is taken on an external form (every Thunderbolt bracket). */
+  externalForm?: string
 }
 
-const byName = new Map<string, { t: Territory; tag: string }>()
+const byName = new Map<string, { t: Territory; tag: string; form?: string }>()
 for (const t of territories) {
-  for (const e of t.events) byName.set(e.name, { t, tag: e.tag })
+  for (const e of t.events) byName.set(e.name, { t, tag: e.tag, form: e.form })
 }
 
 /** Every event a delegate can actually enter (the opening ceremony and pro nights aren't entries). */
@@ -365,6 +565,7 @@ export function resolveEvent(name: string): ResolvedEvent | null {
     name,
     tag: hit.tag,
     territory: hit.t,
+    externalForm: hit.form,
     form: {
       participation: over.participation ?? base.participation,
       // `undefined` in an override means "explicitly no team", so check the key.

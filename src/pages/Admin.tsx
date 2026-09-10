@@ -26,6 +26,7 @@ import {
   istToday,
 } from '../admin/charts'
 import NoticeComposer from '../admin/NoticeComposer'
+import OpeningsBoard from '../admin/OpeningsBoard'
 
 /**
  * The admin dashboard: the ship's instrument panel.
@@ -350,6 +351,8 @@ export default function Admin() {
             ))}
           </div>
         </div>
+
+        <OpeningsBoard onError={setError} />
 
         <NoticeComposer onError={setError} />
 

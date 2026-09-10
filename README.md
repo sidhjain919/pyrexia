@@ -35,10 +35,16 @@ shown as their own line. The rate lives in one place, `CONVENIENCE_BPS` in
 Both live in `DELEGATE_PASSES` in `src/data/registration.ts`; `BASIC_AMOUNT` and `DELEGATE_ADDON`
 are the single source of truth for the numbers shown across the site.
 
-Per-event entry forms are gated **per territory, in code**: `OPEN_TERRITORIES` in
-`api/src/data/events.ts` decides, and `src/data/registration.ts` keeps the same set so sixty cards
-can label themselves without a round trip. Alfresco is open for 2026; the other ten render a
-"Coming Soon" panel. The server enforces it as well as the UI.
+Per-event entry forms are gated **per territory, from the dashboard**: the `event_openings` table
+decides, `POST /api/admin/openings` flips a switch (audited, core team only), and the Registration
+switches panel on `/admin` is where the committee does it. `GET /api/events/openings` is what the
+grid reads; `DEFAULT_OPEN_TERRITORIES` in `src/data/registration.ts` is only the optimistic label
+seventy cards wear until that answer lands. All nine competitive verticals are open for 2026;
+anything closed renders a "Coming Soon" panel, and the server enforces it as well as the UI.
+
+**Rulebooks.** Each vertical's official 2026 PDF lives in `public/rulebooks/` and is linked from
+every event card and entry form. The lines worth reading before opening a forty-page PDF are in
+`src/data/rulebooks.ts`, one entry per event.
 
 **Event entry fees are charged online.** Amounts live in `api/src/data/fees.ts` (paise, the
 authority) and `src/data/fees.ts` (display). The client sends a variant id, never an amount. A paid

@@ -12,7 +12,8 @@
     "e2e": "node scripts/e2e.mjs",
     "keys": "node scripts/generate-keys.mjs",
     "pubkey": "node scripts/derive-public-key.mjs",
-    "verify-pass": "node --experimental-strip-types scripts/verify-live-pass.mjs"
+    "verify-pass": "node --experimental-strip-types scripts/verify-live-pass.mjs",
+    "dev:login": "node scripts/dev-login.mjs"
   },
   "dependencies": {
     "hono": "^4.13.3"

@@ -110,9 +110,9 @@ export default function Footer() {
               href={asset('pyrexia-brochure.pdf')}
               target="_blank"
               rel="noreferrer"
-              className="mt-4 block text-[0.82rem] text-parchment/60 underline decoration-gold/30 underline-offset-4 transition-colors hover:text-gold-bright"
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 px-5 py-2.5 text-[0.84rem] text-gold-bright/90 transition-colors hover:border-gold/80 hover:bg-gold/10 hover:text-gold-bright"
             >
-              View the 2026 brochure →
+              View the full 2026 brochure →
             </a>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Search, ArrowUpRight, Hourglass, MoveHorizontal, Ticket } from 'lucide-react'
-import { territories } from '../data/events'
-import { isTerritoryOpen } from '../data/registration'
+import { Search, ArrowUpRight, BookOpen, ExternalLink, Hourglass, MoveHorizontal, Sparkles, Ticket } from 'lucide-react'
+import { territories, TOTAL_EVENTS } from '../data/events'
+import { useOpenings } from '../registration/useOpenings'
+import { asset } from '../lib/asset'
+import { useNavTo } from './routing'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { photoFor } from '../data/photos'
 import { TerritoryGlyph } from '../lib/art'
@@ -19,12 +21,23 @@ type Row = {
   accent: string
   photo: string
   ownPhoto: boolean
+  /** Thunderbolt brackets link straight out to the e-gaming crew's own form. */
+  externalForm?: string
+  /** This vertical's official rulebook PDF, where one is published. */
+  rulebook?: string
+  /** Set on the two verticals that aren't competitions: what the card offers instead. */
+  cta?: { label: string; to: string }
 }
 
-// The opening ceremony (Fahrenheit) isn't a competition to browse/register for.
-const registerable = territories.filter((t) => !t.noRegister)
-
-const rows: Row[] = registerable.flatMap((t) =>
+/**
+ * Every territory, including the two you don't register for.
+ *
+ * Fahrenheit and Auriga used to be handled by leaving one out of the grid and
+ * letting the other render a "Coming Soon" button that would never become
+ * anything. Both are real parts of the fest and both belong here — they just
+ * offer something other than a form.
+ */
+const rows: Row[] = territories.flatMap((t) =>
   t.events.map((e) => ({
     name: e.name,
     tag: e.tag,
@@ -37,16 +50,23 @@ const rows: Row[] = registerable.flatMap((t) =>
     // shows the event you are about to enter beats sixty of the same crowd.
     photo: photoFor(e.name) ?? territoryPhoto[t.id],
     ownPhoto: !!photoFor(e.name),
+    externalForm: e.form,
+    rulebook: t.rulebook,
+    cta: t.cta,
   })),
 )
 
 export default function EventsGrid() {
   const { openRegister } = useRegistration()
+  const { isOpen } = useOpenings()
+  const navTo = useNavTo()
   const reduce = useReducedMotion()
   const [query, setQuery] = useState('')
-  const [cat, setCat] = useState(registerable[0].code)
+  // Chorea rather than Fahrenheit: the first tab should open onto a rail of
+  // competitions, not onto the one card that has a single entry.
+  const [cat, setCat] = useState('Chorea')
 
-  const cats = registerable.map((t) => t.code)
+  const cats = territories.map((t) => t.code)
   const searching = query.trim().length > 0
 
   const filtered = useMemo(() => {
@@ -61,7 +81,7 @@ export default function EventsGrid() {
   return (
     <section className="relative py-14 sm:py-18 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle index="◆" eyebrow="Event Discovery" title="Every Treasure on the Island" kicker="Pick a territory to see its events, or search across all 60+ competitions at once." />
+        <SectionTitle index="◆" eyebrow="Event Discovery" title="Every Treasure on the Island" kicker={`Pick a territory to see its events, or search across all ${TOTAL_EVENTS} competitions at once.`} />
 
         {/* controls */}
         <div className="mt-10 flex flex-col gap-5">
@@ -152,27 +172,62 @@ export default function EventsGrid() {
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="font-display text-xl text-offwhite">{r.name}</h3>
                   <p className="mt-1 text-[0.85rem] text-parchment/60">{r.tag}</p>
-                  <div className="mt-4 flex items-center gap-2 pt-1">
+                  {/* `mt-auto`, not a fixed margin: a two-line tag would
+                      otherwise push its buttons a row lower than its
+                      neighbours', and a rail of cards whose buttons don't line
+                      up reads as broken. The row sits on the floor of the card
+                      whatever the text above it does. */}
+                  <div className="mt-auto flex items-center gap-2 pt-5">
+                    {/* Three kinds of card, and only one of them is a form.
+                        The ceremony and the pro nights are on your pass, so
+                        they point at the thing you actually came to find. */}
                     <button
-                      onClick={() => openRegister(r.name)}
-                      data-cursor={isTerritoryOpen(r.terrId) ? 'REGISTER' : 'SOON'}
+                      onClick={() => (r.cta ? navTo(r.cta.to) : openRegister(r.name))}
+                      data-cursor={r.cta ? 'LOOK' : isOpen(r.terrId) ? 'REGISTER' : 'SOON'}
                       className="group/btn flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      {isTerritoryOpen(r.terrId) ? (
+                      {r.cta ? (
                         <>
-                          <Ticket size={13} />
-                          Register
+                          <Sparkles size={13} />
+                          {r.cta.label}
                         </>
-                      ) : (
+                      ) : !isOpen(r.terrId) ? (
                         <>
                           <Hourglass size={13} />
                           Coming Soon
                         </>
+                      ) : r.externalForm ? (
+                        <>
+                          <ExternalLink size={13} />
+                          Register
+                        </>
+                      ) : (
+                        <>
+                          <Ticket size={13} />
+                          Register
+                        </>
                       )}
                     </button>
-                    <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
-                      <ArrowUpRight size={12} />
-                    </span>
+                    {/* The rulebook, one tap from the card. Somebody deciding
+                        whether to enter wants the rules, not a second click
+                        through a modal to find them. */}
+                    {r.rulebook ? (
+                      <a
+                        href={asset(`rulebooks/${r.rulebook}`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${r.terr} rulebook (PDF)`}
+                        aria-label={`${r.terr} rulebook, PDF, opens in a new tab`}
+                        className="flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/70 ring-1 ring-inset ring-gold/35 transition-colors hover:text-gold-bright hover:ring-gold/70"
+                      >
+                        <BookOpen size={12} />
+                        Rules
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
+                        <ArrowUpRight size={12} />
+                      </span>
+                    )}
                   </div>
                 </div>
               </motion.article>

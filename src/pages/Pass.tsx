@@ -15,6 +15,7 @@ import {
   type PassView,
 } from '../api/client'
 import { ANNOUNCEMENT_CHANNEL } from '../data/site'
+import { eventFee } from '../data/fees'
 import { openCheckout, PaymentCancelled } from '../registration/razorpay'
 import { useRegistration } from '../registration/context'
 import { refreshEntitlement } from '../registration/useEntitlement'
@@ -340,10 +341,19 @@ export default function Pass() {
             </div>
             <ul className="mt-3 divide-y divide-gold/10">
               {me.entries.map((e) => (
-                <li key={e.eventName} className="flex items-center justify-between gap-3 py-3">
-                  <span className="text-[0.92rem] text-offwhite">{e.eventName}</span>
-                  <span className="font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50">
-                    {e.teamName ?? e.participation}
+                <li key={e.entryId} className="flex items-center justify-between gap-3 py-3">
+                  <span className="min-w-0 text-[0.92rem] text-offwhite">
+                    {e.eventName}
+                    {/* Which bracket, for the events that run several. Two rows
+                        reading "Badminton" and nothing else would be a puzzle. */}
+                    {e.feeVariant && e.feeVariant !== 'standard' && (
+                      <span className="ml-2 text-[0.78rem] text-gold-bright/80">
+                        {bandLabel(e.eventName, e.feeVariant)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50">
+                    {e.teamName ? `${e.teamName} · ${e.headCount}` : e.participation}
                   </span>
                 </li>
               ))}
@@ -360,4 +370,16 @@ export default function Pass() {
       </div>
     </section>
   )
+}
+
+/**
+ * The human name of a price band, e.g. `mixed-doubles` → "Mixed doubles".
+ *
+ * The entry stores the id, because that is what was charged and it must not
+ * change meaning if the label is later reworded. This resolves it for display,
+ * and falls back to the id if the band has since been retired.
+ */
+function bandLabel(eventName: string, variantId: string): string {
+  const fee = eventFee(eventName)
+  return fee?.variants.find((v) => v.id === variantId)?.label ?? variantId
 }

@@ -79,11 +79,27 @@ prices from `DELEGATE_PASSES`: a real backend must price server-side and never t
 
 ### 5. Event entries
 
-Which territories accept entries is a constant in two places that must agree:
-`OPEN_TERRITORIES` in `api/src/data/events.ts` (the authority, checked on every
-`POST /api/me/events`) and the same set in `src/data/registration.ts` (so the grid can
-label sixty cards without a request). Alfresco is open for 2026; anything closed renders
-a "Coming Soon" panel that routes visitors to Basic Registration.
+Which territories accept entries lives in the `event_openings` table, one row per
+vertical, flipped from the Registration switches panel on `/admin`. `data/openings.ts`
+reads it and `POST /api/me/events` checks it on every entry. The grid asks
+`GET /api/events/openings` once per page load via `useOpenings`, falling back to
+`DEFAULT_OPEN_TERRITORIES` in `src/data/registration.ts` while that request is in
+flight — a label, never a decision. Anything closed renders a "Coming Soon" panel with
+the rulebook still attached.
+
+**Teams enter once.** Whoever fills the form lists their crew (`members`, name and
+optional phone) and pays for everyone; there is no invitation, no token and no account
+for a team-mate to hold. `head_count` is the crew plus the entrant, snapshotted on the
+entry because three dance events price a group per head — and the server takes that
+count from the squad it stored, never from a number the client claims.
+
+**One entry per band, not per event.** Badminton singles and doubles are two
+competitions, so the unique index is `(registration_id, event_name, fee_variant)`. The
+entry form greys out bands you already hold.
+
+**External forms.** Every Thunderbolt bracket sets `form` on its `SubEvent`: the site
+links out to the e-gaming crew's Google Form and `POST /api/me/events` refuses the event
+outright, so nobody ends up believing they entered a tournament twice.
 
 **Paid entries.** An event with a fee in `api/src/data/fees.ts` cannot be settled in one
 request, because the money arrives by webhook. The entry is written `pending` with a
@@ -103,3 +119,15 @@ Everything lives in `../data/registration.ts`:
 Setting `teamSize: undefined` in an override means "explicitly solo", and beats the
 territory default. Adding an event to `data/events.ts` needs no work here, it inherits
 its territory's default.
+
+`api/src/data/events.ts` is a **generated copy** of the form half of this file — same
+definitions, different import line. Change this file, then regenerate that one, or the
+server will validate against a form the site is no longer showing.
+
+Two other files travel with an event:
+
+- `../data/fees.ts` (display) and `api/src/data/fees.ts` (paise, the authority). A band
+  marked `perHead` is multiplied by the crew size at checkout.
+- `../data/rulebooks.ts`: the four or five lines from the rulebook that change whether
+  somebody enters, plus that event's coordinators. The full PDF is per vertical, on
+  `Territory.rulebook`.

@@ -1,8 +1,11 @@
 /**
  * Legends of the voyage.
- * The 2024 lineup is real (from the brochure's "glimpse into the PYREXIA 2024
- * lineup"). The 2026 headliners are intentionally unrevealed, the fest keeps
- * the star lineup a secret until closer to the dates.
+ *
+ * Two lists live here and they answer different questions. `proNights` is the
+ * 2026 lineup: five nights, each either a named headliner or a slot still
+ * charted in secret. `pastLegends` is who has played the Auriga stage before,
+ * which is the only honest way to say how big the stage is before the last
+ * names are announced.
  */
 
 import { artistPhoto } from './photos'
@@ -38,13 +41,100 @@ export const pastLegends: Artist[] = [
 ]
 
 /**
- * One mystery slot per night of the fest: five days on the island, five
- * reveals. Dates are fixed; the names stay charted in secret until the drop.
+ * One slot per night of the fest: five days on the island, five stages.
+ *
+ * Three are announced. The other two stay as they were — dates fixed, names
+ * charted in secret — because a card that says "reveal soon" is honest and a
+ * card that invents a name is not.
  */
-export const mysterySlots = [
-  { label: 'Night I', date: '12 Oct', hint: 'The opening roar' },
-  { label: 'Night II', date: '13 Oct', hint: 'A voice the island already knows' },
-  { label: 'Night III', date: '14 Oct', hint: 'Charted, not yet revealed' },
-  { label: 'Night IV', date: '15 Oct', hint: 'The wildcard of the voyage' },
-  { label: 'Night V', date: '16 Oct', hint: 'The name that lights the summit' },
+export type ProNight = {
+  label: string
+  date: string
+  /** Locked slots keep the teaser line; announced ones carry the artist. */
+  hint: string
+  accent: string
+  artist?: {
+    name: string
+    /** One line under the name: what they are. */
+    role: string
+    /** The hook. Short enough to read from the back of a crowd. */
+    tagline: string
+    /** Two sentences at most, for people who want to know who they're seeing. */
+    blurb: string
+    /** The songs a stranger would recognise. */
+    known: string[]
+    mono: string
+    photo: string
+    /** object-position for the portrait, so the face survives the crop. */
+    focus: string
+  }
+}
+
+export const proNights: ProNight[] = [
+  {
+    label: 'Night I',
+    date: '12 Oct',
+    hint: 'Opening night. Lips sealed.',
+    accent: '#e0894a',
+  },
+  {
+    label: 'Night II',
+    date: '13 Oct',
+    hint: 'Punjab pulls up',
+    accent: '#e0894a',
+    artist: {
+      name: 'Parmish Verma',
+      role: 'Punjabi Superstar · Singer & Actor',
+      tagline: 'Certified banger machine. Zero skips.',
+      blurb:
+        'He directed Punjab’s biggest music videos, then decided he’d rather be the one on camera — and never looked back. The whole ground knows every word before the beat even drops.',
+      known: ['Gaal Ni Kadni', 'Shada', 'Chal Oye', 'Le Chak Main Aa Gaya'],
+      mono: 'PV',
+      photo: artistPhoto['Parmish Verma'],
+      focus: '50% 22%',
+    },
+  },
+  {
+    label: 'Night III',
+    date: '14 Oct',
+    hint: 'Your feelings, live on stage',
+    accent: '#5aa9d0',
+    artist: {
+      name: 'Navjot Ahuja',
+      role: 'Singer-Songwriter · Indie Live',
+      tagline: 'This one’s going to hit different.',
+      blurb:
+        'Jaipur kid, one guitar, and a ballad called “Khat” that walked straight into Apple Music India’s top ten. This is the night everyone puts their torch up and forgets they came here to compete.',
+      known: ['Khat', 'Ye Waadiyan', 'Bayaan', 'Khud Se Mohabbat'],
+      mono: 'NA',
+      photo: artistPhoto['Navjot Ahuja'],
+      focus: '50% 40%',
+    },
+  },
+  {
+    label: 'Night IV',
+    date: '15 Oct',
+    hint: 'The ground is not ready',
+    accent: '#b06fd0',
+    artist: {
+      name: 'Nucleya',
+      role: 'Bass Raja · Electronic',
+      tagline: 'Bass so heavy it’s basically a crime.',
+      blurb:
+        'The man who invented desi bass, launched his debut album off the back of a truck at a Mumbai visarjan, and has been flattening festival grounds ever since. Wear shoes you’re fine with losing.',
+      known: ['Bass Rani', 'Laung Gawacha', 'Aaja', 'Koocha Monster'],
+      mono: 'NU',
+      photo: artistPhoto['Nucleya'],
+      focus: '50% 26%',
+    },
+  },
+  {
+    label: 'Night V',
+    date: '16 Oct',
+    hint: 'Saving the biggest for last',
+    accent: '#e6c25e',
+  },
 ]
+
+/** The nights with a name on them, for anything that only wants the headliners. */
+export const headliners = proNights.filter((n) => n.artist)

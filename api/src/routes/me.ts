@@ -63,17 +63,21 @@ me.get('/me', async (c) => {
     .map((p) => ({ id: p.id, name: p.name, amountPaise: p.amount_paise }))
 
   const { results: entries } = await c.env.DB.prepare(
-    `SELECT event_name, territory_code, participation, team_name, created_at
+    `SELECT id, event_name, territory_code, participation, team_name,
+            fee_variant, head_count, created_at
        FROM event_entries
       WHERE registration_id = ? AND status = 'confirmed'
       ORDER BY created_at`,
   )
     .bind(session.registrationId)
     .all<{
+      id: string
       event_name: string
       territory_code: string
       participation: string
       team_name: string | null
+      fee_variant: string | null
+      head_count: number
       created_at: string
     }>()
 
@@ -103,11 +107,17 @@ me.get('/me', async (c) => {
     // An account is not a registration. The UI leans on this to keep saying so.
     hasRegistration: owned.has('basic'),
     hasPass: !!pass,
+    // An event can be entered more than once now — badminton singles and
+    // doubles are two competitions — so each row carries its own id and the
+    // band it was entered in, and the pass page keys on the id.
     entries: entries.map((e) => ({
+      entryId: e.id,
       eventName: e.event_name,
       territoryCode: e.territory_code,
       participation: e.participation,
       teamName: e.team_name,
+      feeVariant: e.fee_variant,
+      headCount: e.head_count ?? 1,
       enteredAt: e.created_at,
     })),
   })
