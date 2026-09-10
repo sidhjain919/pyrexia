@@ -22,6 +22,7 @@ import { newId } from '../lib/ids.ts'
 import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
 import { isHandledEvent, verifyWebhookSignature, type WebhookEvent } from '../lib/razorpay.ts'
+import { applyRefund } from '../lib/refunds.ts'
 
 export const webhooks = new Hono<{ Bindings: Env }>()
 
@@ -59,8 +60,11 @@ webhooks.post('/razorpay', async (c) => {
       case 'payment.failed':
         await onPaymentFailed(c.env, event)
         break
+      case 'refund.created':
       case 'refund.processed':
-        await onRefundProcessed(c.env, event)
+        if (event.payload.refund?.entity) {
+          await applyRefund(c.env, event.payload.refund.entity, 'webhook')
+        }
         break
     }
   } catch (err) {
@@ -297,64 +301,5 @@ async function onPaymentFailed(env: Env, event: WebhookEvent): Promise<void> {
     kind: 'email.payment_failed',
     registrationId: order.registration_id,
     orderId: order.id,
-  })
-}
-
-/* ------------------------------------------------------------------ *
- * refund.processed
- * ------------------------------------------------------------------ */
-
-async function onRefundProcessed(env: Env, event: WebhookEvent): Promise<void> {
-  const refund = event.payload.refund?.entity
-  if (!refund) return
-
-  const order = await env.DB.prepare(
-    'SELECT id, registration_id FROM orders WHERE razorpay_payment_id = ?',
-  )
-    .bind(refund.payment_id)
-    .first<{ id: string; registration_id: string }>()
-
-  if (!order) return
-
-  // Revoke what this order bought, and the pass with it. Note that Razorpay
-  // keeps its fee on a refund, so the fest is out of pocket by that much -
-  // which is why the refund policy has to be written down before launch.
-  await env.DB.batch([
-    env.DB.prepare(
-      `UPDATE orders SET status = 'refunded', updated_at = datetime('now') WHERE id = ?`,
-    ).bind(order.id),
-    env.DB.prepare(
-      `UPDATE entitlements
-          SET revoked_at = datetime('now'), revoked_reason = 'refunded'
-        WHERE order_id = ? AND revoked_at IS NULL`,
-    ).bind(order.id),
-  ])
-
-  // Only kill the pass if nothing is left standing, a refunded Delegate
-  // upgrade should leave a Basic holder still able to walk in.
-  const remaining = await env.DB.prepare(
-    'SELECT count(*) AS n FROM entitlements WHERE registration_id = ? AND revoked_at IS NULL',
-  )
-    .bind(order.registration_id)
-    .first<{ n: number }>()
-
-  if ((remaining?.n ?? 0) === 0) {
-    await env.DB.batch([
-      env.DB.prepare(
-        `UPDATE passes
-            SET revoked_at = datetime('now'), revoked_reason = 'refunded'
-          WHERE registration_id = ? AND revoked_at IS NULL`,
-      ).bind(order.registration_id),
-      env.DB.prepare(
-        `UPDATE registrations SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?`,
-      ).bind(order.registration_id),
-    ])
-  }
-
-  await audit.record(env, {
-    action: 'entitlement.revoke',
-    entity: 'order',
-    entityId: order.id,
-    after: { refundId: refund.id, amountPaise: refund.amount, remaining: remaining?.n ?? 0 },
   })
 }

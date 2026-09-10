@@ -21,10 +21,20 @@ export type SubEvent = {
    * Registration lives on an external form.
    *
    * Thunderbolt runs its tournaments off Google Forms the e-gaming crew
-   * already built, so the site links straight out rather than rebuilding
-   * eight brackets' worth of questions.
+   * already built, and Battle of Bands screens on one before anybody pays,
+   * so the site links straight out rather than rebuilding those questions.
    */
   form?: string
+  /** What the form is for, said on the card in the crew's own words. */
+  formTitle?: string
+  formNote?: string
+}
+
+/** Every Thunderbolt bracket says the same thing about its form, once. */
+const THUNDERBOLT_FORM = {
+  formTitle: 'Thunderbolt takes entries on its own form',
+  formNote:
+    'The e-gaming crew runs every bracket from their own sheet — squads, in-game IDs and the tournament WhatsApp group all live there. It opens in a new tab, and it takes a minute.',
 }
 
 export type Territory = {
@@ -60,25 +70,10 @@ export type Territory = {
 }
 
 export const territories: Territory[] = [
-  {
-    id: 'fahrenheit',
-    code: 'Fahrenheit',
-    subtitle: 'The Opening Ceremony',
-    territory: 'Ember Landing',
-    blurb: 'Where the fever is lit. The gates open and the voyage begins in fire and light.',
-    icon: 'Flame',
-    map: { x: 58.5, y: 82.0 },
-    accent: '#e0894a',
-    events: [{ name: 'Fahrenheit', tag: 'Grand Opening Ceremony' }],
-    /** Opening ceremony: every delegate walks in on their pass, so no entry form. */
-    noRegister: true,
-    cta: { label: 'Get your pass', to: '/#register' },
-    contacts: [
-      { name: 'Pulkit', phone: '6387508295' },
-      { name: 'Shreya', phone: '8887878101' },
-      { name: 'Gautam', phone: '8540909279' },
-    ],
-  },
+  // Competitions first, in the order the brochure lists them; the two you
+  // don't register for — the opening ceremony and the pro nights — come last,
+  // so a strip of tabs opens on a rail of things to enter rather than on the
+  // one card with a single item.
   {
     id: 'chorea',
     code: 'Chorea',
@@ -115,7 +110,14 @@ export const territories: Territory[] = [
       { name: 'Tarang', tag: 'Indian Light, Semi-classical, Bollywood & Folk' },
       { name: 'Euphonia', tag: 'Western Singing' },
       { name: 'Metallica', tag: 'Instrumental · Solo or Duet' },
-      { name: 'Battle of Bands', tag: 'Online screening, then the live final' },
+      {
+        name: 'Battle of Bands',
+        tag: 'Screening round open · Google Form',
+        form: 'https://docs.google.com/forms/d/e/1FAIpQLScVk9SA0EM9EnKK6ZKEGRkalygCFITqgkJ6wRoOJ3LZFNrcbA/viewform?usp=dialog',
+        formTitle: 'This form is for the screening round',
+        formNote:
+          'Battle of Bands screens online first. Fill the form with a link to a performance video of no more than 5 minutes by 2 October 2026 — nothing is paid at this stage. Bands that clear the screening hear from the Sinfonia crew about the live final and the ₹2000 band fee.',
+      },
       { name: 'Rhythm Revolution', tag: 'Rap & Beatboxing Face-off' },
     ],
     contacts: [
@@ -201,8 +203,6 @@ export const territories: Territory[] = [
     accent: '#c98f5a',
     rulebook: 'littmania.pdf',
     events: [
-      { name: 'Biocrux Jr', tag: 'Pre & para-clinical quiz · Online prelims 19 Sep' },
-      { name: 'Biocrux Sr', tag: 'Clinical quiz · Online prelims 26 Sep' },
       { name: 'Cognizzia', tag: 'General Trivia · Four rounds' },
       { name: 'Cineholics', tag: 'Film, series & OTT quiz' },
       { name: 'Anime no Tatakai', tag: 'Anime Quiz · Trivia, picture & audio rounds' },
@@ -299,18 +299,37 @@ export const territories: Territory[] = [
      * Form, so the card links out instead of opening the site's entry form.
      */
     events: [
-      { name: 'BGMI', tag: 'Battle Royale & TDM · Squads of 4+', form: 'https://forms.gle/vjFRZTP1P9XkSa9v5' },
-      { name: 'COD: Mobile', tag: 'Multiplayer · Teams of 5', form: 'https://forms.gle/LFS8Kh3pMk6xhkhq6' },
-      { name: 'Free Fire', tag: 'Battle Royale & Clash Squad', form: 'https://forms.gle/hqAWj3HgAAYvXZRW9' },
-      { name: 'Clash Royale', tag: 'Duel Battle · Three rounds', form: 'https://forms.gle/P6ZNcpGxGxFcZLVQ8' },
-      { name: 'E-Chess', tag: 'Bullet on Chess.com · Swiss format', form: 'https://forms.gle/QkGDNELVdJgeDtjK9' },
-      { name: 'Tekken', tag: 'Pools, then knockout finals', form: 'https://forms.gle/hqXw7j1kMM6qgDcp8' },
-      { name: 'Mortal Kombat', tag: 'Pools, then knockout finals', form: 'https://forms.gle/SjjPk7sS9WYRdFmY7' },
-      { name: 'FIFA', tag: 'Pools, then knockout finals', form: 'https://forms.gle/sFwhgkrBrCqNBbuT7' },
+      { name: 'BGMI', tag: 'Battle Royale & TDM · Squads of 4+', form: 'https://forms.gle/vjFRZTP1P9XkSa9v5', ...THUNDERBOLT_FORM },
+      { name: 'COD: Mobile', tag: 'Multiplayer · Teams of 5', form: 'https://forms.gle/LFS8Kh3pMk6xhkhq6', ...THUNDERBOLT_FORM },
+      { name: 'Free Fire', tag: 'Battle Royale & Clash Squad', form: 'https://forms.gle/hqAWj3HgAAYvXZRW9', ...THUNDERBOLT_FORM },
+      { name: 'Clash Royale', tag: 'Duel Battle · Three rounds', form: 'https://forms.gle/P6ZNcpGxGxFcZLVQ8', ...THUNDERBOLT_FORM },
+      { name: 'E-Chess', tag: 'Bullet on Chess.com · Swiss format', form: 'https://forms.gle/QkGDNELVdJgeDtjK9', ...THUNDERBOLT_FORM },
+      { name: 'Tekken', tag: 'Pools, then knockout finals', form: 'https://forms.gle/hqXw7j1kMM6qgDcp8', ...THUNDERBOLT_FORM },
+      { name: 'Mortal Kombat', tag: 'Pools, then knockout finals', form: 'https://forms.gle/SjjPk7sS9WYRdFmY7', ...THUNDERBOLT_FORM },
+      { name: 'FIFA', tag: 'Pools, then knockout finals', form: 'https://forms.gle/sFwhgkrBrCqNBbuT7', ...THUNDERBOLT_FORM },
     ],
     contacts: [
       { name: 'Bharat', phone: '9588957283' },
       { name: 'Lokesh', phone: '6238930083' },
+    ],
+  },
+  {
+    id: 'fahrenheit',
+    code: 'Fahrenheit',
+    subtitle: 'The Opening Ceremony',
+    territory: 'Ember Landing',
+    blurb: 'Where the fever is lit. The gates open and the voyage begins in fire and light.',
+    icon: 'Flame',
+    map: { x: 58.5, y: 82.0 },
+    accent: '#e0894a',
+    events: [{ name: 'Fahrenheit', tag: 'Grand Opening Ceremony' }],
+    /** Opening ceremony: every delegate walks in on their pass, so no entry form. */
+    noRegister: true,
+    cta: { label: 'Get your pass', to: '/#register' },
+    contacts: [
+      { name: 'Pulkit', phone: '6387508295' },
+      { name: 'Shreya', phone: '8887878101' },
+      { name: 'Gautam', phone: '8540909279' },
     ],
   },
   {

@@ -15,6 +15,7 @@ import { TerritoryGlyph } from '../lib/art'
 import { asset } from '../lib/asset'
 import { Reveal, SectionTitle } from './primitives'
 import { useOpenings } from '../registration/useOpenings'
+import { territoryCta } from '../registration/useEntitlement'
 import { useNavTo } from './routing'
 import { useRegistration } from '../registration/context'
 import { passCta, useEntitlement } from '../registration/useEntitlement'
@@ -52,6 +53,7 @@ export default function IslandMap() {
 
   const byId = (id: string) => territories.find((t) => t.id === id)!
   const active = byId(activeId)
+  const cta = territoryCta(active, entitlement)
 
   /* The ship's live position. The wake binds to the same two values, so the
      dotted line is drawn *by* the ship rather than animated alongside it. */
@@ -433,13 +435,13 @@ export default function IslandMap() {
                           ? 'No entry form. The pro nights are on your Festival Pass — three names are out, two still under wraps.'
                           : 'No entry form. Every delegate walks into the opening ceremony on their pass.'}
                       </p>
-                      {active.cta && (
+                      {cta && (
                         <button
-                          onClick={() => navTo(active.cta!.to)}
+                          onClick={() => navTo(cta.to)}
                           data-cursor="LOOK"
                           className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                         >
-                          <Sparkles size={14} /> {active.cta.label}
+                          <Sparkles size={14} /> {cta.label}
                         </button>
                       )}
                     </div>

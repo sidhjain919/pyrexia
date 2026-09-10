@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { api, subscribeAuth, getSession, type Me } from '../api/client'
+import type { Territory } from '../data/events'
 
 /**
  * What the person looking at the page has already bought.
@@ -129,4 +130,23 @@ export function passCta(state: Entitlement | null): {
     default:
       return { label: 'Register Now', short: 'Register', to: null, action: 'register' }
   }
+}
+
+/**
+ * The call to action on a card you don't register for.
+ *
+ * Fahrenheit's says "Get your pass" — until the person looking already has
+ * one, at which point it would be telling a delegate to buy what they hold.
+ * For them it points at the pass they own instead. Auriga's is the lineup
+ * for everybody.
+ */
+export function territoryCta(
+  t: Territory,
+  state: Entitlement | null,
+): { label: string; to: string } | null {
+  if (!t.cta) return null
+  if (t.id === 'fahrenheit' && (state === 'basic' || state === 'festival')) {
+    return { label: "You're in · My pass", to: '/pass' }
+  }
+  return t.cta
 }

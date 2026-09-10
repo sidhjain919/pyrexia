@@ -15,7 +15,8 @@ import type { Env } from '../types.ts'
 import { newId } from '../lib/ids.ts'
 import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
-import { fetchOrderPayments } from '../lib/razorpay.ts'
+import { fetchOrderPayments, fetchRefunds } from '../lib/razorpay.ts'
+import { applyRefund } from '../lib/refunds.ts'
 
 /** Give the webhook a fair chance before going looking. */
 const GRACE_MINUTES = 30
@@ -192,4 +193,50 @@ async function settle(
     registrationId: order.registration_id,
     orderId: order.id,
   })
+}
+
+/* ------------------------------------------------------------------ *
+ * Refunds the webhook never told us about
+ * ------------------------------------------------------------------ */
+
+/** How far back to look. Generous, because a missed webhook is not noticed the same day. */
+const REFUND_LOOKBACK_DAYS = 30
+
+/**
+ * Ask Razorpay for every refund of the last month and make sure each one is
+ * in the ledger.
+ *
+ * This exists because the first real refund was made on the dashboard and
+ * never appeared here: the webhook handler was right, and the webhook did
+ * not arrive. One list call a tick, however many orders there are, and the
+ * ledger's primary key makes re-reading the same refunds every fifteen
+ * minutes free.
+ */
+export async function reconcileRefunds(env: Env): Promise<void> {
+  if (!env.RAZORPAY_KEY_SECRET) return
+
+  const cfg = {
+    keyId: env.RAZORPAY_KEY_ID,
+    keySecret: env.RAZORPAY_KEY_SECRET,
+    webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
+  }
+
+  let refunds
+  try {
+    refunds = await fetchRefunds(cfg, {
+      fromUnix: Date.now() / 1000 - REFUND_LOOKBACK_DAYS * 86_400,
+    })
+  } catch (err) {
+    console.error('refund sweep could not list refunds', err)
+    return
+  }
+
+  for (const refund of refunds) {
+    try {
+      const outcome = await applyRefund(env, refund, 'sweep')
+      if (outcome !== 'seen') console.log('refund sweep', refund.id, outcome)
+    } catch (err) {
+      console.error('refund sweep failed for', refund.id, err)
+    }
+  }
 }

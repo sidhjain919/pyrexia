@@ -68,14 +68,9 @@ export const eventPhoto: Record<string, string> = {
   FIFA: p('events/fifa.webp'),
   "Mortal Kombat": p('events/mortal-kombat.webp'),
   Tekken: p('events/tekken.webp'),
-  // Three brackets with no frame of their own yet. Rather than the territory
-  // fallback — which would print the same BGMI key art on all three — they
-  // borrow real Thunderbolt tournament shots, and E-Chess borrows the board.
-  "Clash Royale": p('events/tekken.webp'),
-  "Free Fire": p('events/mortal-kombat.webp'),
-  "E-Chess": p('events/chess.webp'),
-  "Biocrux Jr": p('events/biocrux-jr.webp'),
-  "Biocrux Sr": p('events/biocrux-sr.webp'),
+  "Clash Royale": p('events/clash-royale.webp'),
+  "Free Fire": p('events/free-fire.webp'),
+  "E-Chess": p('events/e-chess.webp'),
   Badminton: p('events/badminton.webp'),
   Basketball: p('events/basketball.webp'),
   Carrom: p('events/carrom.webp'),

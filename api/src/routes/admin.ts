@@ -15,7 +15,7 @@ import { Hono } from 'hono'
 
 import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
-import { listOpenings, setOpening } from '../data/openings.ts'
+import { listOpenings, setEventSwitch, setOpening } from '../data/openings.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import * as audit from '../lib/audit.ts'
 
@@ -102,6 +102,7 @@ admin.get('/admin/stats', async (c) => {
        (SELECT count(*) FROM orders WHERE status = 'paid')                         AS paid_orders,
        (SELECT count(*) FROM orders WHERE status = 'failed')                       AS failed_orders,
        (SELECT count(*) FROM orders WHERE status = 'refunded')                     AS refunded_orders,
+       (SELECT coalesce(sum(refunded_paise), 0) FROM orders)                       AS refunded_paise,
        (SELECT coalesce(sum(amount_paise), 0) FROM orders WHERE status = 'paid')   AS collected_paise,
        (SELECT coalesce(sum(amount_paise), 0) FROM orders
           WHERE status = 'paid' AND date(paid_at, ${IST}) = ${TODAY})              AS collected_today,
@@ -267,6 +268,7 @@ admin.get('/admin/stats', async (c) => {
       paid: n('paid_orders'),
       failed: n('failed_orders'),
       refunded: n('refunded_orders'),
+      refundedPaise: n('refunded_paise'),
       stuck: n('stuck'),
       methods,
     },
@@ -545,7 +547,23 @@ admin.post('/admin/openings', async (c) => {
 
   const body = (await readJson(c)) as Record<string, unknown>
   const territoryId = String(body.territoryId ?? '').trim()
+  const eventName = String(body.eventName ?? '').trim()
   const open = body.open === true
+
+  // One of the two, never both: a vertical's master switch, or one event's own.
+  if (eventName) {
+    const changed = await setEventSwitch(c.env, eventName, open, me.email)
+    if (!changed) throw new ApiError('not_found', "That isn't an event we run.")
+    await audit.record(c.env, {
+      actorEmail: me.email,
+      action: 'settings.event_openings',
+      entity: 'event_switch',
+      entityId: eventName,
+      after: { open },
+      ip: clientIp(c),
+    })
+    return c.json({ ok: true, eventName, open })
+  }
 
   const changed = await setOpening(c.env, territoryId, open, me.email)
   if (!changed) throw new ApiError('not_found', "That isn't a vertical we run.")

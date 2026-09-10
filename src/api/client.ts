@@ -69,6 +69,8 @@ export type AdminStats = {
     paid: number
     failed: number
     refunded: number
+    /** Money that went back out, across every order. Paise. */
+    refundedPaise: number
     stuck: number
     methods: { method: string; n: number }[]
   }
@@ -483,8 +485,11 @@ export type EventInfo = {
   territory: { id: string; code: string; name: string }
   /** Filename under /rulebooks for this vertical's official PDF, or null. */
   rulebook: string | null
-  /** Set when entry is taken on an external form (every Thunderbolt bracket). */
+  /** Set when entry is taken on an external form (every Thunderbolt bracket, the Battle of Bands screening). */
   externalForm: string | null
+  /** What that form is for, in the crew's own words. */
+  formTitle: string | null
+  formNote: string | null
   open: boolean
   /** null when the event costs nothing to enter. */
   fee: { unit: 'person' | 'team'; variants: FeeVariant[] } | null
@@ -504,7 +509,15 @@ export type EventInfo = {
   enteredVariants: string[]
 }
 
-/** One vertical on the admin switchboard. */
+/** One event's own switch on the admin switchboard. Meaningful while its vertical is open. */
+export type EventSwitchRow = {
+  name: string
+  open: boolean
+  updatedAt: string | null
+  updatedBy: string | null
+}
+
+/** One vertical on the admin switchboard, with the switch of every event under it. */
 export type OpeningRow = {
   id: string
   code: string
@@ -514,6 +527,7 @@ export type OpeningRow = {
   open: boolean
   updatedAt: string | null
   updatedBy: string | null
+  eventList: EventSwitchRow[]
 }
 
 export const api = {
@@ -690,17 +704,21 @@ export const api = {
    */
   /** Which verticals are taking entries. Public, and asked once per page load. */
   openings: () =>
-    request<{ open: string[]; territories: { id: string; code: string; name: string; events: number; open: boolean }[] }>(
-      '/api/events/openings',
-    ),
+    request<{
+      open: string[]
+      /** Events shut on their own switch inside an open vertical. */
+      closedEvents: string[]
+      territories: { id: string; code: string; name: string; events: number; open: boolean }[]
+    }>('/api/events/openings'),
 
   adminOpenings: () =>
     request<{ territories: OpeningRow[] }>('/api/admin/openings', { auth: true }),
 
-  adminSetOpening: (territoryId: string, open: boolean) =>
-    request<{ ok: boolean; territoryId: string; open: boolean }>('/api/admin/openings', {
+  /** Flip a vertical's master switch, or one event's own. */
+  adminSetOpening: (target: { territoryId: string } | { eventName: string }, open: boolean) =>
+    request<{ ok: boolean; open: boolean }>('/api/admin/openings', {
       method: 'POST',
-      body: { territoryId, open },
+      body: { ...target, open },
       auth: true,
     }),
 

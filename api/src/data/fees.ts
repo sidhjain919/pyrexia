@@ -144,15 +144,10 @@ export const EVENT_FEES: Record<string, EventFee> = {
   },
   Powerlifting: one('person', 150),
 
+  /* ---------------- Chronos ---------------- */
+  'Mr. & Ms. PYREXIA': one('person', 400),
+
   /* ---------------- Littmania ---------------- */
-  'Biocrux Jr': {
-    unit: 'team',
-    variants: [r('team', 'Team (up to 3)', 250), r('lone-wolf', 'Lone wolf', 150)],
-  },
-  'Biocrux Sr': {
-    unit: 'team',
-    variants: [r('team', 'Team (up to 3)', 300), r('lone-wolf', 'Lone wolf', 150)],
-  },
   Cognizzia: {
     unit: 'team',
     variants: [r('team-3', 'Team of 3', 120), r('team-2', 'Team of 2', 100), r('lone-wolf', 'Lone wolf', 60)],

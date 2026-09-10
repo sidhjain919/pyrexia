@@ -108,7 +108,7 @@ export const proNights: ProNight[] = [
       known: ['Khat', 'Ye Waadiyan', 'Bayaan', 'Khud Se Mohabbat'],
       mono: 'NA',
       photo: artistPhoto['Navjot Ahuja'],
-      focus: '50% 40%',
+      focus: '50% 30%',
     },
   },
   {

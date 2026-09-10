@@ -12,7 +12,7 @@
  * question here comes from that vertical's final 2026 rulebook.
  */
 
-import { territories, type Territory } from './events'
+import { territories, type SubEvent, type Territory } from './events'
 
 /* ------------------------------------------------------------------ *
  * Registration tiers
@@ -183,14 +183,6 @@ const F = {
     required: true,
     placeholder: 'What do you play?',
   },
-  videoLink: {
-    id: 'videoLink',
-    label: 'Screening video link',
-    type: 'url',
-    required: true,
-    placeholder: 'Google Drive / YouTube link',
-    help: 'Make sure anyone with the link can view it.',
-  },
   sportsPosition: {
     id: 'sportsPosition',
     label: 'Your position / role',
@@ -352,11 +344,14 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
     fields: [F.instrument, F.performanceTitle, F.duration],
     note: 'Drum kit and keyboard are provided if you need them. Nothing else is.',
   },
+  // Screened on the crew's Google Form before anything is paid; the site never
+  // takes a Battle of Bands entry itself. The shape is kept so the card can
+  // still say what a band is.
   'Battle of Bands': {
     participation: 'team',
     teamSize: { min: 4, max: 12 },
-    fields: [F.videoLink, F.genre],
-    note: 'Entering is free. Send a performance video of no more than 5 minutes by 2 October 2026 — the ₹2000 band fee is due only if you clear the screening round. A maximum of 9 members on stage at once.',
+    fields: [],
+    note: 'Screening round first, on the Google Form. The ₹2000 band fee is due only if you clear it. A maximum of 9 members on stage at once.',
   },
   'Rhythm Revolution': {
     teamSize: { min: 2, max: 2 },
@@ -386,7 +381,7 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   Basketball: {
     teamSize: { min: 3, max: 10 },
     fields: [],
-    note: '5v5 squads are up to 10 players; 3v3 squads are up to 4. Only UG students and interns may play. FIBA rules.',
+    note: '5v5 squads are up to 10 players; 3v3 squads are up to 4. Contact the organisers before registering. FIBA rules.',
   },
   Volleyball: { teamSize: { min: 6, max: 12 }, fields: [] },
   Cricket: {
@@ -428,18 +423,6 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   },
 
   /* ---------------- Littmania ---------------- */
-  'Biocrux Jr': {
-    participation: 'solo-or-team',
-    teamSize: { min: 2, max: 3 },
-    fields: [F.batch, F.whatsapp],
-    note: 'Open to MBBS 2023, 2024 and 2025 batches. Online prelims on 19 September 2026; the top 20 teams reach the finale at PYREXIA. One entry per team, through the team leader — inter-college teams are fine.',
-  },
-  'Biocrux Sr': {
-    participation: 'solo-or-team',
-    teamSize: { min: 2, max: 3 },
-    fields: [F.batch, F.whatsapp],
-    note: 'Open from the MBBS 2025 batch to interns, maximum one intern per team. Online prelims on 26 September 2026; the top 20 teams reach the finale. One entry per team, through the team leader.',
-  },
   Cognizzia: {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 3 },
@@ -538,13 +521,15 @@ export type ResolvedEvent = {
   tag: string
   territory: Territory
   form: EventForm
-  /** Set when entry is taken on an external form (every Thunderbolt bracket). */
+  /** Set when entry is taken on an external form (every Thunderbolt bracket, the Battle of Bands screening). */
   externalForm?: string
+  formTitle?: string
+  formNote?: string
 }
 
-const byName = new Map<string, { t: Territory; tag: string; form?: string }>()
+const byName = new Map<string, { t: Territory; e: SubEvent }>()
 for (const t of territories) {
-  for (const e of t.events) byName.set(e.name, { t, tag: e.tag, form: e.form })
+  for (const e of t.events) byName.set(e.name, { t, e })
 }
 
 /** Every event a delegate can actually enter (the opening ceremony and pro nights aren't entries). */
@@ -563,9 +548,11 @@ export function resolveEvent(name: string): ResolvedEvent | null {
   const over = eventOverrides[name] ?? {}
   return {
     name,
-    tag: hit.tag,
+    tag: hit.e.tag,
     territory: hit.t,
-    externalForm: hit.form,
+    externalForm: hit.e.form,
+    formTitle: hit.e.formTitle,
+    formNote: hit.e.formNote,
     form: {
       participation: over.participation ?? base.participation,
       // `undefined` in an override means "explicitly no team", so check the key.

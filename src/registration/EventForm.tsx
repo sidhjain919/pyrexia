@@ -226,11 +226,11 @@ export default function EventForm({
         {header}
         <div className="rounded-xl border border-gold/25 bg-ocean/40 p-5">
           <div className="font-display text-[1.05rem] text-offwhite">
-            {info.territory.code} takes entries on its own form
+            {info.formTitle ?? `${info.territory.code} takes entries on its own form`}
           </div>
           <p className="mt-1.5 text-[0.86rem] leading-relaxed text-parchment/70">
-            The e-gaming crew runs every bracket from their own sheet — squads, in-game IDs and the
-            tournament WhatsApp group all live there. It opens in a new tab, and it takes a minute.
+            {info.formNote ??
+              'The crew runs this one from their own form. It opens in a new tab, and it takes a minute.'}
           </p>
           <a
             href={info.externalForm}

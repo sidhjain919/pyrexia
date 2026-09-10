@@ -224,6 +224,34 @@ export async function fetchOrderPayments(
   return res.items ?? []
 }
 
+export type RazorpayRefund = {
+  id: string
+  payment_id: string
+  amount: Paise
+  status: string
+  /** Unix seconds. */
+  created_at: number
+}
+
+/**
+ * Every refund on the account since `fromUnix`, newest first.
+ *
+ * This is how the sweep learns about a refund the webhook never delivered. It
+ * is one call regardless of how many orders there are, which is what makes it
+ * affordable to run every fifteen minutes.
+ */
+export async function fetchRefunds(
+  cfg: RazorpayConfig,
+  args: { fromUnix: number; count?: number },
+): Promise<RazorpayRefund[]> {
+  const count = Math.min(args.count ?? 100, 100)
+  const res = await call<{ items: RazorpayRefund[] }>(
+    cfg,
+    `/refunds?from=${Math.floor(args.fromUnix)}&count=${count}`,
+  )
+  return res.items ?? []
+}
+
 export async function refundPayment(
   cfg: RazorpayConfig,
   paymentId: string,
@@ -247,14 +275,21 @@ export type WebhookEvent = {
   event: string
   payload: {
     payment?: { entity: RazorpayPayment }
-    refund?: { entity: { id: string; payment_id: string; amount: Paise; status: string } }
+    refund?: { entity: RazorpayRefund }
   }
 }
 
-/** The events we act on. Everything else is acknowledged and ignored. */
+/**
+ * The events we act on. Everything else is acknowledged and ignored.
+ *
+ * Both refund events are taken: `created` arrives at once, `processed` when
+ * the money has actually moved, which for some methods is days later. The
+ * ledger is keyed by refund id, so hearing about one refund twice is harmless.
+ */
 export const HANDLED_EVENTS = [
   'payment.captured',
   'payment.failed',
+  'refund.created',
   'refund.processed',
 ] as const
 

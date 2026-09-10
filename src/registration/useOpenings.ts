@@ -4,7 +4,8 @@ import { api } from '../api/client'
 import { DEFAULT_OPEN_TERRITORIES } from '../data/registration'
 
 /**
- * Which verticals are taking entries, as the server sees it.
+ * Which verticals — and which single events — are taking entries, as the
+ * server sees it.
  *
  * Fetched once per page load and shared by every card, because the grid asks
  * the same question seventy times. Until the answer lands, the built-in
@@ -12,18 +13,25 @@ import { DEFAULT_OPEN_TERRITORIES } from '../data/registration'
  * grid of "Coming Soon" resolve into "Register" a second later. Nothing here
  * decides anything — entering a closed event is refused by the server whatever
  * this hook believes.
+ *
+ * Two layers, matching the server: a vertical's master switch, and each
+ * event's own. An event is open only when both are.
  */
 
-let cache: ReadonlySet<string> | null = null
-let inflight: Promise<ReadonlySet<string>> | null = null
-const listeners = new Set<(open: ReadonlySet<string>) => void>()
+type Openings = { open: ReadonlySet<string>; closedEvents: ReadonlySet<string> }
 
-function load(): Promise<ReadonlySet<string>> {
+const DEFAULT: Openings = { open: DEFAULT_OPEN_TERRITORIES, closedEvents: new Set() }
+
+let cache: Openings | null = null
+let inflight: Promise<Openings> | null = null
+const listeners = new Set<(next: Openings) => void>()
+
+function load(): Promise<Openings> {
   if (cache) return Promise.resolve(cache)
   inflight ??= api
     .openings()
     .then((res) => {
-      cache = new Set(res.open)
+      cache = { open: new Set(res.open), closedEvents: new Set(res.closedEvents ?? []) }
       for (const fn of listeners) fn(cache)
       return cache
     })
@@ -31,7 +39,7 @@ function load(): Promise<ReadonlySet<string>> {
       // Offline, or the API is having a moment. Keep the default and try again
       // on the next mount rather than declaring everything shut.
       inflight = null
-      return DEFAULT_OPEN_TERRITORIES
+      return DEFAULT
     })
   return inflight
 }
@@ -44,15 +52,15 @@ export function refreshOpenings() {
 }
 
 export function useOpenings() {
-  const [open, setOpen] = useState<ReadonlySet<string>>(cache ?? DEFAULT_OPEN_TERRITORIES)
+  const [state, setState] = useState<Openings>(cache ?? DEFAULT)
   /** False until the server has answered, for anything that wants to wait. */
   const [settled, setSettled] = useState(cache !== null)
 
   useEffect(() => {
     let alive = true
-    const listener = (next: ReadonlySet<string>) => {
+    const listener = (next: Openings) => {
       if (!alive) return
-      setOpen(next)
+      setState(next)
       setSettled(true)
     }
     listeners.add(listener)
@@ -64,7 +72,12 @@ export function useOpenings() {
   }, [])
 
   return {
-    isOpen: (territoryId: string) => open.has(territoryId),
+    /**
+     * Whether entries are open. With only a vertical, its master switch; with
+     * an event name as well, that event's own switch too.
+     */
+    isOpen: (territoryId: string, eventName?: string) =>
+      state.open.has(territoryId) && (eventName === undefined || !state.closedEvents.has(eventName)),
     settled,
   }
 }

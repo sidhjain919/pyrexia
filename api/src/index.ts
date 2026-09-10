@@ -26,7 +26,7 @@ import { ses } from './routes/ses.ts'
 import { webhooks } from './routes/webhooks.ts'
 import { handleJob } from './jobs/mail.ts'
 import { purgeExpiredDocuments } from './jobs/purge.ts'
-import { reconcileOrders } from './jobs/reconcile.ts'
+import { reconcileOrders, reconcileRefunds } from './jobs/reconcile.ts'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -133,6 +133,9 @@ export default {
    */
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(reconcileOrders(env))
+    // And the other direction: money that went back out, which the dashboard
+    // can do without the webhook ever reaching us.
+    ctx.waitUntil(reconcileRefunds(env))
     // The privacy page promises identity documents are deleted within thirty
     // days of the fest. This is what makes that sentence true.
     ctx.waitUntil(purgeExpiredDocuments(env))

@@ -29,7 +29,7 @@ import type { Env } from '../types.ts'
 import { ApiError, readJson } from '../lib/http.ts'
 import { newEntryId, newOrderId } from '../lib/ids.ts'
 import { allowsTeam, requiresTeam, resolveEvent } from '../data/events.ts'
-import { isTerritoryOpen, listOpenings, openTerritoryIds } from '../data/openings.ts'
+import { closedEventNames, isEventOpen, listOpenings, openTerritoryIds } from '../data/openings.ts'
 import { feeFor, priceEntry } from '../data/fees.ts'
 import { conveniencePaise } from '../lib/pricing.ts'
 import { createOrder, razorpayConfig } from '../lib/razorpay.ts'
@@ -73,10 +73,15 @@ function readMembers(raw: unknown): Member[] {
  * requests.
  */
 events.get('/events/openings', async (c) => {
-  const open = await openTerritoryIds(c.env)
-  const rows = await listOpenings(c.env)
+  const [open, closed, rows] = await Promise.all([
+    openTerritoryIds(c.env),
+    closedEventNames(c.env),
+    listOpenings(c.env),
+  ])
   return c.json({
     open: [...open],
+    /** Events shut on their own switch inside an open vertical. */
+    closedEvents: [...closed],
     territories: rows.map((r) => ({
       id: r.id,
       code: r.code,
@@ -93,7 +98,7 @@ events.get('/events/:name', async (c) => {
   if (!resolved) throw new ApiError('not_found', "That event isn't on the chart.")
 
   const session = await resolveSession(c.env, readToken(c.req.raw.headers))
-  const open = await isTerritoryOpen(c.env, resolved.territory.id)
+  const open = await isEventOpen(c.env, resolved.name)
   const fee = feeFor(name)
 
   let eligible = false
@@ -130,8 +135,10 @@ events.get('/events/:name', async (c) => {
     territory: { id: resolved.territory.id, code: resolved.territory.code, name: resolved.territory.territory },
     /** Filename under the site's /rulebooks, where this vertical's PDF lives. */
     rulebook: resolved.territory.rulebook ?? null,
-    /** Set for every Thunderbolt bracket: entry happens on the crew's own form. */
+    /** Set for every Thunderbolt bracket and the Battle of Bands screening: entry happens on the crew's own form. */
     externalForm: resolved.externalForm ?? null,
+    formTitle: resolved.formTitle ?? null,
+    formNote: resolved.formNote ?? null,
     open,
     fee: fee && {
       unit: fee.unit,
@@ -183,8 +190,8 @@ events.post('/me/events', async (c) => {
 
   // Checked here as well as on the way in: the client knowing a form is shut
   // is a courtesy, this is the rule.
-  if (!(await isTerritoryOpen(c.env, resolved.territory.id))) {
-    throw new ApiError('forbidden', `Entries for ${resolved.territory.code} are not open yet.`)
+  if (!(await isEventOpen(c.env, resolved.name))) {
+    throw new ApiError('forbidden', `Entries for ${resolved.name} are not open right now.`)
   }
 
   // Basic Registration is the only thing standing between a person and an

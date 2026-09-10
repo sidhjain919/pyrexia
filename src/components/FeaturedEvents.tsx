@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { ArrowLeft, ArrowRight, Hourglass, Sparkles, Ticket } from 'lucide-react'
 import { territories, TOTAL_EVENTS } from '../data/events'
 import { useOpenings } from '../registration/useOpenings'
+import { territoryCta, useEntitlement } from '../registration/useEntitlement'
 import { territoryPhoto, territoryFocus } from '../data/media'
 import { photoFor } from '../data/photos'
 import { TerritoryGlyph } from '../lib/art'
@@ -28,6 +29,7 @@ export default function FeaturedEvents() {
   const track = useRef<HTMLDivElement>(null)
   const { openRegister } = useRegistration()
   const { isOpen } = useOpenings()
+  const { state: entitlement } = useEntitlement()
   const navTo = useNavTo()
   const scrollBy = (dir: number) => {
     track.current?.scrollBy({ left: dir * 340, behavior: 'smooth' })
@@ -76,6 +78,7 @@ export default function FeaturedEvents() {
           {picks.map((p, i) => {
             const t = territories.find((x) => x.id === p.code)!
             const sub = t.events.find((e) => e.name === p.event)
+            const cta = territoryCta(t, entitlement)
             return (
               <article
                 key={p.event}
@@ -114,15 +117,15 @@ export default function FeaturedEvents() {
                         "Coming Soon" button for the one card they most want to
                         click was the worst of both. */}
                     <button
-                      onClick={() => (t.cta ? navTo(t.cta.to) : openRegister(p.event))}
-                      data-cursor={t.cta ? 'LOOK' : isOpen(t.id) ? 'REGISTER' : 'SOON'}
+                      onClick={() => (cta ? navTo(cta.to) : openRegister(p.event))}
+                      data-cursor={cta ? 'LOOK' : isOpen(t.id, p.event) ? 'REGISTER' : 'SOON'}
                       className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.66rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      {t.cta ? (
+                      {cta ? (
                         <>
-                          <Sparkles size={13} /> {t.cta.label}
+                          <Sparkles size={13} /> {cta.label}
                         </>
-                      ) : isOpen(t.id) ? (
+                      ) : isOpen(t.id, p.event) ? (
                         <>
                           <Ticket size={13} /> Register
                         </>

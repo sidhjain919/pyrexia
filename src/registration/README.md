@@ -80,8 +80,11 @@ prices from `DELEGATE_PASSES`: a real backend must price server-side and never t
 ### 5. Event entries
 
 Which territories accept entries lives in the `event_openings` table, one row per
-vertical, flipped from the Registration switches panel on `/admin`. `data/openings.ts`
-reads it and `POST /api/me/events` checks it on every entry. The grid asks
+vertical, flipped from the Registration switches panel on `/admin`. Under each vertical
+every event has a switch of its own in `event_switches` (no row = open), for closing one
+full bracket without touching its neighbours. An event is open only when both say so:
+`data/openings.ts` reads them and `POST /api/me/events` checks `isEventOpen` on every
+entry. The grid asks
 `GET /api/events/openings` once per page load via `useOpenings`, falling back to
 `DEFAULT_OPEN_TERRITORIES` in `src/data/registration.ts` while that request is in
 flight — a label, never a decision. Anything closed renders a "Coming Soon" panel with
@@ -97,9 +100,17 @@ count from the squad it stored, never from a number the client claims.
 competitions, so the unique index is `(registration_id, event_name, fee_variant)`. The
 entry form greys out bands you already hold.
 
-**External forms.** Every Thunderbolt bracket sets `form` on its `SubEvent`: the site
-links out to the e-gaming crew's Google Form and `POST /api/me/events` refuses the event
-outright, so nobody ends up believing they entered a tournament twice.
+**External forms.** Every Thunderbolt bracket, and the Battle of Bands screening round,
+sets `form` on its `SubEvent` (with `formTitle`/`formNote` saying what the form is for):
+the site links out to the crew's Google Form and `POST /api/me/events` refuses the event
+outright, so nobody ends up believing they entered twice.
+
+**Refunds.** A refund made on the Razorpay dashboard reaches `lib/refunds.ts` two ways —
+the `refund.created`/`refund.processed` webhooks, and the fifteen-minute sweep that lists
+Razorpay's refunds — and the `refunds` table is keyed by Razorpay's id so both paths write
+it once. An order is undone (entitlements revoked, pass revoked if nothing is left,
+registration cancelled) only when what has come back reaches the fest's share; a partial
+refund is recorded on `orders.refunded_paise` and audited, and revokes nothing.
 
 **Paid entries.** An event with a fee in `api/src/data/fees.ts` cannot be settled in one
 request, because the money arrives by webhook. The entry is written `pending` with a

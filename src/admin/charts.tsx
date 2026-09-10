@@ -660,7 +660,12 @@ export function Payments({ payments }: { payments: AdminStats['payments'] }) {
         <div className="flex gap-6 text-[0.8rem]">
           <span><strong className="num">{payments.paid}</strong> <span className="ink-3">paid</span></span>
           <span><strong className="num">{payments.failed}</strong> <span className="ink-3">failed</span></span>
-          <span><strong className="num">{payments.refunded}</strong> <span className="ink-3">refunded</span></span>
+          <span>
+            <strong className="num">{payments.refunded}</strong> <span className="ink-3">refunded</span>
+            {payments.refundedPaise > 0 && (
+              <span className="ink-3"> · {inr(payments.refundedPaise)} returned</span>
+            )}
+          </span>
         </div>
       </div>
 

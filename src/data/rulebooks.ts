@@ -98,9 +98,9 @@ export const eventDetail: Record<string, EventDetail> = {
   },
   'Battle of Bands': {
     rules: [
-      'Online screening first: send a performance video of no more than 5 minutes. Studio, stage or compiled — your call.',
-      'Submissions close 2 October 2026. The best bands come to AIIMS Rishikesh for the live final.',
-      'The ₹2000 band fee is paid only after you clear the screening round.',
+      'Screening round first, on the Google Form: a link to a performance video of no more than 5 minutes. Studio, stage or compiled — your call.',
+      'Submissions close 2 October 2026. The bands that clear it come to AIIMS Rishikesh for the live final.',
+      'Nothing is paid at the screening stage. The ₹2000 band fee is due only after you clear it, and the crew shares the next steps with the shortlisted bands.',
       'Bands of 4–12 members; a maximum of 9 on stage at once.',
       'Any song, any language. 15 minutes on stage, soundcheck included.',
       'Mics, cables, drum kit and keyboard provided. No other instruments.',
@@ -157,11 +157,11 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'FIBA rules. Men’s and women’s categories, in both 5v5 and 3v3.',
       '5v5 squads of up to 10; 3v3 squads of up to 4.',
-      'Only UG students and interns may play.',
+      'Contact the organisers before registering.',
       'Deposit your college ID at the table before every match.',
       'Fail to field a full side within 15 minutes of the scheduled start and the opponent gets a walkover.',
     ],
-    contacts: [C('Pardhuman', '8699305467'), C('Yashwardhan', '9983082339')],
+    contacts: [C('Pardhuman', '8699305467'), C('Yashwardhan', '9983082339'), C('Pratham', '7208504264')],
   },
   Volleyball: {
     rules: [
@@ -176,7 +176,7 @@ export const eventDetail: Record<string, EventDetail> = {
   Cricket: {
     rules: [
       'Knockout format, 20 overs a side. Rain shortens overs at the organisers’ call.',
-      'Squad of 15 (11 + 4 substitutes). The playing XI cannot change once submitted.',
+      'Squad of 15 (11 + 4 substitutes). The playing XI cannot change once submitted; the impact player rule applies, as in the IPL.',
       'No player may turn out for two teams — both are disqualified if they do.',
       'ICC rules apply (LBW excepted). D/L in case of rain.',
       'Field for fewer than 8 overs and you cannot bat or bowl for the rest of the match.',
@@ -212,7 +212,7 @@ export const eventDetail: Record<string, EventDetail> = {
       'Kabaddi shoes are provided during play and must be returned, or a fine applies.',
       'Insufficient registration can cancel the event; fees are refunded if it does.',
     ],
-    contacts: [C('Vijendra', '7597969589'), C('Anjali', '9813073792'), C('Umang', '6207436342')],
+    contacts: [C('Vijendra', '6377726657'), C('Anjali', '9813073792'), C('Umang', '6207436342')],
   },
   'Table Tennis': {
     rules: [
@@ -283,26 +283,6 @@ export const eventDetail: Record<string, EventDetail> = {
 
   /* ---------------- Littmania ---------------- */
 
-  'Biocrux Jr': {
-    rules: [
-      'All pre- and para-clinical subjects. Open to MBBS 2023, 2024 and 2025 batches.',
-      'Online prelims on Google Forms, 19 September 2026: 30 questions in 15 minutes.',
-      'Top 20 teams reach the finale at AIIMS Rishikesh during PYREXIA.',
-      'Teams of up to 3. Lone wolves welcome. Inter-college teams permitted.',
-      'One entry per team, through the team leader. Join the quiz WhatsApp group — the link follows your submission.',
-    ],
-    contacts: [C('Raheel Barbarua', '7086042407'), C('Jatin Gupta', '9571602438'), C('Priyansh Aggarwal', '9855545921')],
-  },
-  'Biocrux Sr': {
-    rules: [
-      'All relevant clinical knowledge. Open from the MBBS 2025 batch to interns.',
-      'Online prelims on Google Forms, 26 September 2026: 30 questions in 15 minutes.',
-      'Top 20 teams reach the finale at AIIMS Rishikesh during PYREXIA.',
-      'Teams of up to 3, maximum one intern per team. Lone wolves welcome.',
-      'One entry per team, through the team leader. Join the quiz WhatsApp group — the link follows your submission.',
-    ],
-    contacts: [C('Raheel Barbarua', '7086042407'), C('Jatin Gupta', '9571602438'), C('Priyansh Aggarwal', '9855545921')],
-  },
   Cognizzia: {
     rules: [
       'Open to all. Teams of 2 or 3; lone wolves welcome.',

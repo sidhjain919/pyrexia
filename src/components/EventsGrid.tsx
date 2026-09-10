@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Search, ArrowUpRight, BookOpen, ExternalLink, Hourglass, MoveHorizontal, Sparkles, Ticket } from 'lucide-react'
 import { territories, TOTAL_EVENTS } from '../data/events'
 import { useOpenings } from '../registration/useOpenings'
+import { territoryCta, useEntitlement } from '../registration/useEntitlement'
 import { asset } from '../lib/asset'
 import { useNavTo } from './routing'
 import { territoryPhoto, territoryFocus } from '../data/media'
@@ -25,8 +26,8 @@ type Row = {
   externalForm?: string
   /** This vertical's official rulebook PDF, where one is published. */
   rulebook?: string
-  /** Set on the two verticals that aren't competitions: what the card offers instead. */
-  cta?: { label: string; to: string }
+  /** The vertical itself, for the two that aren't competitions and offer something other than a form. */
+  territoryRef: (typeof territories)[number]
 }
 
 /**
@@ -52,13 +53,14 @@ const rows: Row[] = territories.flatMap((t) =>
     ownPhoto: !!photoFor(e.name),
     externalForm: e.form,
     rulebook: t.rulebook,
-    cta: t.cta,
+    territoryRef: t,
   })),
 )
 
 export default function EventsGrid() {
   const { openRegister } = useRegistration()
   const { isOpen } = useOpenings()
+  const { state: entitlement } = useEntitlement()
   const navTo = useNavTo()
   const reduce = useReducedMotion()
   const [query, setQuery] = useState('')
@@ -137,7 +139,9 @@ export default function EventsGrid() {
           className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <AnimatePresence mode="popLayout">
-            {filtered.map((r, i) => (
+            {filtered.map((r, i) => {
+              const cta = territoryCta(r.territoryRef, entitlement)
+              return (
               <motion.article
                 key={r.terr + r.name}
                 layout
@@ -182,16 +186,16 @@ export default function EventsGrid() {
                         The ceremony and the pro nights are on your pass, so
                         they point at the thing you actually came to find. */}
                     <button
-                      onClick={() => (r.cta ? navTo(r.cta.to) : openRegister(r.name))}
-                      data-cursor={r.cta ? 'LOOK' : isOpen(r.terrId) ? 'REGISTER' : 'SOON'}
+                      onClick={() => (cta ? navTo(cta.to) : openRegister(r.name))}
+                      data-cursor={cta ? 'LOOK' : isOpen(r.terrId, r.name) ? 'REGISTER' : 'SOON'}
                       className="group/btn flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-2.5 text-[0.68rem] font-semibold uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
                     >
-                      {r.cta ? (
+                      {cta ? (
                         <>
                           <Sparkles size={13} />
-                          {r.cta.label}
+                          {cta.label}
                         </>
-                      ) : !isOpen(r.terrId) ? (
+                      ) : !isOpen(r.terrId, r.name) ? (
                         <>
                           <Hourglass size={13} />
                           Coming Soon
@@ -231,7 +235,8 @@ export default function EventsGrid() {
                   </div>
                 </div>
               </motion.article>
-            ))}
+              )
+            })}
           </AnimatePresence>
         </motion.div>
       </div>

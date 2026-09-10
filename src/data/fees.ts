@@ -182,23 +182,9 @@ export const EVENT_FEES: Record<string, EventFee> = {
   Powerlifting: one('person', 150),
 
   /* ---------------- Chronos ---------------- */
-  // Mr. & Ms. PYREXIA carries no entry fee; Basic Registration covers it.
+  'Mr. & Ms. PYREXIA': one('person', 400),
 
   /* ---------------- Littmania ---------------- */
-  'Biocrux Jr': {
-    unit: 'team',
-    variants: [
-      { id: 'team', label: 'Team (up to 3)', amount: 250 },
-      { id: 'lone-wolf', label: 'Lone wolf', amount: 150 },
-    ],
-  },
-  'Biocrux Sr': {
-    unit: 'team',
-    variants: [
-      { id: 'team', label: 'Team (up to 3)', amount: 300 },
-      { id: 'lone-wolf', label: 'Lone wolf', amount: 150 },
-    ],
-  },
   Cognizzia: {
     unit: 'team',
     variants: [
