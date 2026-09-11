@@ -24,6 +24,15 @@ const GRACE_MINUTES = 30
 const EXPIRE_AFTER_HOURS = 24
 /** Bounded per run: a cron tick should finish quickly and predictably. */
 const BATCH = 50
+/**
+ * How long a failed or expired order stays worth a second look.
+ *
+ * Razorpay lets a student retry on the same order after a failure, and the
+ * retry's capture webhook is as losable as any other. An order we wrote off
+ * as failed can therefore be sitting on real money. Fourteen days covers every
+ * retry anyone is going to make; after that the order is genuinely dead.
+ */
+const RECHECK_DAYS = 14
 
 export async function reconcileOrders(env: Env): Promise<void> {
   // Before the Razorpay secret is configured there is nothing to reconcile
@@ -40,30 +49,43 @@ export async function reconcileOrders(env: Env): Promise<void> {
     webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
   }
 
+  // Two populations, one question: has Razorpay captured money on this order
+  // that we never heard about? `created` orders past the grace period are the
+  // ordinary case. `failed` and `expired` ones are the retries — an order our
+  // webhook marked failed at 10:05 on which the student paid at 10:06.
   const { results: stale } = await env.DB.prepare(
-    `SELECT id, registration_id, razorpay_order_id, amount_paise, created_at
+    `SELECT id, registration_id, razorpay_order_id, amount_paise, status, created_at
        FROM orders
-      WHERE status = 'created'
-        AND razorpay_order_id IS NOT NULL
-        AND created_at < datetime('now', ?)
+      WHERE razorpay_order_id IS NOT NULL
+        AND (
+          (status = 'created' AND created_at < datetime('now', ?))
+          OR (status IN ('failed', 'expired') AND created_at > datetime('now', ?))
+        )
       ORDER BY created_at
       LIMIT ?`,
   )
-    .bind(`-${GRACE_MINUTES} minutes`, BATCH)
+    .bind(`-${GRACE_MINUTES} minutes`, `-${RECHECK_DAYS} days`, BATCH)
     .all<{
       id: string
       registration_id: string
       razorpay_order_id: string
       amount_paise: number
+      status: string
       created_at: string
     }>()
 
   for (const order of stale) {
     try {
       const payments = await fetchOrderPayments(cfg, order.razorpay_order_id)
-      const captured = payments.find((p) => p.status === 'captured')
+      const captured = payments.find((p) => p.status === 'captured' || p.status === 'refunded')
 
       if (captured) {
+        // Captured and then refunded at the dashboard: nothing to grant. The
+        // refund sweep books it against this order; settling it here would
+        // issue a pass and send a confirmation to somebody who has their
+        // money back.
+        if (captured.status === 'refunded' || (captured.amount_refunded ?? 0) > 0) continue
+
         if (captured.amount !== order.amount_paise) {
           // Never grant on a mismatch: surface it for a human instead.
           await audit.record(env, {
@@ -82,6 +104,9 @@ export async function reconcileOrders(env: Env): Promise<void> {
         await settle(env, order, captured)
         continue
       }
+
+      // A failed or expired order with no capture is what it says it is.
+      if (order.status !== 'created') continue
 
       // Nothing captured and it has been sitting long enough that nobody is
       // still at the checkout. Close it so the student can start again cleanly.
@@ -233,7 +258,7 @@ export async function reconcileRefunds(env: Env): Promise<void> {
 
   for (const refund of refunds) {
     try {
-      const outcome = await applyRefund(env, refund, 'sweep')
+      const outcome = await applyRefund(env, refund, 'sweep', cfg)
       if (outcome !== 'seen') console.log('refund sweep', refund.id, outcome)
     } catch (err) {
       console.error('refund sweep failed for', refund.id, err)

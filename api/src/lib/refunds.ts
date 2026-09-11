@@ -17,7 +17,7 @@
 
 import type { Env } from '../types.ts'
 import * as audit from './audit.ts'
-import type { RazorpayRefund } from './razorpay.ts'
+import { fetchPayment, type RazorpayConfig, type RazorpayRefund } from './razorpay.ts'
 
 export type RefundOutcome =
   /** Already in the ledger: nothing changed. */
@@ -26,30 +26,72 @@ export type RefundOutcome =
   | 'partial'
   /** The order is undone and what it bought is revoked. */
   | 'revoked'
-  /** No order carries this payment id. Logged; nothing to undo. */
+  /**
+   * The payment was on an order we had already marked failed or expired, so
+   * nothing was ever granted and there is nothing to revoke: the refund is
+   * booked against that order so the money is accounted for.
+   */
+  | 'written_off'
+  /** No order carries this payment. Audited; nothing to undo. */
   | 'unmatched'
+
+type OrderRow = {
+  id: string
+  registration_id: string
+  amount_paise: number
+  convenience_paise: number
+  refunded_paise: number
+  status: string
+}
+
+const ORDER_COLS = 'id, registration_id, amount_paise, convenience_paise, refunded_paise, status'
 
 export async function applyRefund(
   env: Env,
   refund: RazorpayRefund,
   seenVia: 'webhook' | 'sweep',
+  /** Needed only to look a stray payment up at Razorpay; the webhook path can pass it too. */
+  cfg?: RazorpayConfig,
 ): Promise<RefundOutcome> {
-  const order = await env.DB.prepare(
-    `SELECT id, registration_id, amount_paise, convenience_paise, refunded_paise, status
-       FROM orders WHERE razorpay_payment_id = ?`,
-  )
+  let order = await env.DB.prepare(`SELECT ${ORDER_COLS} FROM orders WHERE razorpay_payment_id = ?`)
     .bind(refund.payment_id)
-    .first<{
-      id: string
-      registration_id: string
-      amount_paise: number
-      convenience_paise: number
-      refunded_paise: number
-      status: string
-    }>()
+    .first<OrderRow>()
+
+  /*
+   * No order carries this payment id. The first live refund was exactly this:
+   * a student's third attempt on an order our webhook had already marked
+   * failed captured, the capture webhook never arrived, and the committee
+   * refunded by hand. The payment still belongs to one of our orders — Razorpay
+   * knows which — so ask, and book the refund there.
+   */
+  let writtenOff = false
+  if (!order && cfg) {
+    try {
+      const payment = await fetchPayment(cfg, refund.payment_id)
+      const byOrder = await env.DB.prepare(
+        `SELECT ${ORDER_COLS} FROM orders WHERE razorpay_order_id = ?`,
+      )
+        .bind(payment.order_id)
+        .first<OrderRow>()
+      // Only an order that never granted anything can be written off here. A
+      // paid order with a different payment id is a puzzle for a human.
+      if (byOrder && byOrder.status !== 'paid') {
+        order = byOrder
+        writtenOff = true
+      }
+    } catch (err) {
+      console.error('could not look up payment for refund', refund.id, err)
+    }
+  }
 
   if (!order) {
     console.warn('refund for a payment we never recorded', refund.id, refund.payment_id)
+    await audit.record(env, {
+      action: 'refund.create',
+      entity: 'refund',
+      entityId: refund.id,
+      after: { paymentId: refund.payment_id, amountPaise: refund.amount, seenVia, outcome: 'unmatched' },
+    })
     return 'unmatched'
   }
 
@@ -74,13 +116,29 @@ export async function applyRefund(
     entityId: order.id,
     after: {
       refundId: refund.id,
+      paymentId: refund.payment_id,
       amountPaise: refund.amount,
       refundedPaise,
       owedPaise,
       seenVia,
-      outcome: undone ? 'revoked' : 'partial',
+      outcome: writtenOff ? 'written_off' : undone ? 'revoked' : 'partial',
     },
   })
+
+  if (writtenOff) {
+    // Nothing was granted on this order, so there is nothing to revoke: it is
+    // marked refunded, pinned to the payment that was actually taken, and the
+    // person's registration stays exactly where it was — pending.
+    await env.DB.prepare(
+      `UPDATE orders
+          SET status = 'refunded', razorpay_payment_id = ?, refunded_paise = ?,
+              updated_at = datetime('now')
+        WHERE id = ?`,
+    )
+      .bind(refund.payment_id, refundedPaise, order.id)
+      .run()
+    return 'written_off'
+  }
 
   if (!undone) {
     await env.DB.prepare(

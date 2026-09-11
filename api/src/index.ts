@@ -132,10 +132,11 @@ export default {
    * telling us: Razorpay knows the payment succeeded even when we never heard.
    */
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(reconcileOrders(env))
-    // And the other direction: money that went back out, which the dashboard
-    // can do without the webhook ever reaching us.
-    ctx.waitUntil(reconcileRefunds(env))
+    // Orders first, then refunds, in that order and never side by side: a
+    // failed order that turns out to be captured *and* refunded must be seen
+    // by the order sweep (which declines to grant) before the refund sweep
+    // books it, or the two race and one of them issues a pass.
+    ctx.waitUntil(reconcileOrders(env).then(() => reconcileRefunds(env)))
     // The privacy page promises identity documents are deleted within thirty
     // days of the fest. This is what makes that sentence true.
     ctx.waitUntil(purgeExpiredDocuments(env))

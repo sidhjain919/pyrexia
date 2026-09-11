@@ -195,6 +195,8 @@ export type RazorpayPayment = {
   order_id: string
   status: 'created' | 'authorized' | 'captured' | 'refunded' | 'failed'
   amount: Paise
+  /** How much of it has been refunded so far. Present on captured payments. */
+  amount_refunded?: Paise
   method?: string
   /** Present once captured. This is how we learn our real effective rate. */
   fee?: Paise

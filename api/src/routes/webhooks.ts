@@ -21,7 +21,7 @@ import { readRaw } from '../lib/http.ts'
 import { newId } from '../lib/ids.ts'
 import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
-import { isHandledEvent, verifyWebhookSignature, type WebhookEvent } from '../lib/razorpay.ts'
+import { isHandledEvent, razorpayConfig, verifyWebhookSignature, type WebhookEvent } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
 
 export const webhooks = new Hono<{ Bindings: Env }>()
@@ -63,7 +63,7 @@ webhooks.post('/razorpay', async (c) => {
       case 'refund.created':
       case 'refund.processed':
         if (event.payload.refund?.entity) {
-          await applyRefund(c.env, event.payload.refund.entity, 'webhook')
+          await applyRefund(c.env, event.payload.refund.entity, 'webhook', razorpayConfig(c.env))
         }
         break
     }
