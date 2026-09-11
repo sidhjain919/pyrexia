@@ -65,9 +65,20 @@ export async function applyRefund(
    * knows which — so ask, and book the refund there.
    */
   let writtenOff = false
+  /** What Razorpay knows about the payment, kept for the audit row if nothing matches. */
+  let stray: Record<string, unknown> | null = null
   if (!order && cfg) {
     try {
       const payment = await fetchPayment(cfg, refund.payment_id)
+      stray = {
+        razorpayOrderId: payment.order_id ?? null,
+        paymentStatus: payment.status,
+        amountPaise: payment.amount,
+        amountRefundedPaise: payment.amount_refunded ?? null,
+        email: payment.email ?? null,
+        contact: payment.contact ?? null,
+        paidAtUnix: payment.created_at ?? null,
+      }
       const byOrder = await env.DB.prepare(
         `SELECT ${ORDER_COLS} FROM orders WHERE razorpay_order_id = ?`,
       )
@@ -90,7 +101,9 @@ export async function applyRefund(
       action: 'refund.create',
       entity: 'refund',
       entityId: refund.id,
-      after: { paymentId: refund.payment_id, amountPaise: refund.amount, seenVia, outcome: 'unmatched' },
+      // Everything a human needs to find this money by hand: the order
+      // Razorpay attached it to and who paid, since none of ours claims it.
+      after: { paymentId: refund.payment_id, amountPaise: refund.amount, seenVia, outcome: 'unmatched', payment: stray },
     })
     return 'unmatched'
   }

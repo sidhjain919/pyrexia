@@ -333,7 +333,9 @@ admin.get('/admin/registrations', async (c) => {
             (SELECT count(*) FROM event_entries ev
               WHERE ev.registration_id = r.id AND ev.status = 'confirmed') AS entries,
             (SELECT coalesce(sum(o.amount_paise), 0) FROM orders o
-              WHERE o.registration_id = r.id AND o.status = 'paid')        AS paid_paise
+              WHERE o.registration_id = r.id AND o.status = 'paid')        AS paid_paise,
+            (SELECT count(*) FROM documents d
+              WHERE d.registration_id = r.id AND d.purged_at IS NULL)      AS documents
        FROM registrations r JOIN registration_tier t ON t.registration_id = r.id
        ${clause}
       ORDER BY r.created_at DESC
@@ -370,6 +372,9 @@ admin.get('/admin/registrations', async (c) => {
       registered: !!r.registered,
       entries: r.entries,
       paidPaise: r.paid_paise,
+      // How many identity files they uploaded, so the table only offers to
+      // show IDs where there are some to show.
+      documents: r.documents,
       createdAt: r.created_at,
     })),
   })
@@ -387,7 +392,7 @@ admin.get('/admin/registrations/:id', async (c) => {
 
   if (!person) throw new ApiError('not_found', 'No such registration.')
 
-  const [orders, entitlements, entries, scans] = await Promise.all([
+  const [orders, entitlements, entries, scans, documents] = await Promise.all([
     c.env.DB.prepare(
       `SELECT id, amount_paise, status, method, fee_paise, tax_paise,
               razorpay_payment_id, created_at, paid_at
@@ -406,6 +411,12 @@ admin.get('/admin/registrations/:id', async (c) => {
          JOIN passes p ON p.id = s.pass_id
         WHERE p.registration_id = ? ORDER BY s.synced_at DESC LIMIT 40`,
     ).bind(id).all<Record<string, unknown>>(),
+    // What they uploaded, by reference only. The bytes are fetched one file at
+    // a time through /admin/documents/:id, which decrypts and logs the view.
+    c.env.DB.prepare(
+      `SELECT id, kind, filename, mime, size_bytes, uploaded_at
+         FROM documents WHERE registration_id = ? AND purged_at IS NULL ORDER BY kind`,
+    ).bind(id).all<Record<string, unknown>>(),
   ])
 
   // The password hash must never leave the server, not even to an admin.
@@ -417,6 +428,7 @@ admin.get('/admin/registrations/:id', async (c) => {
     entitlements: entitlements.results,
     entries: entries.results,
     scans: scans.results,
+    documents: documents.results,
   })
 })
 

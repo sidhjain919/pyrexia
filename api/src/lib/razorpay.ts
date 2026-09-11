@@ -198,6 +198,11 @@ export type RazorpayPayment = {
   /** How much of it has been refunded so far. Present on captured payments. */
   amount_refunded?: Paise
   method?: string
+  /** Who paid, as Razorpay's checkout recorded it. For finding a payment that matches no order. */
+  email?: string
+  contact?: string
+  /** Unix seconds. */
+  created_at?: number
   /** Present once captured. This is how we learn our real effective rate. */
   fee?: Paise
   tax?: Paise

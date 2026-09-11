@@ -120,6 +120,25 @@ export type NoticeInput = {
   expiresAt?: string | null
 }
 
+/** One uploaded identity document, by reference. The bytes come from `fetchAdminDocument`. */
+export type AdminDocument = {
+  id: string
+  kind: 'aadhaar' | 'student_id' | 'photo'
+  filename: string | null
+  mime: string | null
+  size_bytes: number | null
+  uploaded_at: string
+}
+
+export type AdminRegistrationDetail = {
+  registration: Record<string, unknown>
+  orders: Record<string, unknown>[]
+  entitlements: Record<string, unknown>[]
+  entries: Record<string, unknown>[]
+  scans: Record<string, unknown>[]
+  documents: AdminDocument[]
+}
+
 export type AdminRow = {
   id: string
   publicCode: string
@@ -136,6 +155,8 @@ export type AdminRow = {
   registered: boolean
   entries: number
   paidPaise: number
+  /** Identity files uploaded and not yet purged. */
+  documents: number
   createdAt: string
 }
 
@@ -672,7 +693,7 @@ export const api = {
   },
 
   adminRegistration: (id: string) =>
-    request<Record<string, unknown>>(`/api/admin/registrations/${id}`, { auth: true }),
+    request<AdminRegistrationDetail>(`/api/admin/registrations/${id}`, { auth: true }),
 
   adminFixEmail: (id: string, email: string) =>
     request<{ ok: boolean; email: string }>(`/api/admin/registrations/${id}/email`, {
@@ -776,6 +797,29 @@ export async function waitForConfirmation(
  * as a blob. The object URL is revoked straight after; without that, every
  * download in a long admin session stays in memory until the tab closes.
  */
+/**
+ * One identity document, decrypted server-side, as an object URL to show inline.
+ *
+ * Every call is logged against the admin who made it (the server does that),
+ * and the URL is revoked by the caller when the viewer closes: the bytes live
+ * in the tab for as long as somebody is looking and not a moment longer.
+ */
+export async function fetchAdminDocument(id: string): Promise<{ url: string; mime: string }> {
+  const token = getSession()
+  const res = await fetch(`${BASE}/api/admin/documents/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status === 403 ? 'You do not have access to this.' : 'That file could not be opened.',
+      res.status === 403 ? 'forbidden' : 'internal',
+      res.status,
+    )
+  }
+  const blob = await res.blob()
+  return { url: URL.createObjectURL(blob), mime: res.headers.get('Content-Type') ?? blob.type }
+}
+
 export async function downloadFile(path: string, filename: string): Promise<void> {
   const token = getSession()
   const res = await fetch(`${BASE}${path}`, {

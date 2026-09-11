@@ -27,6 +27,7 @@ import {
 } from '../admin/charts'
 import NoticeComposer from '../admin/NoticeComposer'
 import OpeningsBoard from '../admin/OpeningsBoard'
+import IdViewer from '../admin/IdViewer'
 
 /**
  * The admin dashboard: the ship's instrument panel.
@@ -73,6 +74,8 @@ export default function Admin() {
 
   const [busyExport, setBusyExport] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  /** Whose identity documents are open in the viewer, if anyone's. */
+  const [viewing, setViewing] = useState<AdminRow | null>(null)
 
   const loadStats = useCallback(async () => {
     setRefreshing(true)
@@ -362,6 +365,7 @@ export default function Admin() {
           <h2 className="text-[1.15rem] font-semibold">People</h2>
           <p className="ink-3 mt-1 text-[0.82rem]">
             Everyone with an account, newest first. Search by name, email, mobile, college or registration number.
+            “View IDs” opens what they uploaded; every view is logged against your name.
           </p>
 
           <div className="relative mt-4">
@@ -431,11 +435,18 @@ export default function Admin() {
                       {row.paidPaise > 0 ? inr(row.paidPaise) : <span className="ink-3">—</span>}
                     </td>
                     <td className="text-right">
-                      {row.registered && (
-                        <button onClick={() => void resend(row)} className="ghost !py-1 !text-[0.7rem]">
-                          Resend pass
-                        </button>
-                      )}
+                      <div className="inline-flex flex-wrap justify-end gap-1.5">
+                        {row.documents > 0 && (
+                          <button onClick={() => setViewing(row)} className="ghost !py-1 !text-[0.7rem]">
+                            View IDs ({row.documents})
+                          </button>
+                        )}
+                        {row.registered && (
+                          <button onClick={() => void resend(row)} className="ghost !py-1 !text-[0.7rem]">
+                            Resend pass
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -453,6 +464,8 @@ export default function Admin() {
           )}
         </div>
       </div>
+
+      {viewing && <IdViewer row={viewing} onClose={() => setViewing(null)} />}
     </Shell>
   )
 }
