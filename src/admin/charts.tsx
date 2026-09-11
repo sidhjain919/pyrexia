@@ -666,6 +666,14 @@ export function Payments({ payments }: { payments: AdminStats['payments'] }) {
               <span className="ink-3"> · {inr(payments.refundedPaise)} returned</span>
             )}
           </span>
+          {payments.unmatchedRefunds > 0 && (
+            <span
+              title="Razorpay reports these refunds on payments that were never made through the site — a payment link, a QR, or a dashboard collect. There is no registration to undo, so they are not counted above."
+            >
+              <strong className="num">{payments.unmatchedRefunds}</strong>{' '}
+              <span className="ink-3">refunded outside the site</span>
+            </span>
+          )}
         </div>
       </div>
 

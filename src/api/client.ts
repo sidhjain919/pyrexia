@@ -71,6 +71,8 @@ export type AdminStats = {
     refunded: number
     /** Money that went back out, across every order. Paise. */
     refundedPaise: number
+    /** Refunds on payments that never came through the site (a payment link, a QR). */
+    unmatchedRefunds: number
     stuck: number
     methods: { method: string; n: number }[]
   }

@@ -103,6 +103,11 @@ admin.get('/admin/stats', async (c) => {
        (SELECT count(*) FROM orders WHERE status = 'failed')                       AS failed_orders,
        (SELECT count(*) FROM orders WHERE status = 'refunded')                     AS refunded_orders,
        (SELECT coalesce(sum(refunded_paise), 0) FROM orders)                       AS refunded_paise,
+       -- Refunds Razorpay reports on payments that never came through the site
+       -- (a payment link, a QR, a dashboard collect). Nothing to revoke, but
+       -- the committee should see the money went back.
+       (SELECT count(DISTINCT entity_id) FROM audit_log
+          WHERE action = 'refund.create' AND after_json LIKE '%"outcome":"unmatched"%') AS unmatched_refunds,
        (SELECT coalesce(sum(amount_paise), 0) FROM orders WHERE status = 'paid')   AS collected_paise,
        (SELECT coalesce(sum(amount_paise), 0) FROM orders
           WHERE status = 'paid' AND date(paid_at, ${IST}) = ${TODAY})              AS collected_today,
@@ -269,6 +274,7 @@ admin.get('/admin/stats', async (c) => {
       failed: n('failed_orders'),
       refunded: n('refunded_orders'),
       refundedPaise: n('refunded_paise'),
+      unmatchedRefunds: n('unmatched_refunds'),
       stuck: n('stuck'),
       methods,
     },

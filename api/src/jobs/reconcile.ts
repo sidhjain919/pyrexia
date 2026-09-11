@@ -15,7 +15,7 @@ import type { Env } from '../types.ts'
 import { newId } from '../lib/ids.ts'
 import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
-import { fetchOrderPayments, fetchRefunds } from '../lib/razorpay.ts'
+import { RazorpayError, fetchOrderPayments, fetchRefunds } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
 
 /** Give the webhook a fair chance before going looking. */
@@ -59,7 +59,8 @@ export async function reconcileOrders(env: Env): Promise<void> {
       WHERE razorpay_order_id IS NOT NULL
         AND (
           (status = 'created' AND created_at < datetime('now', ?))
-          OR (status IN ('failed', 'expired') AND created_at > datetime('now', ?))
+          OR (status IN ('failed', 'expired') AND created_at > datetime('now', ?)
+              AND (failure_reason IS NULL OR failure_reason NOT LIKE 'razorpay % on recheck'))
         )
       ORDER BY created_at
       LIMIT ?`,
@@ -130,7 +131,18 @@ export async function reconcileOrders(env: Env): Promise<void> {
       }
     } catch (err) {
       // One bad order must not stop the sweep; it will be picked up next tick.
-      console.error('reconcile failed for', order.id, err)
+      // A 4xx on a failed or expired order means Razorpay no longer has it,
+      // which is the same as "no capture": note it and stop asking.
+      const status = err instanceof RazorpayError ? err.status : null
+      console.error('reconcile failed for', order.id, order.status, status, err instanceof Error ? err.message : err)
+      if (order.status !== 'created' && status !== null && status >= 400 && status < 500) {
+        await env.DB.prepare(
+          `UPDATE orders SET failure_reason = COALESCE(failure_reason, ?), updated_at = datetime('now')
+            WHERE id = ?`,
+        )
+          .bind(`razorpay ${status} on recheck`, order.id)
+          .run()
+      }
     }
   }
 }
