@@ -478,8 +478,11 @@ export default function IslandMap() {
                   )}
 
                   {/* Every entry needs a pass first, so the primary CTA sells the pass;
-                      the chips above take you into a specific event's form. */}
-                  {passLabel.action === 'register' ? (
+                      the chips above take you into a specific event's form. Not on
+                      the two panels that aren't competitions: each of those has
+                      exactly one button already, and a second gold button under
+                      "Get your pass" was the same button twice. */}
+                  {active.noRegister ? null : passLabel.action === 'register' ? (
                     <button
                       onClick={openDelegate}
                       data-cursor="REGISTER"

@@ -85,7 +85,7 @@ export const proNights: ProNight[] = [
     artist: {
       name: 'Parmish Verma',
       role: 'Punjabi Superstar · Singer & Actor',
-      tagline: 'Certified banger machine. Zero skips.',
+      tagline: 'Certified banger machine.',
       blurb:
         'He directed Punjab’s biggest music videos, then decided he’d rather be the one on camera — and never looked back. The whole ground knows every word before the beat even drops.',
       known: ['Gaal Ni Kadni', 'Shada', 'Chal Oye', 'Le Chak Main Aa Gaya'],
