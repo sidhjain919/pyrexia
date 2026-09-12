@@ -17,6 +17,7 @@ import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
 import { RazorpayError, fetchOrderPayments, fetchRefunds } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
+import { requestSheetSyncForEntry } from './sheets.ts'
 
 /** Give the webhook a fair chance before going looking. */
 const GRACE_MINUTES = 30
@@ -54,7 +55,8 @@ export async function reconcileOrders(env: Env): Promise<void> {
   // ordinary case. `failed` and `expired` ones are the retries — an order our
   // webhook marked failed at 10:05 on which the student paid at 10:06.
   const { results: stale } = await env.DB.prepare(
-    `SELECT id, registration_id, razorpay_order_id, amount_paise, status, created_at
+    `SELECT id, registration_id, razorpay_order_id, amount_paise, status, created_at,
+            kind, event_entry_id
        FROM orders
       WHERE razorpay_order_id IS NOT NULL
         AND (
@@ -73,6 +75,8 @@ export async function reconcileOrders(env: Env): Promise<void> {
       amount_paise: number
       status: string
       created_at: string
+      kind: string
+      event_entry_id: string | null
     }>()
 
   for (const order of stale) {
@@ -155,7 +159,7 @@ export async function reconcileOrders(env: Env): Promise<void> {
  */
 async function settle(
   env: Env,
-  order: { id: string; registration_id: string },
+  order: { id: string; registration_id: string; kind: string; event_entry_id: string | null },
   payment: { id: string; amount: number; method?: string; fee?: number; tax?: number },
 ): Promise<void> {
   const { results: items } = await env.DB.prepare(
@@ -163,6 +167,11 @@ async function settle(
   )
     .bind(order.id)
     .all<{ product_id: string }>()
+
+  // An entry order buys a place in one event rather than an entitlement, so
+  // settling it means confirming that entry, exactly as the webhook does.
+  // Without this the money was recorded and the student was never entered.
+  const isEntry = order.kind === 'event' && !!order.event_entry_id
 
   await env.DB.batch([
     env.DB.prepare(
@@ -188,30 +197,22 @@ async function settle(
          VALUES (?, ?, ?, ?)`,
       ).bind(newId(), order.registration_id, item.product_id, order.id),
     ),
+
+    // OR IGNORE, so a clash with a place already held in the same band can
+    // never roll back the batch and leave captured money unrecorded.
+    ...(isEntry
+      ? [
+          env.DB.prepare(
+            `UPDATE OR IGNORE event_entries SET status = 'confirmed'
+              WHERE id = ? AND status = 'pending'`,
+          ).bind(order.event_entry_id),
+        ]
+      : []),
   ])
 
-  const existingPass = await env.DB.prepare(
-    'SELECT id FROM passes WHERE registration_id = ? AND revoked_at IS NULL',
-  )
-    .bind(order.registration_id)
-    .first<{ id: string }>()
-
-  if (!existingPass) {
-    const tier = await env.DB.prepare(
-      'SELECT tier FROM registration_tier WHERE registration_id = ?',
-    )
-      .bind(order.registration_id)
-      .first<{ tier: number }>()
-
-    const passId = newPassId()
-    await env.DB.prepare(
-      'INSERT INTO passes (id, registration_id, tier_floor, key_id) VALUES (?, ?, ?, ?)',
-    )
-      .bind(passId, order.registration_id, tier?.tier ?? 0, Number(env.PASS_KEY_ID ?? '1'))
-      .run()
-
-    await env.JOBS.send({ kind: 'pass.render_pdf', passId })
-  }
+  // An event entry never issues a pass; the pass came with the registration.
+  if (isEntry) await requestSheetSyncForEntry(env, order.event_entry_id)
+  else await issuePassIfMissing(env, order.registration_id)
 
   await audit.record(env, {
     action: 'order.reconciled',
@@ -230,6 +231,67 @@ async function settle(
     registrationId: order.registration_id,
     orderId: order.id,
   })
+}
+
+async function issuePassIfMissing(env: Env, registrationId: string): Promise<void> {
+  const existingPass = await env.DB.prepare(
+    'SELECT id FROM passes WHERE registration_id = ? AND revoked_at IS NULL',
+  )
+    .bind(registrationId)
+    .first<{ id: string }>()
+  if (existingPass) return
+
+  const tier = await env.DB.prepare(
+    'SELECT tier FROM registration_tier WHERE registration_id = ?',
+  )
+    .bind(registrationId)
+    .first<{ tier: number }>()
+
+  const passId = newPassId()
+  await env.DB.prepare(
+    'INSERT INTO passes (id, registration_id, tier_floor, key_id) VALUES (?, ?, ?, ?)',
+  )
+    .bind(passId, registrationId, tier?.tier ?? 0, Number(env.PASS_KEY_ID ?? '1'))
+    .run()
+
+  await env.JOBS.send({ kind: 'pass.render_pdf', passId })
+}
+
+/**
+ * Entries whose order is paid but which were never confirmed.
+ *
+ * Before `settle` confirmed entries, a capture recovered by the sweep left the
+ * order paid and its entry pending: the student had paid and was not in the
+ * event. The webhook confirms both in one batch, so a paid order with a pending
+ * entry has no other cause; this finds any left over and confirms them.
+ *
+ * OR IGNORE: should the same person already hold a confirmed place in that
+ * band, the unique index keeps the older one and this entry stays pending for
+ * a human to refund, rather than failing the whole statement every sweep.
+ */
+export async function repairUnconfirmedEntries(env: Env): Promise<void> {
+  const { results } = await env.DB.prepare(
+    `UPDATE OR IGNORE event_entries SET status = 'confirmed'
+      WHERE status = 'pending'
+        AND id IN (SELECT event_entry_id FROM orders
+                    WHERE kind = 'event' AND status = 'paid' AND event_entry_id IS NOT NULL)
+      RETURNING id, registration_id, event_name`,
+  ).all<{ id: string; registration_id: string; event_name: string }>()
+
+  for (const entry of results) {
+    await audit.record(env, {
+      action: 'order.reconciled',
+      entity: 'event_entry',
+      entityId: entry.id,
+      after: {
+        outcome: 'entry_confirmed_after_paid_order',
+        registrationId: entry.registration_id,
+        eventName: entry.event_name,
+      },
+    })
+    await requestSheetSyncForEntry(env, entry.id)
+  }
+  if (results.length) console.log('confirmed entries left pending on paid orders', results.length)
 }
 
 /* ------------------------------------------------------------------ *

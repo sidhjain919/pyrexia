@@ -26,7 +26,7 @@ import { ses } from './routes/ses.ts'
 import { webhooks } from './routes/webhooks.ts'
 import { handleJob } from './jobs/mail.ts'
 import { purgeExpiredDocuments } from './jobs/purge.ts'
-import { reconcileOrders, reconcileRefunds } from './jobs/reconcile.ts'
+import { reconcileOrders, reconcileRefunds, repairUnconfirmedEntries } from './jobs/reconcile.ts'
 import { sweepSheets } from './jobs/sheets.ts'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -137,7 +137,11 @@ export default {
     // failed order that turns out to be captured *and* refunded must be seen
     // by the order sweep (which declines to grant) before the refund sweep
     // books it, or the two race and one of them issues a pass.
-    ctx.waitUntil(reconcileOrders(env).then(() => reconcileRefunds(env)))
+    ctx.waitUntil(
+      reconcileOrders(env)
+        .then(() => repairUnconfirmedEntries(env))
+        .then(() => reconcileRefunds(env)),
+    )
     // The per-event Google Sheets: pick up newly made ones, and rewrite any
     // whose rows drifted from the database because a sync job was lost.
     ctx.waitUntil(sweepSheets(env).catch((err) => console.error('sheet sweep failed', err)))
