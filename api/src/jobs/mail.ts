@@ -16,6 +16,7 @@ import { mailer } from '../lib/mail.ts'
 import { OTP_TTL_MINUTES } from '../lib/otp.ts'
 import { createLoginToken } from '../lib/session.ts'
 import * as templates from '../lib/templates.ts'
+import { syncEventSheet } from './sheets.ts'
 
 /** Where the site lives, for links inside emails. */
 function siteUrl(env: Env): string {
@@ -182,6 +183,10 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
       // upgrade bought after the email went out, which a PDF attached in
       // September cannot. A downloadable version can come later for people who
       // want paper, but nothing depends on it.
+      return
+
+    case 'sheets.sync':
+      await syncEventSheet(env, job.eventName)
       return
 
     default: {

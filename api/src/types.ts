@@ -40,6 +40,10 @@ export type Env = {
   /** Only if the mailbox can send as another address; otherwise SMTP_USER is the sender. */
   SMTP_FROM: string
   GOOGLE_CLIENT_ID: string
+  /** The event-sheets Apps Script web app (its /exec URL). Secret, set with wrangler. */
+  SHEETS_SCRIPT_URL: string
+  /** Shared with that script; it refuses any request without it. Secret. */
+  SHEETS_SCRIPT_SECRET: string
   /** Which signing key new passes are minted with. */
   PASS_KEY_ID: string
 
@@ -62,5 +66,6 @@ export type Job =
   | { kind: 'email.reset_password'; registrationId: string; token: string }
   | { kind: 'email.payment_failed'; registrationId: string; orderId: string }
   | { kind: 'pass.render_pdf'; passId: string }
+  | { kind: 'sheets.sync'; eventName: string }
 
 export type Tier = 0 | 1

@@ -18,6 +18,7 @@
 import type { Env } from '../types.ts'
 import * as audit from './audit.ts'
 import { fetchPayment, type RazorpayConfig, type RazorpayRefund } from './razorpay.ts'
+import { requestSheetSyncForEntry } from '../jobs/sheets.ts'
 
 export type RefundOutcome =
   /** Already in the ledger: nothing changed. */
@@ -181,6 +182,11 @@ export async function applyRefund(
           AND status IN ('confirmed', 'pending')`,
     ).bind(order.id),
   ])
+
+  const entry = await env.DB.prepare('SELECT event_entry_id FROM orders WHERE id = ?')
+    .bind(order.id)
+    .first<{ event_entry_id: string | null }>()
+  await requestSheetSyncForEntry(env, entry?.event_entry_id)
 
   // Only kill the pass if nothing is left standing: a refunded Festival Pass
   // upgrade should leave a Basic holder still able to walk in.

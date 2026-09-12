@@ -35,6 +35,7 @@ import { conveniencePaise } from '../lib/pricing.ts'
 import { createOrder, razorpayConfig } from '../lib/razorpay.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import * as audit from '../lib/audit.ts'
+import { requestSheetSync } from '../jobs/sheets.ts'
 
 export const events = new Hono<{ Bindings: Env }>()
 
@@ -316,6 +317,7 @@ events.post('/me/events', async (c) => {
         headCount,
       },
     })
+    await requestSheetSync(c.env, resolved.name)
 
     return c.json(
       { entryId, eventName: resolved.name, participation: asTeam ? 'team' : 'solo', checkout: null },
@@ -461,6 +463,7 @@ events.delete('/me/events/:name', async (c) => {
     entityId: name,
     after: { registrationId: session.registrationId, variant: variant ?? null },
   })
+  await requestSheetSync(c.env, name)
 
   return c.json({ ok: true })
 })

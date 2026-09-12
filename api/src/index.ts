@@ -27,6 +27,7 @@ import { webhooks } from './routes/webhooks.ts'
 import { handleJob } from './jobs/mail.ts'
 import { purgeExpiredDocuments } from './jobs/purge.ts'
 import { reconcileOrders, reconcileRefunds } from './jobs/reconcile.ts'
+import { sweepSheets } from './jobs/sheets.ts'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -137,6 +138,9 @@ export default {
     // by the order sweep (which declines to grant) before the refund sweep
     // books it, or the two race and one of them issues a pass.
     ctx.waitUntil(reconcileOrders(env).then(() => reconcileRefunds(env)))
+    // The per-event Google Sheets: pick up newly made ones, and rewrite any
+    // whose rows drifted from the database because a sync job was lost.
+    ctx.waitUntil(sweepSheets(env).catch((err) => console.error('sheet sweep failed', err)))
     // The privacy page promises identity documents are deleted within thirty
     // days of the fest. This is what makes that sentence true.
     ctx.waitUntil(purgeExpiredDocuments(env))

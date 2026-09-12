@@ -1,12 +1,13 @@
 /**
  * Excel exports.
  *
- * Three workbooks, one per thing the committee asks for:
+ * Four workbooks, one per thing the committee asks for:
  *
  *   /admin/export/registrations   two tabs: every login, then everyone who paid
  *                                 with everything they typed into the form
  *   /admin/export/payments        every payment attempt, whatever became of it
  *   /admin/export/events          every confirmed event entry, plus a per-event count
+ *   /admin/export/event-sheets    one row per event: a link to its live Google Sheet
  *
  * Two things matter more here than for a normal download:
  *
@@ -28,6 +29,9 @@ import { ApiError } from '../lib/http.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import { xlsxResponse, type Cell, type Sheet } from '../lib/xlsx.ts'
 import * as audit from '../lib/audit.ts'
+import { sheetUrl } from '../lib/sheets.ts'
+import { registerableEvents, resolveEvent } from '../data/events.ts'
+import { sweepSheets, toIst } from '../jobs/sheets.ts'
 
 export const exports_ = new Hono<{ Bindings: Env }>()
 
@@ -285,5 +289,68 @@ exports_.get('/admin/export/events', async (c) => {
       ),
     ],
     'events',
+  )
+})
+
+/* ------------------------------------------------------------------ *
+ * Event sheets: where each event's live Google Sheet is
+ * ------------------------------------------------------------------ */
+
+exports_.get('/admin/export/event-sheets', async (c) => {
+  // Look at the Drive folder now, so a sheet made a minute ago already has its
+  // link here, and queue a catch-up for any that are behind. Google being down
+  // must not cost anybody the list, so a failure is logged and the download
+  // goes ahead with what the database already knows.
+  try {
+    await sweepSheets(c.env)
+  } catch (err) {
+    console.error('sheet sweep before export failed', err)
+  }
+
+  const { results: sheets } = await c.env.DB.prepare(
+    'SELECT event_name, spreadsheet_id, synced_at, last_error FROM event_sheets',
+  ).all<{ event_name: string; spreadsheet_id: string; synced_at: string | null; last_error: string | null }>()
+  const byEvent = new Map(sheets.map((s) => [s.event_name, s]))
+
+  const { results: counts } = await c.env.DB.prepare(
+    `SELECT event_name, count(*) AS n FROM event_entries
+      WHERE status = 'confirmed' GROUP BY event_name`,
+  ).all<{ event_name: string; n: number }>()
+  const entries = new Map(counts.map((r) => [r.event_name, r.n]))
+
+  const rows = registerableEvents.map((e) => {
+    const external = resolveEvent(e.name)?.externalForm
+    const sheet = byEvent.get(e.name)
+    if (external) {
+      return [
+        e.name, e.territory.code, { link: external, text: 'Open the crew’s Google Form' }, '', '',
+        'Takes entries on its own Google Form, not on the site',
+      ] as Cell[]
+    }
+    if (!sheet) {
+      return [
+        e.name, e.territory.code, '', entries.get(e.name) ?? 0, '',
+        'No sheet yet: run the setup script again',
+      ] as Cell[]
+    }
+    return [
+      e.name, e.territory.code,
+      { link: sheetUrl(sheet.spreadsheet_id), text: 'Open sheet' },
+      entries.get(e.name) ?? 0,
+      sheet.synced_at ? toIst(sheet.synced_at) : '',
+      sheet.last_error ? `Last write failed: ${sheet.last_error.slice(0, 200)}` : sheet.synced_at ? 'Live' : 'Filling in…',
+    ] as Cell[]
+  })
+
+  return workbook(
+    [
+      tab(
+        'Event Sheets',
+        'One live Google Sheet per event',
+        ['Event', 'Vertical', 'Sheet', 'Confirmed entries', 'Sheet last changed (IST)', 'Status'],
+        rows,
+      ),
+    ],
+    'event-sheets',
   )
 })

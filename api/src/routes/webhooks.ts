@@ -23,6 +23,7 @@ import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
 import { isHandledEvent, razorpayConfig, verifyWebhookSignature, type WebhookEvent } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
+import { requestSheetSyncForEntry } from '../jobs/sheets.ts'
 
 export const webhooks = new Hono<{ Bindings: Env }>()
 
@@ -195,6 +196,7 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
 
   // An event entry never issues a pass; the pass came with the registration.
   if (order.kind !== 'event') await issuePassIfNeeded(env, order.registration_id)
+  else await requestSheetSyncForEntry(env, order.event_entry_id)
 
   await audit.record(env, {
     action: 'order.paid',

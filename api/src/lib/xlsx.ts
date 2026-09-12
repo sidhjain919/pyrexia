@@ -17,7 +17,12 @@
  * optional in the spec and omitting them is what keeps this auditable.
  */
 
-export type Cell = string | number | null | undefined
+/**
+ * `{ link, text }` is a clickable link. It is written as a HYPERLINK formula,
+ * the one formula this file ever emits, and only ever from a URL the server
+ * built itself: never pass user input as `link`.
+ */
+export type Cell = string | number | null | undefined | { link: string; text: string }
 
 const enc = new TextEncoder()
 
@@ -73,6 +78,13 @@ function cellXml(col: number, rowNum: number, value: Cell): string {
   if (value === null || value === undefined || value === '') return `<c r="${ref}"/>`
   if (typeof value === 'number' && Number.isFinite(value)) {
     return `<c r="${ref}"><v>${value}</v></c>`
+  }
+  if (typeof value === 'object') {
+    // Quotes are doubled inside a formula string, then the whole thing is
+    // XML-escaped like any other text.
+    const q = (s: string) => `"${s.replace(/"/g, '""')}"`
+    const formula = `HYPERLINK(${q(value.link)},${q(value.text)})`
+    return `<c r="${ref}" t="str"><f>${xmlEscape(formula)}</f><v>${xmlEscape(value.text)}</v></c>`
   }
   return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(String(value))}</t></is></c>`
 }

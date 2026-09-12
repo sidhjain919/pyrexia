@@ -105,7 +105,6 @@ SES_TOPIC_ARN = "arn:aws:sns:ap-south-1:895757147303:pyrexia-email-events"
 # What keeps it useful is the origin allowlist in the Google console, not
 # secrecy, and the audience check when we verify the token.
 GOOGLE_CLIENT_ID = "422997955520-i6d1963hfip9gs9enp4lbf70onnfi754.apps.googleusercontent.com"
-
 # Secrets set with `wrangler secret put`:
 #   RAZORPAY_KEY_ID
 #   RAZORPAY_KEY_SECRET
@@ -114,6 +113,9 @@ GOOGLE_CLIENT_ID = "422997955520-i6d1963hfip9gs9enp4lbf70onnfi754.apps.googleuse
 #   SESSION_SECRET
 #   DOC_ENCRYPTION_KEY      — envelope key for identity documents at rest
 #   BREVO_API_KEY / RESEND_API_KEY / ZEPTOMAIL_TOKEN / MAILGUN_API_KEY
+#   SHEETS_SCRIPT_URL       — the event-sheets Apps Script web app (/exec URL)
+#   SHEETS_SCRIPT_SECRET    — shared with that script (see scripts/event-sheets.mjs);
+#                             with either unset, the per-event sheets are off
 #
 # ZeptoMail also wants ZEPTOMAIL_REGION ("in" for the India data centre, the
 # default). Mailgun wants MAILGUN_DOMAIN (the verified sending domain) and

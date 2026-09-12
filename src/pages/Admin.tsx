@@ -331,9 +331,10 @@ export default function Admin() {
         <div className="mt-10">
           <h2 className="text-[1.15rem] font-semibold">Downloads</h2>
           <p className="ink-3 mt-1 text-[0.82rem]">
-            Three Excel workbooks. Registrations has two tabs: every login, then everyone who paid with
+            Four Excel workbooks. Registrations has two tabs: every login, then everyone who paid with
             what they entered on the form. Each sheet is stamped with the time it was made, so a list
-            printed this morning is not mistaken for this afternoon’s.
+            printed this morning is not mistaken for this afternoon’s. Event Sheets links to one live
+            Google Sheet per event, which fills in by itself as entries are confirmed.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2.5">
@@ -341,6 +342,7 @@ export default function Admin() {
               ['Registrations', '/api/admin/export/registrations', 'registrations'],
               ['Payments', '/api/admin/export/payments', 'payments'],
               ['Events', '/api/admin/export/events', 'events'],
+              ['Event Sheets', '/api/admin/export/event-sheets', 'event-sheets'],
             ].map(([label, path, file]) => (
               <button
                 key={label}
