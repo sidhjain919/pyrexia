@@ -188,6 +188,7 @@ type SheetRecord = {
   spreadsheet_id: string
   sheet_gid: number
   content_hash: string | null
+  last_error: string | null
 }
 
 /** The `sheets.sync` job. Throws only for failures worth retrying. */
@@ -196,7 +197,8 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
   if (!cfg) return
 
   const record = await env.DB.prepare(
-    'SELECT event_name, spreadsheet_id, sheet_gid, content_hash FROM event_sheets WHERE event_name = ?',
+    `SELECT event_name, spreadsheet_id, sheet_gid, content_hash, last_error
+       FROM event_sheets WHERE event_name = ?`,
   )
     .bind(eventName)
     .first<SheetRecord>()
@@ -212,7 +214,17 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
 
   const grid = buildGrid(eventName, results)
   const hash = await hashGrid(grid)
-  if (hash === record.content_hash) return
+  if (hash === record.content_hash) {
+    // The tab already shows exactly this. An error left on the row came from
+    // a retry whose reply Google lost after an earlier write had landed, so
+    // it no longer describes the sheet.
+    if (record.last_error) {
+      await env.DB.prepare('UPDATE event_sheets SET last_error = NULL WHERE event_name = ? AND content_hash = ?')
+        .bind(eventName, hash)
+        .run()
+    }
+    return
+  }
 
   let applied: boolean
   try {
@@ -289,12 +301,21 @@ export async function discoverSheets(env: Env): Promise<number> {
 export async function sweepSheets(env: Env): Promise<{ found: number; queued: number }> {
   if (!config(env)) return { found: 0, queued: 0 }
 
-  const found = await discoverSheets(env)
+  // Finding sheets asks Google to open every vertical's spreadsheet, which is
+  // slow and now and then loses its reply. That must not stop the catch-up
+  // below, which only needs the places already on record.
+  let found = 0
+  try {
+    found = await discoverSheets(env)
+  } catch (err) {
+    console.error('sheet discovery failed; catching up on known sheets', err)
+  }
 
   const [{ results: records }, { results: entries }] = await Promise.all([
-    env.DB.prepare('SELECT event_name, content_hash FROM event_sheets').all<{
+    env.DB.prepare('SELECT event_name, content_hash, last_error FROM event_sheets').all<{
       event_name: string
       content_hash: string | null
+      last_error: string | null
     }>(),
     env.DB.prepare(`${ENTRY_SQL}${ORDER}`).all<EntryRow>(),
   ])
@@ -309,7 +330,9 @@ export async function sweepSheets(env: Env): Promise<{ found: number; queued: nu
   const stale: string[] = []
   for (const r of records) {
     const hash = await hashGrid(buildGrid(r.event_name, byEvent.get(r.event_name) ?? []))
-    if (hash !== r.content_hash) stale.push(r.event_name)
+    // An error flag is re-checked too: the sync either rewrites the tab or,
+    // finding it already current, clears the flag.
+    if (hash !== r.content_hash || r.last_error) stale.push(r.event_name)
   }
 
   // sendBatch takes at most 100 messages.

@@ -93,6 +93,6 @@ export async function writeSheet(
   return !body.skipped
 }
 
-/** Opens the spreadsheet on that event's tab. */
-export const sheetUrl = (spreadsheetId: string, gid = 0) =>
-  `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${gid}`
+/** Opens the spreadsheet, on one tab when a gid is given. */
+export const sheetUrl = (spreadsheetId: string, gid?: number) =>
+  `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit${gid === undefined ? '' : `#gid=${gid}`}`

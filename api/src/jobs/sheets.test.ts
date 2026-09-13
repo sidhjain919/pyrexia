@@ -89,9 +89,10 @@ test('only Velocity events get a spreadsheet each; the rest are tabs of their ve
   assert.deepEqual([...verticals].sort(), ['Alfresco', 'Chorea', 'Chronos', 'Kalakriti', 'Littmania', 'Sinfonia', 'Thespians'])
 })
 
-test("a sheet link opens the event's own tab", () => {
+test('a sheet link opens the spreadsheet, or one tab of it', () => {
   assert.equal(sheetUrl('abc', 123456), 'https://docs.google.com/spreadsheets/d/abc/edit#gid=123456')
-  assert.equal(sheetUrl('abc'), 'https://docs.google.com/spreadsheets/d/abc/edit#gid=0')
+  assert.equal(sheetUrl('abc', 0), 'https://docs.google.com/spreadsheets/d/abc/edit#gid=0')
+  assert.equal(sheetUrl('abc'), 'https://docs.google.com/spreadsheets/d/abc/edit')
 })
 
 test('a link cell becomes a HYPERLINK formula with quotes escaped', () => {

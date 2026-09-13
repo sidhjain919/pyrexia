@@ -7,7 +7,7 @@
  *                                 with everything they typed into the form
  *   /admin/export/payments        every payment attempt, whatever became of it
  *   /admin/export/events          every confirmed event entry, plus a per-event count
- *   /admin/export/event-sheets    one row per event: a link to its live Google Sheet
+ *   /admin/export/event-sheets    one row per live Google spreadsheet, with its link
  *
  * Two things matter more here than for a normal download:
  *
@@ -31,7 +31,7 @@ import { xlsxResponse, type Cell, type Sheet } from '../lib/xlsx.ts'
 import * as audit from '../lib/audit.ts'
 import { sheetUrl } from '../lib/sheets.ts'
 import { registerableEvents, resolveEvent } from '../data/events.ts'
-import { sweepSheets, toIst } from '../jobs/sheets.ts'
+import { SEPARATE_SHEET_VERTICALS, sheetEvents, sweepSheets, toIst } from '../jobs/sheets.ts'
 
 export const exports_ = new Hono<{ Bindings: Env }>()
 
@@ -297,26 +297,17 @@ exports_.get('/admin/export/events', async (c) => {
  * ------------------------------------------------------------------ */
 
 exports_.get('/admin/export/event-sheets', async (c) => {
-  // Look at the Drive folder now, so a sheet made a minute ago already has its
-  // link here, and queue a catch-up for any that are behind. Google being down
-  // must not cost anybody the list, so a failure is logged and the download
-  // goes ahead with what the database already knows.
-  try {
-    await sweepSheets(c.env)
-  } catch (err) {
-    console.error('sheet sweep before export failed', err)
-  }
+  // Look for new sheets and queue a catch-up for any that are behind, but not
+  // while the admin waits: asking Google takes a good fifteen seconds, and the
+  // links below come from what the database already knows.
+  c.executionCtx.waitUntil(
+    sweepSheets(c.env).catch((err) => console.error('sheet sweep after export failed', err)),
+  )
 
-  const { results: sheets } = await c.env.DB.prepare(
-    'SELECT event_name, spreadsheet_id, sheet_gid, synced_at, last_error FROM event_sheets',
-  ).all<{
-    event_name: string
-    spreadsheet_id: string
-    sheet_gid: number
-    synced_at: string | null
-    last_error: string | null
-  }>()
-  const byEvent = new Map(sheets.map((s) => [s.event_name, s]))
+  const { results: places } = await c.env.DB.prepare(
+    'SELECT event_name, spreadsheet_id, synced_at, last_error FROM event_sheets',
+  ).all<{ event_name: string; spreadsheet_id: string; synced_at: string | null; last_error: string | null }>()
+  const byEvent = new Map(places.map((s) => [s.event_name, s]))
 
   const { results: counts } = await c.env.DB.prepare(
     `SELECT event_name, count(*) AS n FROM event_entries
@@ -324,38 +315,79 @@ exports_.get('/admin/export/event-sheets', async (c) => {
   ).all<{ event_name: string; n: number }>()
   const entries = new Map(counts.map((r) => [r.event_name, r.n]))
 
-  const rows = registerableEvents.map((e) => {
-    const external = resolveEvent(e.name)?.externalForm
-    const sheet = byEvent.get(e.name)
-    if (external) {
-      return [
-        e.name, e.territory.code, { link: external, text: 'Open the crew’s Google Form' }, '', '',
-        'Takes entries on its own Google Form, not on the site',
-      ] as Cell[]
+  /*
+   * One row per spreadsheet, matching what is in the Drive folder: a vertical's
+   * spreadsheet with its events as tabs, or one Velocity event's own. Grouped
+   * by spreadsheet id rather than by vertical, so the rows are whatever the
+   * folder really holds. Rows follow the order events appear on the site.
+   */
+  type Book = { vertical: string; events: string[]; synced: string[]; errors: string[] }
+  const books = new Map<string, Book>()
+  const unplaced: string[] = []
+
+  for (const e of sheetEvents) {
+    const place = byEvent.get(e.name)
+    if (!place) {
+      unplaced.push(e.name)
+      continue
     }
-    if (!sheet) {
-      return [
-        e.name, e.territory.code, '', entries.get(e.name) ?? 0, '',
-        'No sheet yet: run the setup script again',
-      ] as Cell[]
-    }
+    const book = books.get(place.spreadsheet_id) ?? { vertical: e.territory.code, events: [], synced: [], errors: [] }
+    book.events.push(e.name)
+    if (place.synced_at) book.synced.push(place.synced_at)
+    if (place.last_error) book.errors.push(e.name)
+    books.set(place.spreadsheet_id, book)
+  }
+
+  const rows: Cell[][] = [...books.entries()].map(([id, book]) => {
+    const own = book.events.length === 1 && SEPARATE_SHEET_VERTICALS.has(
+      sheetEvents.find((e) => e.name === book.events[0])?.territory.id ?? '',
+    )
+    const filling = book.events.length - book.synced.length
     return [
-      e.name, e.territory.code,
-      // Straight to the event's own tab, even inside a vertical's spreadsheet.
-      { link: sheetUrl(sheet.spreadsheet_id, sheet.sheet_gid), text: 'Open sheet' },
-      entries.get(e.name) ?? 0,
-      sheet.synced_at ? toIst(sheet.synced_at) : '',
-      sheet.last_error ? `Last write failed: ${sheet.last_error.slice(0, 200)}` : sheet.synced_at ? 'Live' : 'Filling in…',
-    ] as Cell[]
+      own ? `${book.vertical} · ${book.events[0]}` : book.vertical,
+      book.vertical,
+      { link: sheetUrl(id), text: 'Open spreadsheet' },
+      own ? 1 : book.events.length,
+      own ? '' : book.events.join(', '),
+      book.events.reduce((sum, name) => sum + (entries.get(name) ?? 0), 0),
+      book.synced.length ? toIst(book.synced.sort().at(-1)!) : '',
+      book.errors.length
+        ? `Last write failed for: ${book.errors.join(', ')} (retried automatically)`
+        : filling
+          ? `Filling in ${filling} tab(s)…`
+          : 'Live',
+    ]
   })
+
+  if (unplaced.length) {
+    rows.push([
+      'Not set up yet', '', '', unplaced.length, unplaced.join(', '),
+      unplaced.reduce((sum, name) => sum + (entries.get(name) ?? 0), 0), '',
+      'Run setUp in the Apps Script, then publish a new version',
+    ])
+  }
+
+  // Events that don't take entries here at all, kept apart so the first tab
+  // lists only the fest's own spreadsheets.
+  const external = registerableEvents
+    .map((e) => ({ e, form: resolveEvent(e.name)?.externalForm }))
+    .filter((x): x is { e: (typeof registerableEvents)[number]; form: string } => !!x.form)
+    .map(({ e, form }) => [e.name, e.territory.code, { link: form, text: 'Open the crew’s Google Form' }] as Cell[])
 
   return workbook(
     [
       tab(
-        'Event Sheets',
-        'Live Google Sheets: a tab per event, a spreadsheet per Velocity event',
-        ['Event', 'Vertical', 'Sheet', 'Confirmed entries', 'Sheet last changed (IST)', 'Status'],
+        'Spreadsheets',
+        `${books.size} live Google spreadsheets: one per vertical with a tab per event, one per Velocity event`,
+        ['Spreadsheet', 'Vertical', 'Link', 'Tabs', 'Events inside', 'Confirmed entries',
+         'Last changed (IST)', 'Status'],
         rows,
+      ),
+      tab(
+        'External forms',
+        'Events that take entries on their own Google Form, not on the site',
+        ['Event', 'Vertical', 'Form'],
+        external,
       ),
     ],
     'event-sheets',
