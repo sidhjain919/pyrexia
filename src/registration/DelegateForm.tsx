@@ -478,8 +478,7 @@ export default function DelegateForm() {
                   </span>
                 </div>
                 <p className="mt-1 text-[0.82rem] text-parchment/65">
-                  Full access to everything the island runs, the pro nights included. You can
-                  also add this later, and it costs exactly the same.
+                  Full access to everything the island runs, the pro nights included.
                 </p>
               </button>
 

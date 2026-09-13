@@ -123,7 +123,7 @@ function terms() {
           </P>
           <P>
             <strong className="text-parchment">The Festival Pass (a further {rupees(DELEGATE_ADDON)})</strong>{' '}
-            can be bought with your Basic Registration or added later at the same price. It opens
+            can be bought with your Basic Registration or added later. It opens
             access to the full festival programme across the island, the pro nights included. Basic
             Registration alone does not cover the full programme.
           </P>

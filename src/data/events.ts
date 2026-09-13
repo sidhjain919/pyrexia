@@ -260,7 +260,7 @@ export const territories: Territory[] = [
     accent: '#e07a5a',
     rulebook: 'alfresco.pdf',
     events: [
-      { name: 'Evening Amore', tag: 'Blind date night · 15 Oct' },
+      { name: 'Evening Amore', tag: 'Blind date night · 14 Oct' },
       { name: 'Capture and Conquer', tag: 'Scavenger hunt · 60 minutes' },
       { name: 'Grab O Mania', tag: 'Blindfolded relay · Teams of 4' },
       { name: 'Squid Game', tag: 'Four rounds. Only some of you continue.' },

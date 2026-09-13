@@ -483,7 +483,7 @@ export const eventDetail: Record<string, EventDetail> = {
   /* ---------------- Alfresco ---------------- */
 
   'Evening Amore': {
-    date: '15 Oct',
+    date: '14 Oct',
     rules: [
       'Couples and singles both welcome. Single entries are paired by a randomised system.',
       'Leave midway and no new partner is assigned unless you re-register at the same fee.',
@@ -504,7 +504,7 @@ export const eventDetail: Record<string, EventDetail> = {
     contacts: [C('Anshika', '9079471020'), C('Upender', '8929830218')],
   },
   'Grab O Mania': {
-    date: '14 Oct',
+    date: '13 Oct',
     rules: [
       'Teams of 4. One player is unblindfolded; the other three are not.',
       'The sighted player talks Player 2 through Task 1, then Player 3 guides Player 4, and so on.',
@@ -545,7 +545,7 @@ export const eventDetail: Record<string, EventDetail> = {
     contacts: [C('Ronak', '9350600914'), C('Hariom', '8949029464')],
   },
   'Balloon Burst': {
-    date: '16 Oct',
+    date: '14 Oct',
     rules: [
       'One player inflates balloons; the other bursts them by sitting on them on the chair.',
       'No hands, no sharp objects.',
@@ -566,10 +566,10 @@ export const eventDetail: Record<string, EventDetail> = {
   'Songstra Vaganza': { date: '15 Oct', rules: ['Teams of 2–4.', 'A melody marathon: keep the songs coming.'] },
   Tambola: { date: '16 Oct', rules: ['Individual entry.', 'Housie, the way you remember it.'] },
   'Musical Chairs': { date: '13 Oct', rules: ['Individual entry.', 'Spin, scramble, sit.'] },
-  'Soul Sync': { date: '13 Oct', rules: ['Teams of 2.', 'How well do you actually know each other?'] },
-  'Drape It': { date: '15 Oct', rules: ['Teams of 2.', 'A styling face-off against the clock.'] },
+  'Soul Sync': { date: '16 Oct', rules: ['Teams of 2.', 'How well do you actually know each other?'] },
+  'Drape It': { date: '16 Oct', rules: ['Teams of 2.', 'A styling face-off against the clock.'] },
   'Dumb Charades': { date: '14 Oct', rules: ['Teams of 3–5.', 'Act it out. Never say it.'] },
-  'Swift Mingle': { date: '14 Oct', rules: ['Individual entry, priced separately for boys and girls.', 'Speed connect: a room full of strangers and a very short clock.'] },
+  'Swift Mingle': { date: '15 Oct', rules: ['Individual entry, priced separately for boys and girls.', 'Speed connect: a room full of strangers and a very short clock.'] },
 
   /* ---------------- Thunderbolt (external Google Forms) ---------------- */
 
