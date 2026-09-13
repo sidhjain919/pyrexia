@@ -333,8 +333,9 @@ export default function Admin() {
           <p className="ink-3 mt-1 text-[0.82rem]">
             Four Excel workbooks. Registrations has two tabs: every login, then everyone who paid with
             what they entered on the form. Each sheet is stamped with the time it was made, so a list
-            printed this morning is not mistaken for this afternoon’s. Event Sheets links to one live
-            Google Sheet per event, which fills in by itself as entries are confirmed.
+            printed this morning is not mistaken for this afternoon’s. Event Sheets links to every
+            event’s live Google Sheet (a tab in its vertical’s spreadsheet; a spreadsheet of its own for
+            Velocity), which fills in by itself as entries are confirmed.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2.5">

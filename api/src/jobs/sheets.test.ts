@@ -6,8 +6,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildGrid, sheetEvents, toIst } from './sheets.ts'
-import { SheetsScriptError, writeSheet } from '../lib/sheets.ts'
+import { SEPARATE_SHEET_VERTICALS, buildGrid, sheetEvents, toIst } from './sheets.ts'
+import { SheetsScriptError, sheetUrl, writeSheet } from '../lib/sheets.ts'
 import { buildXlsx } from '../lib/xlsx.ts'
 
 const entry = (over: Record<string, unknown> = {}) => ({
@@ -81,6 +81,19 @@ test('events on external forms get no sheet', () => {
   assert.equal(new Set(names).size, names.length)
 })
 
+test('only Velocity events get a spreadsheet each; the rest are tabs of their vertical', () => {
+  const own = sheetEvents.filter((e) => SEPARATE_SHEET_VERTICALS.has(e.territory.id))
+  assert.equal(own.length, 11)
+  assert.ok(own.every((e) => e.territory.code === 'Velocity'))
+  const verticals = new Set(sheetEvents.filter((e) => !SEPARATE_SHEET_VERTICALS.has(e.territory.id)).map((e) => e.territory.code))
+  assert.deepEqual([...verticals].sort(), ['Alfresco', 'Chorea', 'Chronos', 'Kalakriti', 'Littmania', 'Sinfonia', 'Thespians'])
+})
+
+test("a sheet link opens the event's own tab", () => {
+  assert.equal(sheetUrl('abc', 123456), 'https://docs.google.com/spreadsheets/d/abc/edit#gid=123456')
+  assert.equal(sheetUrl('abc'), 'https://docs.google.com/spreadsheets/d/abc/edit#gid=0')
+})
+
 test('a link cell becomes a HYPERLINK formula with quotes escaped', () => {
   const bytes = buildXlsx([{ name: 'T', rows: [[{ link: 'https://docs.google.com/x?a="b"&c', text: 'Open' }]] }])
   const xml = new TextDecoder().decode(bytes)
@@ -98,7 +111,7 @@ test('the script client tells a stale write, a refusal and an outage apart', asy
   }
   const failure = async () => {
     try {
-      await writeSheet(cfg, 'id', [['a']], 1)
+      await writeSheet(cfg, 'id', 0, [['a']], 1)
     } catch (err) {
       assert.ok(err instanceof SheetsScriptError)
       return err
@@ -107,9 +120,9 @@ test('the script client tells a stale write, a refusal and an outage apart', asy
   }
   try {
     answer(200, '{"ok":true}')
-    assert.equal(await writeSheet(cfg, 'id', [['a']], 1), true)
+    assert.equal(await writeSheet(cfg, 'id', 0, [['a']], 1), true)
     answer(200, '{"ok":true,"skipped":true}')
-    assert.equal(await writeSheet(cfg, 'id', [['a']], 1), false)
+    assert.equal(await writeSheet(cfg, 'id', 0, [['a']], 1), false)
     answer(200, '{"ok":false,"error":"busy","retry":true}')
     assert.equal((await failure()).retryable, true)
     answer(200, '{"ok":false,"error":"forbidden"}')

@@ -34,6 +34,16 @@ import {
 
 /** How the setup script labels a sheet, so a renamed file is still found. */
 export const SHEET_TAG = 'pyrexia-event:'
+/** The same, for a spreadsheet that holds a whole vertical, one tab per event. */
+export const VERTICAL_TAG = 'pyrexia-vertical:'
+
+/**
+ * Verticals whose events each get a spreadsheet of their own. Every other
+ * vertical shares one spreadsheet, with a tab per event. Velocity is the
+ * exception because each sport is run by its own crew, who share their sheet
+ * with nobody else's.
+ */
+export const SEPARATE_SHEET_VERTICALS = new Set(['velocity'])
 
 /**
  * Events that get a sheet: every one entered on this site. The Thunderbolt
@@ -176,6 +186,7 @@ async function hashGrid(grid: SheetValue[][]): Promise<string> {
 type SheetRecord = {
   event_name: string
   spreadsheet_id: string
+  sheet_gid: number
   content_hash: string | null
 }
 
@@ -185,7 +196,7 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
   if (!cfg) return
 
   const record = await env.DB.prepare(
-    'SELECT event_name, spreadsheet_id, content_hash FROM event_sheets WHERE event_name = ?',
+    'SELECT event_name, spreadsheet_id, sheet_gid, content_hash FROM event_sheets WHERE event_name = ?',
   )
     .bind(eventName)
     .first<SheetRecord>()
@@ -205,7 +216,7 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
 
   let applied: boolean
   try {
-    applied = await writeSheet(cfg, record.spreadsheet_id, grid, version)
+    applied = await writeSheet(cfg, record.spreadsheet_id, record.sheet_gid, grid, version)
   } catch (err) {
     const message = err instanceof Error ? err.message.slice(0, 500) : String(err)
     await env.DB.prepare('UPDATE event_sheets SET last_error = ? WHERE event_name = ?')
@@ -238,10 +249,11 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
  * ------------------------------------------------------------------ */
 
 /**
- * Ask the script which sheet is which event's, and remember it.
+ * Ask the script where each event's tab is, and remember it.
  *
- * Matched on the tag the setup script writes into each file's description, so
- * renaming a sheet in Drive changes nothing here. Returns how many were found.
+ * The script finds them by tags it wrote itself (a file description, a tab's
+ * developer metadata), so renaming a spreadsheet or a tab changes nothing
+ * here. Returns how many were found.
  */
 export async function discoverSheets(env: Env): Promise<number> {
   const cfg = config(env)
@@ -251,16 +263,18 @@ export async function discoverSheets(env: Env): Promise<number> {
   const matched = (await listSheets(cfg)).filter((f) => known.has(f.event))
 
   if (matched.length) {
-    // A different id for an event means its sheet was replaced: start that
+    // A different spreadsheet or tab for an event means it moved: start that
     // one from nothing rather than trusting the old hash.
     await env.DB.batch(
       matched.map((f) =>
         env.DB.prepare(
-          `INSERT INTO event_sheets (event_name, spreadsheet_id) VALUES (?, ?)
+          `INSERT INTO event_sheets (event_name, spreadsheet_id, sheet_gid) VALUES (?, ?, ?)
            ON CONFLICT (event_name) DO UPDATE
-             SET spreadsheet_id = excluded.spreadsheet_id, content_hash = NULL
-           WHERE event_sheets.spreadsheet_id != excluded.spreadsheet_id`,
-        ).bind(f.event, f.id),
+             SET spreadsheet_id = excluded.spreadsheet_id, sheet_gid = excluded.sheet_gid,
+                 content_hash = NULL, synced_at = NULL, last_error = NULL
+           WHERE event_sheets.spreadsheet_id != excluded.spreadsheet_id
+              OR event_sheets.sheet_gid != excluded.sheet_gid`,
+        ).bind(f.event, f.id, f.gid),
       ),
     )
   }

@@ -7,9 +7,14 @@
  * The script is published as a web app anyone can reach, and refuses every
  * request that does not carry the shared secret.
  *
+ * Where an event lives is a spreadsheet and a tab inside it. Most verticals
+ * share one spreadsheet with a tab per event; Velocity gives every event a
+ * spreadsheet of its own. The script decides the layout; the server only
+ * needs the pair.
+ *
  * Two actions:
- *   list   every event sheet in the folder, as { event, id }
- *   write  replace the first tab of one sheet with a grid of rows
+ *   list   every event's place, as { event, id, gid }
+ *   write  replace one tab with a grid of rows
  */
 
 export type ScriptConfig = { url: string; secret: string }
@@ -60,14 +65,18 @@ async function call<T>(cfg: ScriptConfig, action: string, payload: Record<string
 
 export type SheetValue = string | number
 
-/** Every tagged sheet in the folder. */
-export async function listSheets(cfg: ScriptConfig): Promise<{ event: string; id: string }[]> {
-  const body = await call<{ sheets: { event: string; id: string }[] }>(cfg, 'list')
-  return body.sheets ?? []
+/** A spreadsheet, and the tab in it (its gid, as in the URL) that holds one event. */
+export type SheetPlace = { event: string; id: string; gid: number }
+
+/** Where every event's tab is. */
+export async function listSheets(cfg: ScriptConfig): Promise<SheetPlace[]> {
+  const body = await call<{ sheets: { event: string; id: string; gid?: number }[] }>(cfg, 'list')
+  // An older script version answers without a gid; its sheets have one tab.
+  return (body.sheets ?? []).map((s) => ({ event: s.event, id: s.id, gid: Number(s.gid ?? 0) }))
 }
 
 /**
- * Replace one sheet's first tab with `grid`, clearing anything beyond it.
+ * Replace one event's tab with `grid`, clearing anything beyond it.
  *
  * `version` orders writes: the script ignores one older than the last it
  * applied, so two syncs racing never leave the older list on screen. Returns
@@ -76,12 +85,14 @@ export async function listSheets(cfg: ScriptConfig): Promise<{ event: string; id
 export async function writeSheet(
   cfg: ScriptConfig,
   id: string,
+  gid: number,
   grid: SheetValue[][],
   version: number,
 ): Promise<boolean> {
-  const body = await call<{ skipped?: boolean }>(cfg, 'write', { id, grid, version })
+  const body = await call<{ skipped?: boolean }>(cfg, 'write', { id, gid, grid, version })
   return !body.skipped
 }
 
-export const sheetUrl = (spreadsheetId: string) =>
-  `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
+/** Opens the spreadsheet on that event's tab. */
+export const sheetUrl = (spreadsheetId: string, gid = 0) =>
+  `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${gid}`

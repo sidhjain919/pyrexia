@@ -308,8 +308,14 @@ exports_.get('/admin/export/event-sheets', async (c) => {
   }
 
   const { results: sheets } = await c.env.DB.prepare(
-    'SELECT event_name, spreadsheet_id, synced_at, last_error FROM event_sheets',
-  ).all<{ event_name: string; spreadsheet_id: string; synced_at: string | null; last_error: string | null }>()
+    'SELECT event_name, spreadsheet_id, sheet_gid, synced_at, last_error FROM event_sheets',
+  ).all<{
+    event_name: string
+    spreadsheet_id: string
+    sheet_gid: number
+    synced_at: string | null
+    last_error: string | null
+  }>()
   const byEvent = new Map(sheets.map((s) => [s.event_name, s]))
 
   const { results: counts } = await c.env.DB.prepare(
@@ -335,7 +341,8 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     }
     return [
       e.name, e.territory.code,
-      { link: sheetUrl(sheet.spreadsheet_id), text: 'Open sheet' },
+      // Straight to the event's own tab, even inside a vertical's spreadsheet.
+      { link: sheetUrl(sheet.spreadsheet_id, sheet.sheet_gid), text: 'Open sheet' },
       entries.get(e.name) ?? 0,
       sheet.synced_at ? toIst(sheet.synced_at) : '',
       sheet.last_error ? `Last write failed: ${sheet.last_error.slice(0, 200)}` : sheet.synced_at ? 'Live' : 'Filling in…',
@@ -346,7 +353,7 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     [
       tab(
         'Event Sheets',
-        'One live Google Sheet per event',
+        'Live Google Sheets: a tab per event, a spreadsheet per Velocity event',
         ['Event', 'Vertical', 'Sheet', 'Confirmed entries', 'Sheet last changed (IST)', 'Status'],
         rows,
       ),
