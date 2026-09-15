@@ -474,7 +474,7 @@ export default function DelegateForm() {
                     Add the Festival Pass
                   </span>
                   <span className="shrink-0 whitespace-nowrap font-display text-lg text-gold-bright">
-                    +{rupees(delegate?.amountPaise ?? 220000)}
+                    +{rupees(delegate?.amountPaise ?? 240000)}
                   </span>
                 </div>
                 <p className="mt-1 text-[0.82rem] text-parchment/65">
@@ -490,7 +490,7 @@ export default function DelegateForm() {
                 {wantsDelegate && (
                   <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">
                     <span>Festival Pass · full programme</span>
-                    <span>{rupees(delegate?.amountPaise ?? 220000)}</span>
+                    <span>{rupees(delegate?.amountPaise ?? 240000)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between py-0.5 font-log text-[0.7rem] uppercase tracking-wide2 text-parchment/60">

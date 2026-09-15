@@ -29,7 +29,10 @@ export const SITE = {
  * stale promise on the page.
  */
 export const EARLY_BIRD = {
-  live: true,
+  /** Closed: the hundred are gone and the Festival Pass add-on is now the
+   *  post-early-bird price. Flipping this back to `true` restores the banner
+   *  on every surface at once, so the copy below is left intact. */
+  live: false,
   headline: 'Early bird is open',
   short: 'Early bird: first 100 registrations at the current price',
   blurb: 'is running now. The first 100 registrations pay the current price; after that it goes up.',

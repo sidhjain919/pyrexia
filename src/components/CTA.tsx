@@ -84,19 +84,23 @@ export default function CTA() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.29, duration: 0.8 }}
-          className="mx-auto mt-4 flex max-w-lg items-center gap-3 rounded-xl border border-gold/45 bg-gold/[0.08] px-4 py-3.5 text-left"
-        >
-          <Zap size={16} className="shrink-0 text-gold-bright" />
-          <p className="text-[0.85rem] leading-relaxed text-parchment/85">
-            <span className="font-log uppercase tracking-wide2 text-gold-bright">Early bird</span>{' '}
-            {EARLY_BIRD.blurb}
-          </p>
-        </motion.div>
+        {/* Same switch the noticeboard reads: when the offer is over it leaves
+            this page too, rather than promising a price that has moved on. */}
+        {EARLY_BIRD.live && (
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.29, duration: 0.8 }}
+            className="mx-auto mt-4 flex max-w-lg items-center gap-3 rounded-xl border border-gold/45 bg-gold/[0.08] px-4 py-3.5 text-left"
+          >
+            <Zap size={16} className="shrink-0 text-gold-bright" />
+            <p className="text-[0.85rem] leading-relaxed text-parchment/85">
+              <span className="font-log uppercase tracking-wide2 text-gold-bright">Early bird</span>{' '}
+              {EARLY_BIRD.blurb}
+            </p>
+          </motion.div>
+        )}
 
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 16 }}
