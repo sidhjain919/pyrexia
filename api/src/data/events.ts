@@ -258,8 +258,8 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
     note: 'Priced per head. Nothing to prepare — you get a random prop and one minute, then five minutes to sell it or stage it.',
   },
   'Nukkad Natak': {
-    teamSize: { min: 6, max: 20 },
-    note: 'Teams of 6–20, and the limit is hard. Eighteen minutes maximum, Hindi or English, original work only. No fire, no water, no electronic instruments.',
+    teamSize: { min: 6, max: 30 },
+    note: 'Teams of 6–30, and the limit is hard. Eighteen minutes maximum, Hindi or English, original work only. No fire, no water, no electronic instruments.',
   },
 
   /* ---------------- Velocity ---------------- */

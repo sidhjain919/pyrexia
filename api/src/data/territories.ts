@@ -138,7 +138,7 @@ export const territories: Territory[] = [
     events: [
       { name: 'Echoes of Expression', tag: 'Monoact & Mime' },
       { name: 'mADD Angle', tag: 'Random prop, one minute, sell it or stage it' },
-      { name: 'Nukkad Natak', tag: 'Street Play · Teams of 6–20' },
+      { name: 'Nukkad Natak', tag: 'Street Play · Teams of 6–30' },
     ],
     contacts: [
       { name: 'Shivanshi', phone: '9258542725' },

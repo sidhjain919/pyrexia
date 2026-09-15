@@ -141,7 +141,7 @@ export const eventDetail: Record<string, EventDetail> = {
   },
   'Nukkad Natak': {
     rules: [
-      'Teams of 6–20. The limit is hard — no exceptions.',
+      'Teams of 6–30. The limit is hard — no exceptions.',
       'One round. Eighteen minutes maximum; overrunning costs marks.',
       'Hindi or English, in language a passer-by understands.',
       'Original work only. Open theme, but plays with social relevance are expected.',
