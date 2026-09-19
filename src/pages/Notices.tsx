@@ -55,7 +55,7 @@ export default function Notices() {
           }}
         />
         {/* The planks run from near-black to bleached grey, and the bleached
-            run goes straight through the middle of the board — which is where
+            run goes straight through the middle of the board, which is where
             the type is. Pale text on it was legible over some planks and gone
             over others. This darkens the middle of the board only, leaving the
             grain and the rope corners as they are. */}
@@ -102,7 +102,7 @@ export default function Notices() {
         <div className="mt-10 rounded-xl border border-gold/15 bg-navy/40 p-8 text-center">
           <p className="text-[0.94rem] leading-relaxed text-parchment/70">
             The board is clear. This is where the crew posts schedule changes, results and
-            anything urgent during the five days — worth a look each morning of the fest.
+            anything urgent during the five days, worth a look each morning of the fest.
           </p>
           <p className="mt-3 text-[0.88rem] leading-relaxed text-parchment/55">
             Everything else is already open: {TOTAL_EVENTS} events with their rulebooks, and

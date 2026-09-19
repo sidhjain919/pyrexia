@@ -98,7 +98,7 @@ const channelBlock = () =>
      </td></tr>
    </table>`
 
-const CHANNEL_TEXT = `Join the announcement channel — every schedule change and result goes there first:
+const CHANNEL_TEXT = `Join the announcement channel. Every schedule change and result goes there first:
 ${CHANNEL_URL}
 
 WhatsApp channels are muted by default, kindly unmute this channel manually to receive all the important updates on time.`
@@ -347,4 +347,215 @@ If you didn't try to sign up, ignore this email. No account has been created.
 PYREXIA 2026 · AIIMS Rishikesh`
 
   return { subject: 'Your PYREXIA verification code', html, text }
+}
+
+/* ------------------------------------------------------------------ *
+ * Accommodation confirmed
+ * ------------------------------------------------------------------ */
+
+/**
+ * A short label/value table, for a receipt somebody will read on a phone at a
+ * hostel desk rather than on a laptop.
+ */
+const detailTable = (rows: readonly (readonly [string, string])[]) =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border-collapse:collapse;">` +
+  rows
+    .map(
+      ([label, value]) =>
+        `<tr>
+<td style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#6b7d81;padding:7px 0;border-bottom:1px solid #17323c;white-space:nowrap;">${esc(label)}</td>
+<td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:${BRAND.parchment};padding:7px 0 7px 18px;border-bottom:1px solid #17323c;text-align:right;">${esc(value)}</td>
+</tr>`,
+    )
+    .join('') +
+  `</table>`
+
+/**
+ * The accommodation receipt.
+ *
+ * This is the document the hostel desk asks to see at check-in, so it leads
+ * with the booking reference and says plainly what has *not* been paid: the
+ * ₹500 deposit is cash, on arrival, and getting it back at check-out depends
+ * on the hard copy the desk issues against this email. Somebody who reads
+ * only the first screen should still turn up with the right things.
+ */
+export function accommodationConfirmed(args: {
+  name: string
+  code: string
+  publicCode: string
+  room: string
+  days: number
+  arrival: string
+  departure: string
+  /** The room itself. */
+  roomPaise: number
+  /** What was actually charged, gateway fee included. What their bank shows. */
+  amountPaise: number
+  depositRupees: number
+  passUrl: string
+}) {
+  const first = args.name.split(' ')[0] || args.name
+  const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
+  const roomCharge = `₹${(args.roomPaise / 100).toLocaleString('en-IN')}`
+  const deposit = `₹${args.depositRupees.toLocaleString('en-IN')}`
+
+  const html = shell(
+    h1(`Your bed is booked, ${esc(first)}.`) +
+      p(`We received ${esc(amount)}. Show this email at the accommodation desk when you arrive.`) +
+      codeBox('Booking reference', args.code) +
+      detailTable([
+        ['Room', args.room],
+        ['Nights', `${args.days} days`],
+        ['Arriving', args.arrival],
+        ['Leaving', args.departure],
+        ['Room charge', roomCharge],
+        ['Total paid', amount],
+        ['Delegate', args.publicCode],
+      ]) +
+      p(
+        `<strong style="color:${BRAND.parchment};">Bring ${esc(deposit)} in cash.</strong> ` +
+          `That is the refundable security deposit, collected at check-in and returned when you leave. ` +
+          `It is not part of the amount above and cannot be paid online.`,
+      ) +
+      p(
+        `Also bring your <strong style="color:${BRAND.parchment};">delegate card, college ID and Aadhaar</strong>. ` +
+          `The desk checks all three, then issues you a printed receipt. Keep that printed receipt: it is what gets your deposit back at check-out.`,
+      ) +
+      button(args.passUrl, 'View my booking') +
+      p(
+        `House rules, in short: no smoking or alcohol on the premises, damage is charged against your deposit, ` +
+          `and your luggage is your own responsibility. Cancellations are not refunded.`,
+      ) +
+      channelBlock(),
+    `Accommodation confirmed · ${args.code}`,
+  )
+
+  const text = `Your bed is booked, ${first}.
+
+We received ${amount}. Show this email at the accommodation desk when you arrive.
+
+Booking reference: ${args.code}
+
+Room:      ${args.room}
+Nights:    ${args.days} days
+Arriving:  ${args.arrival}
+Leaving:   ${args.departure}
+Room:      ${roomCharge}
+Total:     ${amount}
+Delegate:  ${args.publicCode}
+
+BRING ${deposit} IN CASH. That is the refundable security deposit, collected at
+check-in and returned when you leave. It is not part of the amount above and
+cannot be paid online.
+
+Also bring your delegate card, college ID and Aadhaar. The desk checks all
+three, then issues a printed receipt. Keep that printed receipt: it is what
+gets your deposit back at check-out.
+
+View your booking:
+${args.passUrl}
+
+House rules, in short: no smoking or alcohol on the premises, damage is charged
+against your deposit, and your luggage is your own responsibility.
+Cancellations are not refunded.
+
+${CHANNEL_TEXT}
+
+PYREXIA 2026 · Pirates of the Lost Island
+12-16 October 2026 · AIIMS Rishikesh`
+
+  return { subject: `Accommodation confirmed: ${args.code}`, html, text }
+}
+
+/* ------------------------------------------------------------------ *
+ * Event entry confirmed
+ * ------------------------------------------------------------------ */
+
+/**
+ * You are in this event.
+ *
+ * Paid event entries used to receive `upgradeConfirmed`, which told somebody
+ * who had just paid ₹350 for mixed doubles that their Festival Pass was ready.
+ * An entry order has no line items and follows an earlier paid order, which is
+ * exactly the shape that handler reads as an upgrade. It is its own message
+ * now, because it is its own thing: it names the event, the bracket and the
+ * squad, which is what the entrant wants to check.
+ */
+export function eventEntered(args: {
+  name: string
+  publicCode: string
+  eventName: string
+  territory: string
+  /** The bracket, for events that run several. Empty when there is only one. */
+  band: string
+  /** The crew name, for a team entry. Empty for a solo one. */
+  teamName: string
+  /** People this entry covers, the entrant included. */
+  headCount: number
+  /** Zero for the events that cost nothing beyond Basic Registration. */
+  amountPaise: number
+  passUrl: string
+}) {
+  const first = args.name.split(' ')[0] || args.name
+  const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
+  const title = args.band ? `${args.eventName} · ${args.band}` : args.eventName
+  // Most events on the island charge nothing beyond Basic Registration. Such
+  // an entry must not be sent a receipt for ₹0: there was no transaction to
+  // receipt, and a zero on a confirmation reads like something went wrong.
+  const paid = args.amountPaise > 0
+
+  const rows: [string, string][] = [['Event', title], ['Territory', args.territory]]
+  if (args.teamName) rows.push(['Crew', args.teamName])
+  if (args.headCount > 1) rows.push(['People covered', String(args.headCount)])
+  if (paid) rows.push(['Paid', amount])
+  rows.push(['Registration No', args.publicCode])
+
+  const html = shell(
+    h1(`You're in, ${esc(first)}.`) +
+      p(
+        `Your entry for <strong style="color:${BRAND.parchment};">${esc(title)}</strong> is confirmed. ` +
+          (paid
+            ? `We received ${esc(amount)}.`
+            : 'Your Basic Registration covers it, so there is nothing to pay.'),
+      ) +
+      detailTable(rows) +
+      p(
+        args.teamName
+          ? 'This entry covers your whole crew, so nobody else needs to enter or pay. The names you listed are what the desk checks against.'
+          : 'Nobody else needs to do anything. Bring your pass and turn up.',
+      ) +
+      button(args.passUrl, 'View my pass') +
+      p(
+        `The ${esc(args.territory)} crew will be in touch with the schedule. ` +
+          `Your entry is also listed on your pass page.`,
+      ) +
+      channelBlock(),
+    `Entered: ${title}`,
+  )
+
+  const text = `You're in, ${first}.
+
+Your entry for ${title} is confirmed. ${
+    paid ? `We received ${amount}.` : 'Your Basic Registration covers it, so there is nothing to pay.'
+  }
+
+${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}
+
+${
+  args.teamName
+    ? 'This entry covers your whole crew, so nobody else needs to enter or pay.\nThe names you listed are what the desk checks against.'
+    : 'Nobody else needs to do anything. Bring your pass and turn up.'
+}
+
+View your pass:
+${args.passUrl}
+
+The ${args.territory} crew will be in touch with the schedule.
+
+${CHANNEL_TEXT}
+
+PYREXIA 2026 · Pirates of the Lost Island
+12-16 October 2026 · AIIMS Rishikesh`
+
+  return { subject: `You're entered: ${title}`, html, text }
 }

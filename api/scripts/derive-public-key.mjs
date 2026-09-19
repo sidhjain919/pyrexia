@@ -2,7 +2,7 @@
  * Derive the public half from the private signing key actually in use.
  *
  * This exists because I published a public key from a keypair that was then
- * thrown away and regenerated — the two drifted, and every pass failed to
+ * thrown away and regenerated, the two drifted, and every pass failed to
  * verify. Never transcribe a public key from a generation run; always derive it
  * from the private key that is really deployed.
  */

@@ -2,7 +2,7 @@
 /**
  * Bring new photography into the site.
  *
- * Drop originals — any size, JPG/PNG/HEIC/WebP — into a folder and run this.
+ * Drop originals (any size, JPG/PNG/HEIC/WebP) into a folder and run this.
  * Each one is resized to the size it actually renders at and re-encoded to
  * WebP, which is what turned 1.3 GB of originals into 12 MB the first time
  * round. Nothing is written outside `public/photos/`, and an original is never
@@ -72,7 +72,7 @@ for (const name of readdirSync(src).sort()) {
   }
   const prefix = Object.keys(KINDS).find((k) => stem.startsWith(`${k}-`))
   if (!prefix) {
-    skipped.push(`${name} — no artist-/event-/gallery-/scene- prefix`)
+    skipped.push(`${name}: no artist-/event-/gallery-/scene- prefix`)
     continue
   }
 
@@ -83,7 +83,7 @@ for (const name of readdirSync(src).sort()) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
   if (!slug) {
-    skipped.push(`${name} — nothing left after the prefix`)
+    skipped.push(`${name}: nothing left after the prefix`)
     continue
   }
 
@@ -108,7 +108,7 @@ for (const name of readdirSync(src).sort()) {
     const kb = Math.round(statSync(out).size / 1024)
     done.push(`${kind.dir}/${slug}.webp  ${kind.width}×${kind.height}  ${kb} KB   ← ${name}`)
   } catch (err) {
-    skipped.push(`${name} — ffmpeg failed: ${String(err.stderr ?? err).slice(0, 120)}`)
+    skipped.push(`${name}: ffmpeg failed: ${String(err.stderr ?? err).slice(0, 120)}`)
   }
 }
 
@@ -121,6 +121,6 @@ if (skipped.length) {
 }
 
 console.log(
-  '\nNow reference them in src/data/photos.ts —' +
+  '\nNow reference them in src/data/photos.ts:' +
     ' `artistPhoto` for portraits, `eventPhoto` for event frames.\n',
 )

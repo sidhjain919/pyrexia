@@ -51,7 +51,7 @@ export function useActiveSection(ids: string[]): string | null {
     // The sections only exist on the home page. Anywhere else nothing in the
     // chart is "current", and saying so is better than the old behaviour: the
     // elements were looked up once at mount, so after a visit to /sign-in
-    // they were detached nodes whose rect reads as 0,0 — which put every one
+    // they were detached nodes whose rect reads as 0,0, which put every one
     // of them "above the probe" and left the underline stuck on Navigator,
     // on every page, until a hard refresh.
     if (pathname !== '/') {

@@ -1,5 +1,5 @@
 /**
- * Which verticals — and which single events — are taking entries.
+ * Which verticals, and which single events, are taking entries.
  *
  * This used to be a constant in a file, on the theory that opening entries is
  * a decision with a rulebook and a fee behind it and should arrive in a commit

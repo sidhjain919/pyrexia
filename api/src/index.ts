@@ -14,6 +14,7 @@ import { secureHeaders } from 'hono/secure-headers'
 
 import type { Env, Job } from './types.ts'
 import { ApiError } from './lib/http.ts'
+import { accommodation } from './routes/accommodation.ts'
 import { admin } from './routes/admin.ts'
 import { auth } from './routes/auth.ts'
 import { exports_ } from './routes/exports.ts'
@@ -26,7 +27,12 @@ import { ses } from './routes/ses.ts'
 import { webhooks } from './routes/webhooks.ts'
 import { handleJob } from './jobs/mail.ts'
 import { purgeExpiredDocuments } from './jobs/purge.ts'
-import { reconcileOrders, reconcileRefunds, repairUnconfirmedEntries } from './jobs/reconcile.ts'
+import {
+  reconcileOrders,
+  reconcileRefunds,
+  repairUnconfirmedBookings,
+  repairUnconfirmedEntries,
+} from './jobs/reconcile.ts'
 import { sweepSheets } from './jobs/sheets.ts'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -81,6 +87,7 @@ app.get('/health', (c) =>
 )
 
 app.route('/api', registrations)
+app.route('/api', accommodation)
 app.route('/api', auth)
 app.route('/api', me)
 app.route('/api', events)
@@ -140,6 +147,7 @@ export default {
     ctx.waitUntil(
       reconcileOrders(env)
         .then(() => repairUnconfirmedEntries(env))
+        .then(() => repairUnconfirmedBookings(env))
         .then(() => reconcileRefunds(env)),
     )
     // The per-event Google Sheets: pick up newly made ones, and rewrite any

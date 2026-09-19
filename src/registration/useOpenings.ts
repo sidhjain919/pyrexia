@@ -4,14 +4,14 @@ import { api } from '../api/client'
 import { DEFAULT_OPEN_TERRITORIES } from '../data/registration'
 
 /**
- * Which verticals — and which single events — are taking entries, as the
+ * Which verticals, and which single events, are taking entries, as the
  * server sees it.
  *
  * Fetched once per page load and shared by every card, because the grid asks
  * the same question seventy times. Until the answer lands, the built-in
  * default stands in: it is right in the ordinary case, so nobody watches a
  * grid of "Coming Soon" resolve into "Register" a second later. Nothing here
- * decides anything — entering a closed event is refused by the server whatever
+ * decides anything: entering a closed event is refused by the server whatever
  * this hook believes.
  *
  * Two layers, matching the server: a vertical's master switch, and each

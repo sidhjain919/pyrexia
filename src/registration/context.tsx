@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
 /**
- * Two distinct journeys:
- *  - `delegate`: buy the pass. Details, ID documents, payment, QR issued.
- *  - `event`   : enter one specific competition. Gated on a confirmed pass.
+ * Three distinct journeys:
+ *  - `delegate`     : buy the pass. Details, ID documents, payment, QR issued.
+ *  - `event`        : enter one specific competition. Gated on a confirmed pass.
+ *  - `accommodation`: book a bed for the five days. Also gated on the pass.
  */
-export type RegisterMode = 'delegate' | 'event'
+export type RegisterMode = 'delegate' | 'event' | 'accommodation'
 
 type RegistrationCtx = {
   open: boolean
@@ -14,6 +15,8 @@ type RegistrationCtx = {
   eventName: string | null
   /** Open the delegate pass flow. */
   openDelegate: () => void
+  /** Open the accommodation booking form. */
+  openAccommodation: () => void
   /** Open the entry form for one event. Falls back to the delegate flow with no name. */
   openRegister: (event?: string) => void
   closeRegister: () => void
@@ -32,6 +35,12 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
     setOpen(true)
   }, [])
 
+  const openAccommodation = useCallback(() => {
+    setMode('accommodation')
+    setEventName(null)
+    setOpen(true)
+  }, [])
+
   const openRegister = useCallback((event?: string) => {
     if (event) {
       setMode('event')
@@ -46,8 +55,16 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
   const closeRegister = useCallback(() => setOpen(false), [])
 
   const value = useMemo(
-    () => ({ open, mode, eventName, openDelegate, openRegister, closeRegister }),
-    [open, mode, eventName, openDelegate, openRegister, closeRegister],
+    () => ({
+      open,
+      mode,
+      eventName,
+      openDelegate,
+      openAccommodation,
+      openRegister,
+      closeRegister,
+    }),
+    [open, mode, eventName, openDelegate, openAccommodation, openRegister, closeRegister],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

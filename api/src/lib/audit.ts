@@ -37,10 +37,13 @@ export type AuditAction =
   | 'auth.password_reset'
   | 'event.enter'
   | 'event.withdraw'
+  | 'accommodation.book'
+  | 'accommodation.cancel'
   | 'registration.email_changed'
   | 'registration.email_resent'
   | 'export.download'
   | 'settings.event_openings'
+  | 'settings.accommodation'
 
 export type AuditEntry = {
   action: AuditAction

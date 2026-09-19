@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { Compass, StaggerWords } from './primitives'
 import { SITE } from '../data/site'
 import { sectionPhoto } from '../data/media'
@@ -116,7 +116,6 @@ export default function CTA() {
               className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
             >
               {cta.label}
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </button>
           ) : (
             <Link
@@ -125,7 +124,6 @@ export default function CTA() {
               className="font-accent group inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-9 py-4 text-[0.92rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.04]"
             >
               {cta.label}
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
           )}
           <button

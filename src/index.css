@@ -58,7 +58,7 @@ html {
  * The atmospheric backdrop.
  *
  * This used to be `background-attachment: fixed` on <body>, which forces the
- * browser to repaint the whole four-layer gradient on every scroll frame — the
+ * browser to repaint the whole four-layer gradient on every scroll frame, and the
  * single biggest cause of the stutter on phones. A fixed pseudo-element is
  * promoted to its own layer and composited instead of repainted, so it holds
  * the same "stationary backdrop" look while the page scrolls over it smoothly.
@@ -122,7 +122,7 @@ body {
  * Anchor targets clear the header.
  *
  * The nav scrolls by `scrollIntoView({ block: 'start' })`, which puts the
- * section's top edge at the top of the viewport — underneath a header that is
+ * section's top edge at the top of the viewport, underneath a header that is
  * fixed over it. Every section heading arrived hidden behind the bar, which is
  * worst on a phone, where the header is a larger share of the screen and the
  * mobile menu is the main way anyone navigates. `--header-h` is published by

@@ -16,6 +16,9 @@ import { mailer } from '../lib/mail.ts'
 import { OTP_TTL_MINUTES } from '../lib/otp.ts'
 import { createLoginToken } from '../lib/session.ts'
 import * as templates from '../lib/templates.ts'
+import { departureDate, festDate, roomLabel, SECURITY_DEPOSIT_RUPEES } from '../data/accommodation.ts'
+import { feeFor } from '../data/fees.ts'
+import { resolveEvent } from '../data/events.ts'
 import { syncEventSheet } from './sheets.ts'
 
 /** Where the site lives, for links inside emails. */
@@ -88,6 +91,111 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
             amountPaise: row.amount_paise,
             passUrl,
           })
+
+      await deliver(env, send, row.email, row.name, message)
+      return
+    }
+
+    case 'email.event_entered': {
+      const row = await env.DB.prepare(
+        `SELECT r.name, r.email, r.public_code, e.event_name, e.territory_code,
+                e.team_name, e.head_count, e.fee_variant, e.fee_paise
+           FROM event_entries e
+           JOIN registrations r ON r.id = e.registration_id
+          WHERE e.id = ? AND e.registration_id = ?`,
+      )
+        .bind(job.entryId, job.registrationId)
+        .first<{
+          name: string
+          email: string
+          public_code: string
+          event_name: string
+          territory_code: string
+          team_name: string | null
+          head_count: number
+          fee_variant: string | null
+          fee_paise: number
+        }>()
+
+      if (!row) return
+
+      // The bracket somebody actually paid for, by the id stored on the entry.
+      // Only worth printing when the event runs more than one: "Nukkad Natak ·
+      // Entry" tells nobody anything.
+      const fee = feeFor(row.event_name)
+      const band =
+        fee && fee.variants.length > 1
+          ? (fee.variants.find((v) => v.id === row.fee_variant)?.label ?? row.fee_variant ?? '')
+          : ''
+
+      const resolved = resolveEvent(row.event_name)
+      const passUrl = await deepLink(env, job.registrationId, '/pass')
+
+      const message = templates.eventEntered({
+        name: row.name,
+        publicCode: row.public_code,
+        eventName: row.event_name,
+        territory: resolved?.territory.territory ?? row.territory_code,
+        band,
+        teamName: row.team_name ?? '',
+        headCount: row.head_count ?? 1,
+        amountPaise: row.fee_paise,
+        passUrl,
+      })
+
+      await deliver(env, send, row.email, row.name, message)
+      return
+    }
+
+    case 'email.accommodation_confirmed': {
+      // The booking carries its own copy of the contact details, so the
+      // receipt goes to the address given on the accommodation form rather
+      // than the one on the registration: for a good number of people those
+      // are different, and this is the email they have to produce at a desk.
+      const row = await env.DB.prepare(
+        `SELECT b.public_code AS code, b.name, b.email, b.sharing, b.ac, b.days,
+                b.arrival_date, b.fee_paise, r.public_code AS delegate_code,
+                (SELECT o.amount_paise FROM orders o
+                  WHERE o.accommodation_booking_id = b.id AND o.status = 'paid'
+                  ORDER BY o.paid_at DESC LIMIT 1) AS paid_paise
+           FROM accommodation_bookings b
+           JOIN registrations r ON r.id = b.registration_id
+          WHERE b.id = ? AND b.registration_id = ?`,
+      )
+        .bind(job.bookingId, job.registrationId)
+        .first<{
+          code: string
+          name: string
+          email: string
+          sharing: number
+          ac: number
+          days: number
+          arrival_date: string
+          fee_paise: number
+          delegate_code: string
+          paid_paise: number | null
+        }>()
+
+      if (!row) return
+
+      const passUrl = await deepLink(env, job.registrationId, '/pass')
+
+      const message = templates.accommodationConfirmed({
+        name: row.name,
+        code: row.code,
+        publicCode: row.delegate_code,
+        room: roomLabel({ sharing: row.sharing, ac: row.ac === 1 }),
+        days: row.days,
+        arrival: festDate(row.arrival_date),
+        departure: festDate(departureDate(row.arrival_date, row.days)),
+        roomPaise: row.fee_paise,
+        // What their statement will say, gateway charges included. Falls back
+        // to the room charge only if the order row has gone missing, which
+        // should be impossible by the time this job runs.
+        amountPaise: row.paid_paise ?? row.fee_paise,
+        depositRupees: SECURITY_DEPOSIT_RUPEES,
+        passUrl,
+      })
 
       await deliver(env, send, row.email, row.name, message)
       return

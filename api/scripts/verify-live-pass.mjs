@@ -1,6 +1,6 @@
 /**
  * Take a pass minted by the live server and put it through the gate logic,
- * using only the PUBLIC key — exactly what a guard's phone will do, offline.
+ * using only the PUBLIC key, exactly what a guard's phone will do, offline.
  */
 import { randomUUID, webcrypto } from 'node:crypto'
 import { verifyPass, decidePassAtGate } from '../src/lib/pass.ts'

@@ -376,7 +376,7 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 3 },
     fields: [],
-    note: 'Priced per head. Nothing to prepare — you get a random prop and one minute, then five minutes to sell it or stage it.',
+    note: 'Priced per head. Nothing to prepare: you get a random prop and one minute, then five minutes to sell it or stage it.',
   },
   'Nukkad Natak': {
     teamSize: { min: 6, max: 30 },
@@ -412,13 +412,13 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 2 },
     fields: [],
-    note: 'Entries are limited and filled first come, first served. Playing more than one category? Enter each one separately — the site keeps them apart.',
+    note: 'Entries are limited and filled first come, first served. Playing more than one category? Enter each one separately: the site keeps them apart.',
   },
   Chess: {
     participation: 'solo-or-team',
     teamSize: { min: 4, max: 6 },
     fields: [],
-    note: 'Four tournaments run: one team event and three individual time controls. You may enter as many as you like — pick a band, then come back and enter another. Batch 2021 or later only.',
+    note: 'Four tournaments run: one team event and three individual time controls. You may enter as many as you like, pick a band, then come back and enter another. Batch 2021 or later only.',
   },
   Carrom: { participation: 'solo-or-team', teamSize: { min: 2, max: 2 }, fields: [] },
   Powerlifting: {
@@ -437,12 +437,12 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   Cineholics: {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 3 },
-    note: 'Four rounds, starting with a pen-and-paper screening. Entering alone is fine — the organisers pair lone wolves on the day.',
+    note: 'Four rounds, starting with a pen-and-paper screening. Entering alone is fine: the organisers pair lone wolves on the day.',
   },
   'Anime no Tatakai': {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 4 },
-    note: 'Four rounds — trivia, picture, audio, and a final round where you set your own stake. Mainstream and current series; little to no manga.',
+    note: 'Four rounds: trivia, picture, audio, and a final round where you set your own stake. Mainstream and current series; little to no manga.',
   },
   JAM: { note: 'Sixty seconds on a topic you draw from a chit. No hesitation, no deviation, no repetition.' },
   Oratio: {
@@ -459,7 +459,7 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   Storysmiths: {
     participation: 'team',
     teamSize: { min: 3, max: 3 },
-    note: 'Teams of 3, writing one story in relay. No team? Contact the coordinators — individual entrants are paired on the day of the event.',
+    note: 'Teams of 3, writing one story in relay. No team? Contact the coordinators: individual entrants are paired on the day of the event.',
   },
   Taboo: { participation: 'team', teamSize: { min: 2, max: 4 } },
   'Poetic Reveries': { fields: [F.poemTitle], note: 'The poem must be exclusively self-written. Five minutes maximum.' },
@@ -496,7 +496,7 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   'Evening Amore': {
     participation: 'solo-or-team',
     teamSize: { min: 2, max: 2 },
-    note: 'Couples and singles both welcome; singles are paired by a randomised system. Come well groomed — lounge wear is not the look. No refunds once a partner is assigned.',
+    note: 'Couples and singles both welcome; singles are paired by a randomised system. Come well groomed: lounge wear is not the look. No refunds once a partner is assigned.',
   },
   'Capture and Conquer': {
     participation: 'solo-or-team',

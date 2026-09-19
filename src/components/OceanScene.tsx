@@ -68,8 +68,8 @@ export default function OceanScene() {
          *
          * The painting is 1.71:1 and a phone is 0.46:1, so `cover` shows about
          * a quarter of its width. Centred, that quarter is open water: the
-         * island is off the left edge, and the ship and the moon — the two
-         * things that say "pirates" — are both off the right. Anchoring toward
+         * island is off the left edge, and the ship and the moon, the two
+         * things that say "pirates", are both off the right. Anchoring toward
          * the right of the plate keeps the ship, the moon upper-right and the
          * island's palms all in a portrait window.
          *

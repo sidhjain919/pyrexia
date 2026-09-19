@@ -34,7 +34,7 @@ export type SubEvent = {
 const THUNDERBOLT_FORM = {
   formTitle: 'Thunderbolt takes entries on its own form',
   formNote:
-    'The e-gaming crew runs every bracket from their own sheet — squads, in-game IDs and the tournament WhatsApp group all live there. It opens in a new tab, and it takes a minute.',
+    'The e-gaming crew runs every bracket from their own sheet: squads, in-game IDs and the tournament WhatsApp group all live there. It opens in a new tab, and it takes a minute.',
 }
 
 export type Territory = {
@@ -60,7 +60,7 @@ export type Territory = {
    *
    * Fahrenheit and Auriga are not competitions: one is the ceremony every
    * delegate walks into, the other is the pro nights. A "Register" button on
-   * either would be a lie, and "Coming Soon" is worse — it promises a form
+   * either would be a lie, and "Coming Soon" is worse, because it promises a form
    * that is never going to arrive. So they get the thing a visitor actually
    * wants from them instead.
    */
@@ -71,7 +71,7 @@ export type Territory = {
 
 export const territories: Territory[] = [
   // Competitions first, in the order the brochure lists them; the two you
-  // don't register for — the opening ceremony and the pro nights — come last,
+  // don't register for, the opening ceremony and the pro nights, come last,
   // so a strip of tabs opens on a rail of things to enter rather than on the
   // one card with a single item.
   {
@@ -116,7 +116,7 @@ export const territories: Territory[] = [
         form: 'https://docs.google.com/forms/d/e/1FAIpQLScVk9SA0EM9EnKK6ZKEGRkalygCFITqgkJ6wRoOJ3LZFNrcbA/viewform?usp=dialog',
         formTitle: 'This form is for the screening round',
         formNote:
-          'Battle of Bands screens online first. Fill the form with a link to a performance video of no more than 5 minutes by 2 October 2026 — nothing is paid at this stage. Bands that clear the screening hear from the Sinfonia crew about the live final and the ₹2000 band fee.',
+          'Battle of Bands screens online first. Fill the form with a link to a performance video of no more than 5 minutes by 2 October 2026. Nothing is paid at this stage. Bands that clear the screening hear from the Sinfonia crew about the live final and the ₹2000 band fee.',
       },
       { name: 'Rhythm Revolution', tag: 'Rap & Beatboxing Face-off' },
     ],

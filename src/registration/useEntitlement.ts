@@ -135,7 +135,7 @@ export function passCta(state: Entitlement | null): {
 /**
  * The call to action on a card you don't register for.
  *
- * Fahrenheit's says "Get your pass" — until the person looking already has
+ * Fahrenheit's says "Get your pass", until the person looking already has
  * one, at which point it would be telling a delegate to buy what they hold.
  * For them it points at the pass they own instead. Auriga's is the lineup
  * for everybody.

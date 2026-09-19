@@ -461,7 +461,7 @@ export function Funnel({ funnel }: { funnel: AdminStats['funnel'] }) {
       table={{
         columns: ['Step', 'People', 'Of previous step'],
         numeric: [1, 2],
-        rows: stages.map((s, i) => [s.label, s.n, i === 0 ? '—' : `${pct(s.n, stages[i - 1].n)}%`]),
+        rows: stages.map((s, i) => [s.label, s.n, i === 0 ? '–' : `${pct(s.n, stages[i - 1].n)}%`]),
       }}
     >
       <ol className="space-y-3">
@@ -655,7 +655,7 @@ export function Payments({ payments }: { payments: AdminStats['payments'] }) {
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
         <div>
           <div className="ink-3 text-[0.74rem]">Success rate</div>
-          <div className="mt-0.5 text-[1.8rem] font-semibold leading-none">{rate === null ? '—' : `${rate}%`}</div>
+          <div className="mt-0.5 text-[1.8rem] font-semibold leading-none">{rate === null ? '–' : `${rate}%`}</div>
         </div>
         <div className="flex gap-6 text-[0.8rem]">
           <span><strong className="num">{payments.paid}</strong> <span className="ink-3">paid</span></span>
@@ -668,7 +668,7 @@ export function Payments({ payments }: { payments: AdminStats['payments'] }) {
           </span>
           {payments.unmatchedRefunds > 0 && (
             <span
-              title="Razorpay reports these refunds on payments that were never made through the site — a payment link, a QR, or a dashboard collect. There is no registration to undo, so they are not counted above."
+              title="Razorpay reports these refunds on payments that were never made through the site: a payment link, a QR, or a dashboard collect. There is no registration to undo, so they are not counted above."
             >
               <strong className="num">{payments.unmatchedRefunds}</strong>{' '}
               <span className="ink-3">refunded outside the site</span>

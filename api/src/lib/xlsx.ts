@@ -9,11 +9,11 @@
  *
  * Why a real .xlsx rather than CSV: amounts land in true numeric cells (so they
  * sum and sort in Excel), and because text lives in typed string cells, a value
- * beginning `=` or `+` is never interpreted as a formula — the CSV-injection
+ * beginning `=` or `+` is never interpreted as a formula, and the CSV-injection
  * hazard simply does not exist here.
  *
  * Only what a printout sheet needs: one sheet, a title row, a header row, then
- * data. Numbers vs. text per cell. No styles, no shared strings — both are
+ * data. Numbers vs. text per cell. No styles, no shared strings: both are
  * optional in the spec and omitting them is what keeps this auditable.
  */
 

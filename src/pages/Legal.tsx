@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { SITE } from '../data/site'
 import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
+import { SECURITY_DEPOSIT } from '../data/accommodation'
 
 /**
  * The four pages Razorpay checks for before activating live payments: terms,
@@ -262,9 +263,9 @@ function privacy() {
         <Block>
           <H>Why we collect it</H>
           <P>
-            To issue and verify your pass, to run the events you enter, to contact you about the
-            festival, to reach someone if you are unwell or injured on campus, and to keep proper
-            financial records.
+            To issue and verify your pass, to run the events you enter, to give you a bed if you
+            book one, to contact you about the festival, to reach someone if you are unwell or
+            injured on campus, and to keep proper financial records.
           </P>
           <P>
             We do not sell your information. We do not share it with sponsors. We do not send you
@@ -278,6 +279,13 @@ function privacy() {
             <li><strong className="text-parchment">Razorpay</strong>, to take payment.</li>
             <li><strong className="text-parchment">Our email provider</strong>, to deliver your pass and confirmations.</li>
             <li><strong className="text-parchment">Cloudflare</strong>, where the website and database are hosted.</li>
+            <li>
+              <strong className="text-parchment">The hotel or hostel you are placed in</strong>, if
+              you book accommodation. Some rooms are off campus, with hospitality partners who have
+              to be able to check you in, so they are given your name, phone number and college and
+              nothing else. We ask you to agree to this on the booking form rather than assuming
+              it, and if you do not book a room, nobody outside {SITE.name} is told anything.
+            </li>
           </L>
         </Block>
 
@@ -329,9 +337,10 @@ function refunds() {
             </p>
             <p className="mt-2 text-[0.92rem] leading-relaxed text-parchment/75">
               Once your payment is confirmed, none of Basic Registration ({rupees(BASIC_AMOUNT)}),
-              the Festival Pass ({rupees(DELEGATE_ADDON)}) or an individual event entry fee can be
-              refunded or transferred to another person. Payment gateway charges are not refundable
-              in any circumstance, as they are not ours to return.
+              the Festival Pass ({rupees(DELEGATE_ADDON)}), an individual event entry fee or an
+              accommodation booking can be refunded or transferred to another person. Payment
+              gateway charges are not refundable in any circumstance, as they are not ours to
+              return.
             </p>
           </div>
         </Block>
@@ -351,6 +360,7 @@ function refunds() {
             <li>You are unable to attend, for any reason.</li>
             <li>You attend only some of the five days.</li>
             <li>You withdraw from an event you had entered, or paid an entry fee for.</li>
+            <li>You cancel a room you had booked, or leave earlier than you booked for.</li>
             <li>An event, venue or artist line-up changes.</li>
             <li>Your registration is cancelled for breaking the terms.</li>
           </L>
@@ -366,8 +376,8 @@ function refunds() {
           </P>
           <P>
             If <strong className="text-parchment">we cancel an event you had paid an entry fee
-            for</strong> — a few of the sports brackets say in their rulebooks that too few
-            entries can call the event off — that entry fee is returned. The event's coordinators
+            for</strong>, and a few of the sports brackets say in their rulebooks that too few
+            entries can call the event off, then that entry fee is returned. The event's coordinators
             handle it and will contact everyone who had entered. This covers the entry fee for
             that event only; your Basic Registration and Festival Pass are unaffected, because
             they cover the whole fest rather than that one bracket.
@@ -375,6 +385,23 @@ function refunds() {
           <P>
             Approved refunds are returned to the original payment method within 7 working days.
             Your bank may take a few days more to show it.
+          </P>
+        </Block>
+
+        <Block>
+          <H>Accommodation, and the security deposit</H>
+          <P>
+            A room booked through this site is paid for in advance and, like everything else
+            above, is not refunded if you cancel or cut your stay short. Rooms are allocated to
+            the people who have booked them, and an empty bed costs us what a full one does.
+          </P>
+          <P>
+            The <strong className="text-parchment">{rupees(SECURITY_DEPOSIT)} security
+            deposit</strong> is a separate thing and is refundable. It is collected in cash at
+            check-in, never online, and returned to you at check-out against the printed receipt
+            the accommodation desk issues. It is kept only to cover damage to the room or its
+            facilities, and only to the extent of the damage: anything beyond the deposit is
+            charged on top, and anything left over is yours.
           </P>
         </Block>
 

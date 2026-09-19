@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Star, Ticket, X } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Loader2, Star, Ticket, X } from 'lucide-react'
 
 import {
   ApiError,
@@ -406,7 +406,7 @@ export default function DelegateForm() {
               <div>
                 <h3 className="font-display text-lg text-offwhite">Identity documents</h3>
                 <p className="mt-1.5 text-[0.85rem] text-parchment/55">
-                  Your college ID is needed before you can pay — it is what the
+                  Your college ID is needed before you can pay: it is what the
                   student rate is based on. A government photo ID is optional.
                 </p>
               </div>
@@ -544,7 +544,7 @@ export default function DelegateForm() {
             </>
           ) : (
             <>
-              Continue <ArrowRight size={14} />
+              Continue
             </>
           )}
         </button>

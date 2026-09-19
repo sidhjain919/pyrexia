@@ -135,7 +135,7 @@ export default function Artists() {
  * One announced night.
  *
  * The portrait is the card: name and hook sit on the photograph, and the
- * detail — who they are, what you'd recognise — sits under it where it can be
+ * detail (who they are, what you'd recognise) sits under it where it can be
  * read without fighting the image for contrast.
  */
 function HeadlinerCard({ night }: { night: ProNight }) {

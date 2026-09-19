@@ -3,7 +3,7 @@
  *
  * The authority on what an event costs, mirroring `src/data/fees.ts` on the
  * site. The site's copy is for display; this one is what gets charged, and the
- * client never sends an amount — only a variant id and, where a band is priced
+ * client never sends an amount, only a variant id and, where a band is priced
  * per head, the squad size it already had to declare.
  *
  * Paise throughout, like everything else that touches money.

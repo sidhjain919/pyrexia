@@ -9,7 +9,7 @@ import { api } from '../api/client'
  * The failure this exists to prevent has one shape: somebody switches Razorpay
  * to test keys for a dry run, the run goes well, the site gets announced, and
  * nobody notices for a day that every registration since has taken zero rupees
- * and issued a real pass. Nothing else on the page looks any different — the
+ * and issued a real pass. Nothing else on the page looks any different: the
  * checkout opens, the payment succeeds, the confirmation email arrives. Test
  * mode is invisible by design, which is exactly the problem.
  *
@@ -63,7 +63,7 @@ export default function PaymentModeBanner() {
     >
       <AlertTriangle size={14} className="shrink-0" />
       <span>
-        Test mode — payments are not real and no money is taken
+        Test mode: payments are not real and no money is taken
       </span>
     </div>
   )

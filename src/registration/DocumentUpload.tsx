@@ -11,8 +11,8 @@ import { ApiError, api, uploadDocument, type MyDocument } from '../api/client'
  * manage it.
  *
  * The two documents are not equal. The college ID is what the whole price
- * depends on — this is a student fest at a student rate, and the desk has no
- * other way to tell a student from anyone else — so it is required. Aadhaar is
+ * depends on: this is a student fest at a student rate, and the desk has no
+ * other way to tell a student from anyone else, so it is required. Aadhaar is
  * a convenience for the desk and stays optional, because insisting on the one
  * document people are most careful with, to sell a ₹500 ticket, loses
  * registrations and deserves to.
@@ -129,7 +129,7 @@ export default function DocumentUpload({
       {!compact && (
         <p className="text-[0.88rem] leading-relaxed text-parchment/60">
           Kept on file for the registration desk, in case a question comes up
-          about a pass. Your college ID is required — the student rate depends
+          about a pass. Your college ID is required: the student rate depends
           on it. A government photo ID is optional. Images or PDF, up to{' '}
           {MAX_MB} MB each. Bring the physical cards with you to the fest.
         </p>

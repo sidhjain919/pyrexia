@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { useRegistration } from '../registration/context'
 import DelegateForm from '../registration/DelegateForm'
 import EventForm from '../registration/EventForm'
+import AccommodationForm from '../registration/AccommodationForm'
 import { Compass } from './primitives'
 import { sectionPhoto } from '../data/media'
 import { resolveEvent } from '../data/registration'
@@ -34,6 +35,7 @@ export default function RegisterModal() {
 
   const resolved = eventName ? resolveEvent(eventName) : null
   const isEvent = mode === 'event' && !!resolved
+  const isStay = mode === 'accommodation'
 
   return (
     <AnimatePresence>
@@ -48,7 +50,9 @@ export default function RegisterModal() {
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label={isEvent ? `Register for ${eventName}` : 'Fest registration'}
+            aria-label={
+              isStay ? 'Book accommodation' : isEvent ? `Register for ${eventName}` : 'Fest registration'
+            }
             initial={{ opacity: 0, y: 30, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -72,16 +76,18 @@ export default function RegisterModal() {
               </button>
               <div className="absolute bottom-4 left-6 right-16">
                 <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/80">
-                  {isEvent ? 'Event Entry' : 'Join the Voyage'}
+                  {isStay ? 'Make Port' : isEvent ? 'Event Entry' : 'Join the Voyage'}
                 </div>
                 <h2 className="truncate font-display text-[1.3rem] text-offwhite sm:text-3xl">
-                  {isEvent ? eventName : 'Fest Registration'}
+                  {isStay ? 'Book your stay' : isEvent ? eventName : 'Fest Registration'}
                 </h2>
               </div>
             </div>
 
             <div className="max-h-[68vh] overflow-y-auto p-6 sm:p-8">
-              {isEvent ? (
+              {isStay ? (
+                <AccommodationForm onNeedRegistration={openDelegate} />
+              ) : isEvent ? (
                 <EventForm
                   key={eventName}
                   eventName={eventName!}
@@ -126,7 +132,7 @@ export default function RegisterModal() {
                 </div>
               )}
 
-              {!isEvent && returnTo && (
+              {!isEvent && !isStay && returnTo && (
                 <p className="mt-6 text-center text-[0.8rem] text-parchment/60">
                   Once your registration is confirmed, head back to{' '}
                   <span className="text-gold-bright">{returnTo}</span>.

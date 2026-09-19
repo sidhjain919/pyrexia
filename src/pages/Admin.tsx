@@ -26,6 +26,7 @@ import {
   istToday,
 } from '../admin/charts'
 import NoticeComposer from '../admin/NoticeComposer'
+import AccommodationBoard from '../admin/AccommodationBoard'
 import OpeningsBoard from '../admin/OpeningsBoard'
 import IdViewer from '../admin/IdViewer'
 
@@ -331,11 +332,13 @@ export default function Admin() {
         <div className="mt-10">
           <h2 className="text-[1.15rem] font-semibold">Downloads</h2>
           <p className="ink-3 mt-1 text-[0.82rem]">
-            Four Excel workbooks. Registrations has two tabs: every login, then everyone who paid with
+            Five Excel workbooks. Registrations has two tabs: every login, then everyone who paid with
             what they entered on the form. Each sheet is stamped with the time it was made, so a list
             printed this morning is not mistaken for this afternoon’s. Event Sheets lists the live Google
             spreadsheets, one row each: a vertical’s spreadsheet with a tab per event, or a Velocity
-            event’s own. They fill in by themselves as entries are confirmed.
+            event’s own. They fill in by themselves as entries are confirmed. Accommodation is the
+            rooming list: every confirmed booking, then how many rooms of each type to have ready,
+            then who arrives on which day.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2.5">
@@ -344,6 +347,7 @@ export default function Admin() {
               ['Payments', '/api/admin/export/payments', 'payments'],
               ['Events', '/api/admin/export/events', 'events'],
               ['Event Sheets', '/api/admin/export/event-sheets', 'event-sheets'],
+              ['Accommodation', '/api/admin/export/accommodation', 'accommodation'],
             ].map(([label, path, file]) => (
               <button
                 key={label}
@@ -359,6 +363,8 @@ export default function Admin() {
         </div>
 
         <OpeningsBoard onError={setError} />
+
+        <AccommodationBoard onError={setError} />
 
         <NoticeComposer onError={setError} />
 
@@ -435,7 +441,7 @@ export default function Admin() {
                       )}
                     </td>
                     <td className="n num">
-                      {row.paidPaise > 0 ? inr(row.paidPaise) : <span className="ink-3">—</span>}
+                      {row.paidPaise > 0 ? inr(row.paidPaise) : <span className="ink-3">–</span>}
                     </td>
                     <td className="text-right">
                       <div className="inline-flex flex-wrap justify-end gap-1.5">

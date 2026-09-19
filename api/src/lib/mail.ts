@@ -348,7 +348,7 @@ class ZeptoProvider implements MailProvider {
     // Zoho's console hands you the whole header line, prefix included, and its
     // copy button copies the whole thing. Pasting that verbatim produces
     // `Zoho-enczapikey Zoho-enczapikey wSsV…` and a 401 that reads exactly
-    // like a wrong key — an afternoon of re-issuing tokens that were all fine.
+    // like a wrong key: an afternoon of re-issuing tokens that were all fine.
     this.token = token.trim().replace(/^Zoho-enczapikey\s+/i, '')
     // `in` is the India data centre, which is where this account should live.
     this.host = region === 'in' ? 'api.zeptomail.in' : 'api.zeptomail.com'

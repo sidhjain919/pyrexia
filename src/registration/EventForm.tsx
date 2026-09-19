@@ -478,7 +478,7 @@ export default function EventForm({
             <div className="flex gap-3 rounded-lg border border-gold/25 bg-ocean/40 p-4">
               <Users size={17} className="mt-0.5 shrink-0 text-gold-bright" />
               <p className="text-[0.82rem] leading-relaxed text-parchment/75">
-                You are registering the whole crew — only one of you needs to do this, and there is
+                You are registering the whole crew: only one of you needs to do this, and there is
                 nothing for the others to accept.{' '}
                 <span className="text-parchment/50">
                   Everyone still needs their own ₹500 Basic Registration to be on campus.

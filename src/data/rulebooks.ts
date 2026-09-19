@@ -98,7 +98,7 @@ export const eventDetail: Record<string, EventDetail> = {
   },
   'Battle of Bands': {
     rules: [
-      'Screening round first, on the Google Form: a link to a performance video of no more than 5 minutes. Studio, stage or compiled — your call.',
+      'Screening round first, on the Google Form: a link to a performance video of no more than 5 minutes. Studio, stage or compiled: your call.',
       'Submissions close 2 October 2026. The bands that clear it come to AIIMS Rishikesh for the live final.',
       'Nothing is paid at the screening stage. The ₹2000 band fee is due only after you clear it, and the crew shares the next steps with the shortlisted bands.',
       'Bands of 4–12 members; a maximum of 9 on stage at once.',
@@ -132,7 +132,7 @@ export const eventDetail: Record<string, EventDetail> = {
   'mADD Angle': {
     rules: [
       'You are handed a random prop and get one minute to prepare.',
-      'Sell it as an advertisement or stage it as drama — either counts.',
+      'Sell it as an advertisement or stage it as drama: either counts.',
       'Five minutes maximum. Hindi or English.',
       'Teams of up to 3. Basic brand products are provided; no other props are.',
       'Judged on creativity, humour, relevance to the prop, audience engagement and presentation.',
@@ -141,7 +141,7 @@ export const eventDetail: Record<string, EventDetail> = {
   },
   'Nukkad Natak': {
     rules: [
-      'Teams of 6–30. The limit is hard — no exceptions.',
+      'Teams of 6–30. The limit is hard: no exceptions.',
       'One round. Eighteen minutes maximum; overrunning costs marks.',
       'Hindi or English, in language a passer-by understands.',
       'Original work only. Open theme, but plays with social relevance are expected.',
@@ -177,7 +177,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Knockout format, 20 overs a side. Rain shortens overs at the organisers’ call.',
       'Squad of 15 (11 + 4 substitutes). The playing XI cannot change once submitted; the impact player rule applies, as in the IPL.',
-      'No player may turn out for two teams — both are disqualified if they do.',
+      'No player may turn out for two teams. Both are disqualified if they do.',
       'ICC rules apply (LBW excepted). D/L in case of rain.',
       'Field for fewer than 8 overs and you cannot bat or bowl for the rest of the match.',
       'Interns, UG 2022–2026, JRs and SRs are eligible. Contact the organisers before registering to confirm dates and spots.',
@@ -237,7 +237,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'One team tournament and three individual tournaments. You may enter as many as you like.',
       'Team: four players plus up to two optional substitutes, all from the same college. Double-elimination, 15+0.',
-      'Individual time controls — Rapid 10+2, Blitz 5+3, Bullet 2+1. All knockout.',
+      'Individual time controls: Rapid 10+2, Blitz 5+3, Bullet 2+1. All knockout.',
       'FIDE rules throughout. Batch 2021 or later only.',
       'Carry a valid college ID.',
     ],
@@ -268,7 +268,7 @@ export const eventDetail: Record<string, EventDetail> = {
 
   'Mr. & Ms. PYREXIA': {
     rules: [
-      'Theme: Serenity of Seasons. Dress as spring, summer, autumn or winter — and make the season unmistakable.',
+      'Theme: Serenity of Seasons. Dress as spring, summer, autumn or winter, and make the season unmistakable.',
       'Round 1 · Ramp Walk: a 30-second intro video in MP4 (you on camera, not a voiceover) with your name, one word that describes you, and why you chose your outfit. No college or course names. The video plays, then you walk for 40 seconds.',
       'Round 2 · Talent: one talent, two minutes maximum. Bring your own MP3 track and props.',
       'Round 3 · Surprise: revealed on the day at the auditorium. No preparation, no rehearsal.',
@@ -305,7 +305,7 @@ export const eventDetail: Record<string, EventDetail> = {
   'Anime no Tatakai': {
     rules: [
       'Four rounds. Trivia (5 pts, 10 seconds a question), picture round (10 pts), audio round (5 pts, −1 for a wrong answer).',
-      'Final round: you choose the stake — 5, 10, 15 or 20 points — and lose the same if you’re wrong.',
+      'Final round: you choose the stake (5, 10, 15 or 20 points) and lose the same if you’re wrong.',
       'Teams of 2–4; lone wolves allowed. Open from first years to interns.',
       'Mainstream and current series. Little to no manga, manhwa or manhua.',
     ],
@@ -322,10 +322,10 @@ export const eventDetail: Record<string, EventDetail> = {
   },
   Oratio: {
     rules: [
-      'Bilingual debate — speak in English or Hindi. Two sides of 4, finalised an hour before the debate.',
+      'Bilingual debate: speak in English or Hindi. Two sides of 4, finalised an hour before the debate.',
       'Round 1 opening: one speaker per team, 3 minutes. Round 2: the rest, 3 minutes each; unused time may transfer but no speech exceeds 5.',
       'Round 3 rebuttal: one question each (2 minutes), answered in 2. Round 4 closing: one speaker, 3 minutes.',
-      'Marked out of 100 — content 30, clarity 20, delivery 20, teamwork 15, rebuttal 15.',
+      'Marked out of 100: content 30, clarity 20, delivery 20, teamwork 15, rebuttal 15.',
       'No personal attacks. A bell rings 30 seconds before your time ends.',
     ],
     contacts: [C('Gaurang Sharma', '9024635316'), C('Aarav', '9015093332')],
@@ -343,7 +343,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Teams of 3. Entrants without a team are paired with others on the day.',
       'Writer 1 gets a prompt, 5 minutes to think and 10 to write. Writers 2 and 3 read for 5 minutes, then continue for 10.',
-      'Random keywords are handed out mid-event and must be worked in — creatively used, they earn extra points.',
+      'Random keywords are handed out mid-event and must be worked in. Used creatively, they earn extra points.',
       'No internet, AI tools, reference material or outside help. Anyone caught disqualifies the whole team.',
       'Everything must be written during the event. Winners are announced the following day.',
     ],
@@ -409,7 +409,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Individual. Theme announced before the competition begins.',
       '1.5 hours. T-shirts, paints and brushes are provided.',
-      'Bring your own materials if you like — except the T-shirt.',
+      'Bring your own materials if you like, except the T-shirt.',
     ],
     contacts: [C('Bhavya', '8764213826'), C('Siddharth', '6393090764')],
   },
@@ -417,7 +417,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Individual black-and-white sketching. Theme announced before the start.',
       '2 hours. Sheets and pencils are provided.',
-      'Bring extra media if you want — charcoal and the like are welcome.',
+      'Bring extra media if you want: charcoal and the like are welcome.',
     ],
     contacts: [C('Bhavya', '8764213826'), C('Shreya', '8439365531')],
   },
@@ -425,7 +425,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Individual. Theme announced before the start.',
       '2 hours. Canvas, paints and brushes are provided.',
-      'Bring your own materials if you like — except the canvas.',
+      'Bring your own materials if you like, except the canvas.',
     ],
     contacts: [C('Ayush', '7985371801'), C('Siddharth', '6393090764')],
   },
@@ -449,7 +449,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Individual. Theme announced before the start.',
       '1.5 hours. Paints and sheets are provided.',
-      'Bring sponges, knives, whatever you like — brushes are strictly prohibited.',
+      'Bring sponges, knives, whatever you like, but brushes are strictly prohibited.',
     ],
     contacts: [C('Bhavya', '8764213826'), C('Siddharth', '6393090764')],
   },
@@ -457,7 +457,7 @@ export const eventDetail: Record<string, EventDetail> = {
     rules: [
       'Individual. Theme announced before the start.',
       '1.5 hours. Stones, paints and brushes are provided.',
-      'Bring your own materials if you like — except ready-made or pre-painted stones.',
+      'Bring your own materials if you like, except ready-made or pre-painted stones.',
     ],
     contacts: [C('Siddharth', '6393090764'), C('Ayush', '7985371801')],
   },
@@ -497,7 +497,7 @@ export const eventDetail: Record<string, EventDetail> = {
     date: '15 Oct',
     rules: [
       'Teams of 1–4. You get a list of items and activities, each worth points by how hard it is to find.',
-      'Beg, borrow or steal — then photograph or film yourself doing it.',
+      'Beg, borrow or steal, then photograph or film yourself doing it.',
       '60 minutes. No vehicles, and nobody leaves campus.',
       'Most points from items collected and tasks done, in the least time, wins.',
     ],
@@ -550,7 +550,7 @@ export const eventDetail: Record<string, EventDetail> = {
       'One player inflates balloons; the other bursts them by sitting on them on the chair.',
       'No hands, no sharp objects.',
       'A balloon counts only when fully burst with the knot visible.',
-      'Most balloons inside the time limit — or all of them soonest — wins.',
+      'Most balloons inside the time limit, or all of them soonest, wins.',
     ],
     contacts: [C('Aanchal', '8799760114'), C('Asmita', '9835846797')],
   },
@@ -576,7 +576,7 @@ export const eventDetail: Record<string, EventDetail> = {
   BGMI: {
     rules: [
       'Battle Royale (₹400 per team) and TDM (₹200 per team).',
-      'Squads of at least 4, fixed after round one — changing members is disqualification.',
+      'Squads of at least 4, fixed after round one. Changing members is disqualification.',
       'League stage then a final round; the top 16 teams go through.',
       'Placement points #1: 10 down to #8: 1, plus 1 point per finish.',
       'Mobiles and tablets only, original app store installs only. Organisers spectate every match.',
@@ -608,7 +608,7 @@ export const eventDetail: Record<string, EventDetail> = {
   'Clash Royale': {
     rules: [
       'Registration ₹125. Game mode: Duel Battle.',
-      'Three rounds — in-game tournament, last chance qualifiers, then playoffs.',
+      'Three rounds: in-game tournament, last chance qualifiers, then playoffs.',
       'Open to medical students of batch 2021 or later.',
       'Newly released broken cards, Evos or Heroes may be banned; the call is the organisers’ and is announced beforehand.',
       'Prize pool ₹1,800.',

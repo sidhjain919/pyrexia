@@ -17,8 +17,8 @@ import { asset } from '../lib/asset'
  * was really providing is still there.
  *
  * The two layers exist because they answer different questions. The master
- * switch is "is Velocity taking entries" — closing it shuts eleven sports at
- * once. An event's own switch is "is women's doubles full" — closing it shuts
+ * switch is "is Velocity taking entries", and closing it shuts eleven sports at
+ * once. An event's own switch is "is women's doubles full", and closing it shuts
  * that one card and leaves the ten beside it alone. An event is open only
  * when both say so, which the card makes visible: a shut vertical greys its
  * whole list.
@@ -114,7 +114,7 @@ export default function OpeningsBoard({ onError }: { onError: (msg: string) => v
       <p className="ink-3 mt-1 text-[0.82rem]">
         A master switch per vertical, and one for every event under it. Open a vertical and every
         event under it starts taking entries on the site immediately; close a single event and only
-        that card reads “Coming Soon”. Entries already paid for are never affected — closing only
+        that card reads “Coming Soon”. Entries already paid for are never affected: closing only
         stops new ones. Every change is logged against your name.
       </p>
 

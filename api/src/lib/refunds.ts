@@ -11,7 +11,7 @@
  * committee refunds the fest's share and Razorpay keeps its fee, so the number
  * that comes back is never the number that was charged. An order is undone
  * when what has come back reaches what the fest was actually owed; anything
- * smaller is recorded, audited, and left standing — a partial refund of a
+ * smaller is recorded, audited, and left standing: a partial refund of a
  * gateway charge must not cancel somebody's pass.
  */
 
@@ -62,8 +62,8 @@ export async function applyRefund(
    * No order carries this payment id. The first live refund was exactly this:
    * a student's third attempt on an order our webhook had already marked
    * failed captured, the capture webhook never arrived, and the committee
-   * refunded by hand. The payment still belongs to one of our orders — Razorpay
-   * knows which — so ask, and book the refund there.
+   * refunded by hand. The payment still belongs to one of our orders, and Razorpay
+   * knows which, so ask, and book the refund there.
    */
   let writtenOff = false
   /** What Razorpay knows about the payment, kept for the audit row if nothing matches. */
@@ -142,7 +142,7 @@ export async function applyRefund(
   if (writtenOff) {
     // Nothing was granted on this order, so there is nothing to revoke: it is
     // marked refunded, pinned to the payment that was actually taken, and the
-    // person's registration stays exactly where it was — pending.
+    // person's registration stays exactly where it was: pending.
     await env.DB.prepare(
       `UPDATE orders
           SET status = 'refunded', razorpay_payment_id = ?, refunded_paise = ?,

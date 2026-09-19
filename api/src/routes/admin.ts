@@ -16,6 +16,13 @@ import { Hono } from 'hono'
 import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
 import { listOpenings, setEventSwitch, setOpening } from '../data/openings.ts'
+import {
+  accommodationSettings,
+  departureDate,
+  festDate,
+  roomLabel,
+  setAccommodationOpen,
+} from '../data/accommodation.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import * as audit from '../lib/audit.ts'
 
@@ -596,4 +603,109 @@ admin.post('/admin/openings', async (c) => {
   })
 
   return c.json({ ok: true, territoryId, open })
+})
+
+/* ------------------------------------------------------------------ *
+ * Accommodation
+ * ------------------------------------------------------------------ */
+
+/**
+ * The rooming list, plus the switch's current state.
+ *
+ * Occupancy is grouped the way the team allocates: block, then room size,
+ * then AC. `rooms` is the number of rooms that many people implies, rounded
+ * up, because four people wanting a three-seater is two rooms.
+ */
+admin.get('/admin/accommodation', async (c) => {
+  const [settings, bookings, occupancy, arrivals] = await Promise.all([
+    accommodationSettings(c.env),
+    c.env.DB.prepare(
+      `SELECT b.public_code, b.gender, b.sharing, b.ac, b.days, b.arrival_date,
+              b.arrival_time, b.name, b.email, b.phone, b.college, b.course,
+              b.requirements, b.fee_paise, b.created_at, r.public_code AS delegate_code
+         FROM accommodation_bookings b
+         JOIN registrations r ON r.id = b.registration_id
+        WHERE b.status = 'confirmed'
+        ORDER BY b.created_at DESC`,
+    ).all<Record<string, string | number | null>>(),
+    c.env.DB.prepare(
+      `SELECT gender, sharing, ac, count(*) AS people,
+              coalesce(sum(fee_paise), 0) AS collected_paise
+         FROM accommodation_bookings WHERE status = 'confirmed'
+        GROUP BY gender, sharing, ac ORDER BY gender, sharing, ac DESC`,
+    ).all<{ gender: string; sharing: number; ac: number; people: number; collected_paise: number }>(),
+    c.env.DB.prepare(
+      `SELECT arrival_date, count(*) AS people
+         FROM accommodation_bookings WHERE status = 'confirmed'
+        GROUP BY arrival_date ORDER BY arrival_date`,
+    ).all<{ arrival_date: string; people: number }>(),
+  ])
+
+  return c.json({
+    settings,
+    bookings: bookings.results.map((b) => ({
+      code: b.public_code,
+      gender: b.gender,
+      room: roomLabel({ sharing: Number(b.sharing), ac: b.ac === 1 }),
+      days: b.days,
+      arrival: festDate(String(b.arrival_date)),
+      arrivalTime: b.arrival_time,
+      departure: festDate(departureDate(String(b.arrival_date), Number(b.days))),
+      name: b.name,
+      email: b.email,
+      phone: b.phone,
+      college: b.college,
+      course: b.course,
+      requirements: b.requirements,
+      feePaise: b.fee_paise,
+      delegateCode: b.delegate_code,
+      bookedAt: b.created_at,
+    })),
+    occupancy: occupancy.results.map((o) => ({
+      gender: o.gender,
+      room: roomLabel({ sharing: o.sharing, ac: o.ac === 1 }),
+      people: o.people,
+      rooms: Math.ceil(o.people / o.sharing),
+      collectedPaise: o.collected_paise,
+    })),
+    arrivals: arrivals.results.map((a) => ({
+      date: festDate(a.arrival_date),
+      people: a.people,
+    })),
+    totals: {
+      people: occupancy.results.reduce((n, o) => n + o.people, 0),
+      collectedPaise: occupancy.results.reduce((n, o) => n + o.collected_paise, 0),
+    },
+  })
+})
+
+/**
+ * Open or close bookings.
+ *
+ * The only control there is. Nothing here counts beds: how many exist is
+ * negotiated with the hospitality partners week to week, so this is the
+ * committee saying "we are full" rather than the database deducing it.
+ */
+admin.post('/admin/accommodation/settings', async (c) => {
+  const me = c.get('admin')
+  if (!PRIVILEGED.has(me.role)) {
+    throw new ApiError('forbidden', 'Only the core team can open or close accommodation.')
+  }
+
+  const body = (await readJson(c)) as Record<string, unknown>
+  const open = body.open === true
+  const note = String(body.note ?? '').trim().slice(0, 300) || null
+
+  await setAccommodationOpen(c.env, open, note, me.email)
+
+  await audit.record(c.env, {
+    actorEmail: me.email,
+    action: 'settings.accommodation',
+    entity: 'accommodation_settings',
+    entityId: 'global',
+    after: { open, note },
+    ip: clientIp(c),
+  })
+
+  return c.json({ ok: true, open, note })
 })

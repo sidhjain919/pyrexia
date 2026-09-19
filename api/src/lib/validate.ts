@@ -1,5 +1,6 @@
 /**
- * Input validation for the registration form.
+ * Input validation for the forms that write a person into the database: the
+ * registration form, and the accommodation booking form below it.
  *
  * These rules deliberately mirror the ones the React form applies, because the
  * browser's copy is a courtesy and this one is the enforcement. Anything that
@@ -135,6 +136,78 @@ export function validateRegistration(body: unknown): {
 
   for (const [k, v] of Object.entries(value)) {
     if (typeof v === 'string' && v.length > 500) errors[k] = 'That value is too long.'
+  }
+
+  return { ok: Object.keys(errors).length === 0, errors, value }
+}
+
+/* ------------------------------------------------------------------ *
+ * Accommodation
+ * ------------------------------------------------------------------ */
+
+export type AccommodationContact = {
+  name: string
+  email: string
+  phone: string
+  college: string
+  course: string
+  /** Free text: ground floor, a medical condition, anything the team should know. */
+  requirements: string
+  /** Free text on purpose: "late evening" beats a precise number somebody invented. */
+  arrivalTime: string
+  rulesAccepted: boolean
+  partnerConsent: boolean
+}
+
+/**
+ * The part of an accommodation booking that is about the person.
+ *
+ * The room, the length of the stay and the arrival date are not checked here:
+ * those are priced by `data/accommodation.ts`, which is the only thing that
+ * knows which rooms exist and what they cost, and it refuses anything it
+ * cannot price.
+ *
+ * These fields arrive prefilled from the registration and are editable, which
+ * is the point: the number somebody carries at a fest is frequently not the
+ * one they signed up with, and the desk needs the one that will be answered.
+ */
+export function validateAccommodation(body: unknown): {
+  ok: boolean
+  errors: FieldErrors
+  value: AccommodationContact
+} {
+  const b = (body ?? {}) as Record<string, unknown>
+  const errors: FieldErrors = {}
+
+  const value: AccommodationContact = {
+    name: str(b.name),
+    email: normaliseEmail(str(b.email)),
+    phone: normalisePhone(str(b.phone)),
+    college: str(b.college),
+    course: str(b.course),
+    requirements: str(b.requirements).slice(0, 600),
+    arrivalTime: str(b.arrivalTime).slice(0, 60),
+    rulesAccepted: b.rulesAccepted === true,
+    partnerConsent: b.partnerConsent === true,
+  }
+
+  if (value.name.length < 2) errors.name = 'Tell us your name.'
+  if (value.name.length > 120) errors.name = 'That name is too long.'
+
+  if (!EMAIL_RE.test(value.email)) errors.email = 'The receipt has to reach you somewhere.'
+  if (value.email.length > 200) errors.email = 'That email is too long.'
+
+  // The number the desk rings when somebody has not turned up by midnight.
+  if (!PHONE_RE.test(value.phone)) errors.phone = 'A 10-digit Indian mobile number.'
+
+  if (value.college.length < 2) errors.college = 'Which port do you sail from?'
+  if (value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
+
+  // Both refused rather than defaulted. The terms behind them have teeth: a
+  // cancellation is not refunded, and damage is charged against the deposit.
+  if (!value.rulesAccepted) errors.rulesAccepted = 'Please read and accept the house rules.'
+  if (!value.partnerConsent) {
+    errors.partnerConsent = 'We need this to hand your booking to the hotel.'
   }
 
   return { ok: Object.keys(errors).length === 0, errors, value }

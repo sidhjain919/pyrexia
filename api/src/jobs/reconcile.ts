@@ -52,11 +52,11 @@ export async function reconcileOrders(env: Env): Promise<void> {
 
   // Two populations, one question: has Razorpay captured money on this order
   // that we never heard about? `created` orders past the grace period are the
-  // ordinary case. `failed` and `expired` ones are the retries — an order our
+  // ordinary case. `failed` and `expired` ones are the retries: an order our
   // webhook marked failed at 10:05 on which the student paid at 10:06.
   const { results: stale } = await env.DB.prepare(
     `SELECT id, registration_id, razorpay_order_id, amount_paise, status, created_at,
-            kind, event_entry_id
+            kind, event_entry_id, accommodation_booking_id
        FROM orders
       WHERE razorpay_order_id IS NOT NULL
         AND (
@@ -77,6 +77,7 @@ export async function reconcileOrders(env: Env): Promise<void> {
       created_at: string
       kind: string
       event_entry_id: string | null
+      accommodation_booking_id: string | null
     }>()
 
   for (const order of stale) {
@@ -159,7 +160,13 @@ export async function reconcileOrders(env: Env): Promise<void> {
  */
 async function settle(
   env: Env,
-  order: { id: string; registration_id: string; kind: string; event_entry_id: string | null },
+  order: {
+    id: string
+    registration_id: string
+    kind: string
+    event_entry_id: string | null
+    accommodation_booking_id: string | null
+  },
   payment: { id: string; amount: number; method?: string; fee?: number; tax?: number },
 ): Promise<void> {
   const { results: items } = await env.DB.prepare(
@@ -172,6 +179,9 @@ async function settle(
   // settling it means confirming that entry, exactly as the webhook does.
   // Without this the money was recorded and the student was never entered.
   const isEntry = order.kind === 'event' && !!order.event_entry_id
+  // Same shape as an entry: no line items, nothing granted, one pending row
+  // to confirm. Without this the money was recorded and nobody got a bed.
+  const isBooking = order.kind === 'accommodation' && !!order.accommodation_booking_id
 
   await env.DB.batch([
     env.DB.prepare(
@@ -208,11 +218,23 @@ async function settle(
           ).bind(order.event_entry_id),
         ]
       : []),
+
+    ...(isBooking
+      ? [
+          env.DB.prepare(
+            `UPDATE OR IGNORE accommodation_bookings
+                SET status = 'confirmed', updated_at = datetime('now')
+              WHERE id = ? AND status = 'pending'`,
+          ).bind(order.accommodation_booking_id),
+        ]
+      : []),
   ])
 
-  // An event entry never issues a pass; the pass came with the registration.
+  // Only an order that bought products issues a pass. Neither an entry nor a
+  // bed does: the pass came with the registration. Tested positively, so a
+  // fourth kind of order cannot quietly inherit the pass-issuing branch.
   if (isEntry) await requestSheetSyncForEntry(env, order.event_entry_id)
-  else await issuePassIfMissing(env, order.registration_id)
+  else if (!isBooking) await issuePassIfMissing(env, order.registration_id)
 
   await audit.record(env, {
     action: 'order.reconciled',
@@ -226,11 +248,27 @@ async function settle(
     },
   })
 
-  await env.JOBS.send({
-    kind: 'email.registration_confirmed',
-    registrationId: order.registration_id,
-    orderId: order.id,
-  })
+  // Same routing as the webhook, for the same reason: an entry settled by the
+  // sweep must not be announced as a Festival Pass upgrade either.
+  if (isBooking) {
+    await env.JOBS.send({
+      kind: 'email.accommodation_confirmed',
+      registrationId: order.registration_id,
+      bookingId: order.accommodation_booking_id!,
+    })
+  } else if (isEntry) {
+    await env.JOBS.send({
+      kind: 'email.event_entered',
+      registrationId: order.registration_id,
+      entryId: order.event_entry_id!,
+    })
+  } else {
+    await env.JOBS.send({
+      kind: 'email.registration_confirmed',
+      registrationId: order.registration_id,
+      orderId: order.id,
+    })
+  }
 }
 
 async function issuePassIfMissing(env: Env, registrationId: string): Promise<void> {
@@ -290,8 +328,59 @@ export async function repairUnconfirmedEntries(env: Env): Promise<void> {
       },
     })
     await requestSheetSyncForEntry(env, entry.id)
+    // This path confirms an entry nothing else did, so nothing else has told
+    // the entrant they are in. Reaching here twice is not possible: the UPDATE
+    // only matches a pending row, and it has just stopped being one.
+    await env.JOBS.send({
+      kind: 'email.event_entered',
+      registrationId: entry.registration_id,
+      entryId: entry.id,
+    })
   }
   if (results.length) console.log('confirmed entries left pending on paid orders', results.length)
+}
+
+/**
+ * Bookings whose order is paid but which were never confirmed.
+ *
+ * The accommodation counterpart of `repairUnconfirmedEntries`, and it exists
+ * for the same reason: a paid order beside a pending booking means somebody
+ * paid for a bed the desk has no record of them holding, which is a problem
+ * that surfaces at eleven at night with their luggage in the corridor.
+ *
+ * OR IGNORE: if they somehow already hold a confirmed booking, the unique
+ * index keeps it and this row stays pending for a human to refund, rather
+ * than failing the statement on every sweep from now until the fest.
+ */
+export async function repairUnconfirmedBookings(env: Env): Promise<void> {
+  const { results } = await env.DB.prepare(
+    `UPDATE OR IGNORE accommodation_bookings
+        SET status = 'confirmed', updated_at = datetime('now')
+      WHERE status = 'pending'
+        AND id IN (SELECT accommodation_booking_id FROM orders
+                    WHERE kind = 'accommodation' AND status = 'paid'
+                      AND accommodation_booking_id IS NOT NULL)
+      RETURNING id, registration_id, public_code`,
+  ).all<{ id: string; registration_id: string; public_code: string }>()
+
+  for (const booking of results) {
+    await audit.record(env, {
+      action: 'order.reconciled',
+      entity: 'accommodation_booking',
+      entityId: booking.id,
+      after: {
+        outcome: 'booking_confirmed_after_paid_order',
+        registrationId: booking.registration_id,
+        code: booking.public_code,
+      },
+    })
+    await env.JOBS.send({
+      kind: 'email.accommodation_confirmed',
+      registrationId: booking.registration_id,
+      bookingId: booking.id,
+    })
+  }
+  if (results.length) console.log('confirmed bookings left pending on paid orders', results.length)
 }
 
 /* ------------------------------------------------------------------ *

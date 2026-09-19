@@ -14,7 +14,7 @@
  *
  * The client never sends an amount. It sends a variant id, and the price for
  * that id comes from `data/fees.ts`. Where a band is priced per head it also
- * sends a squad — but the *count* is taken from the squad the server stores,
+ * sends a squad, but the *count* is taken from the squad the server stores,
  * never from a number the client claims.
  *
  * Teams enter once. Whoever registers lists their crew, pays, and is done:
@@ -270,7 +270,7 @@ events.post('/me/events', async (c) => {
     throw new ApiError(
       'conflict',
       priced && fee && fee.variants.length > 1
-        ? `You're already entered for ${resolved.name} — ${priced.label}.`
+        ? `You're already entered for ${resolved.name}, ${priced.label}.`
         : `You're already entered for ${resolved.name}.`,
     )
   }
@@ -318,6 +318,16 @@ events.post('/me/events', async (c) => {
       },
     })
     await requestSheetSync(c.env, resolved.name)
+
+    // A free entry is settled the moment it is written, so nothing else will
+    // ever tell this person they are in. Most events on the island charge
+    // nothing, which made "no email" the normal experience of entering one:
+    // the form closed and that was the only confirmation there was.
+    await c.env.JOBS.send({
+      kind: 'email.event_entered',
+      registrationId: session.registrationId,
+      entryId,
+    })
 
     return c.json(
       { entryId, eventName: resolved.name, participation: asTeam ? 'team' : 'solo', checkout: null },

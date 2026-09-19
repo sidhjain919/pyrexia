@@ -21,7 +21,7 @@ export type Env = {
   SES_SECRET_ACCESS_KEY: string
   SES_REGION: string
   SES_TOPIC_ARN: string
-  /** ZeptoMail (Zoho). Verifies with TXT records only — no MX anywhere. */
+  /** ZeptoMail (Zoho). Verifies with TXT records only, no MX anywhere. */
   ZEPTOMAIL_TOKEN: string
   ZEPTOMAIL_REGION: string
   /** Mailgun. MX is only needed to *receive*; sending verifies on TXT alone. */
@@ -65,6 +65,8 @@ export type Job =
   | { kind: 'email.verify_code'; registrationId: string; code: string }
   | { kind: 'email.reset_password'; registrationId: string; token: string }
   | { kind: 'email.payment_failed'; registrationId: string; orderId: string }
+  | { kind: 'email.accommodation_confirmed'; registrationId: string; bookingId: string }
+  | { kind: 'email.event_entered'; registrationId: string; entryId: string }
   | { kind: 'pass.render_pdf'; passId: string }
   | { kind: 'sheets.sync'; eventName: string }
 

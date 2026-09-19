@@ -28,7 +28,7 @@ export const faqs: FAQ[] = [
   },
   {
     q: 'How do I join the crew?',
-    a: 'Everything happens on this website — registration for the fest and for every event. Start with Basic Registration (BR), which is your boarding pass to the island. Individual event entries open through the season; the noticeboard says when each territory opens.',
+    a: 'Everything happens on this website: registration for the fest and for every event. Start with Basic Registration (BR), which is your boarding pass to the island. Individual event entries open through the season; the noticeboard says when each territory opens.',
   },
   {
     q: 'Is basic registration mandatory?',

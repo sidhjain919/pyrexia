@@ -156,7 +156,6 @@ export default function FeaturedEvents() {
           >
             <span className="font-display text-lg">All Territories</span>
             <span className="font-log text-[0.6rem] uppercase tracking-cinema">{TOTAL_EVENTS} events await</span>
-            <ArrowRight size={18} />
           </button>
           </div>
         </Reveal>

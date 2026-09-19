@@ -88,7 +88,8 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
   if (!payment) return
 
   const order = await env.DB.prepare(
-    `SELECT id, registration_id, amount_paise, status, kind, event_entry_id
+    `SELECT id, registration_id, amount_paise, status, kind, event_entry_id,
+            accommodation_booking_id
        FROM orders WHERE razorpay_order_id = ?`,
   )
     .bind(payment.order_id)
@@ -99,6 +100,7 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
       status: string
       kind: string
       event_entry_id: string | null
+      accommodation_booking_id: string | null
     }>()
 
   if (!order) {
@@ -151,6 +153,22 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
         ]
       : []
 
+  /*
+   * An accommodation order buys a bed. Like an entry order it has no line
+   * items and grants no entitlement; what it does is turn a pending booking
+   * into a confirmed one. The status guard makes a repeat delivery a no-op.
+   */
+  const bookingStatements: D1PreparedStatement[] =
+    order.kind === 'accommodation' && order.accommodation_booking_id
+      ? [
+          env.DB.prepare(
+            `UPDATE accommodation_bookings
+                SET status = 'confirmed', updated_at = datetime('now')
+              WHERE id = ? AND status = 'pending'`,
+          ).bind(order.accommodation_booking_id),
+        ]
+      : []
+
   const statements: D1PreparedStatement[] = [
     // The unique index on razorpay_payment_id means a concurrent duplicate
     // delivery loses here rather than granting a second time.
@@ -190,13 +208,17 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
     ),
 
     ...entryStatements,
+    ...bookingStatements,
   ]
 
   await env.DB.batch(statements)
 
-  // An event entry never issues a pass; the pass came with the registration.
-  if (order.kind !== 'event') await issuePassIfNeeded(env, order.registration_id)
-  else await requestSheetSyncForEntry(env, order.event_entry_id)
+  // Only an order that bought products issues a pass. Tested by what the
+  // order *is* rather than by what it is not: this used to read `!== 'event'`,
+  // which was true for every kind that had not been invented yet, and would
+  // have minted a festival pass for anyone who booked a bed.
+  if (order.kind === 'event') await requestSheetSyncForEntry(env, order.event_entry_id)
+  else if (order.kind !== 'accommodation') await issuePassIfNeeded(env, order.registration_id)
 
   await audit.record(env, {
     action: 'order.paid',
@@ -214,11 +236,33 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
     },
   })
 
-  await env.JOBS.send({
-    kind: 'email.registration_confirmed',
-    registrationId: order.registration_id,
-    orderId: order.id,
-  })
+  // One email per kind of thing bought. Routed on `kind` rather than left to
+  // the registration mail to work out: that handler decides between "you're
+  // aboard" and "upgrade confirmed" by whether the order has line items and
+  // follows an earlier one, and an event entry has neither items nor a first
+  // order, so every paid entry used to be announced as a Festival Pass
+  // upgrade to somebody who had just paid for badminton.
+  if (order.kind === 'accommodation' && order.accommodation_booking_id) {
+    // The receipt the hostel desk asks to see at check-in, which is a
+    // different document from a registration confirmation.
+    await env.JOBS.send({
+      kind: 'email.accommodation_confirmed',
+      registrationId: order.registration_id,
+      bookingId: order.accommodation_booking_id,
+    })
+  } else if (order.kind === 'event' && order.event_entry_id) {
+    await env.JOBS.send({
+      kind: 'email.event_entered',
+      registrationId: order.registration_id,
+      entryId: order.event_entry_id,
+    })
+  } else {
+    await env.JOBS.send({
+      kind: 'email.registration_confirmed',
+      registrationId: order.registration_id,
+      orderId: order.id,
+    })
+  }
 }
 
 /**

@@ -44,6 +44,7 @@ export const NAV = [
   { label: 'Home', to: '/#home', meaning: '' },
   { label: 'The Legend', to: '/#legend', meaning: 'About' },
   { label: 'Events', to: '/#island', meaning: 'Explore & register' },
+  { label: 'Harbour', to: '/#harbour', meaning: 'Stay & accommodation' },
   { label: "Captain's Log", to: '/#log', meaning: 'Schedule' },
   { label: 'Legends', to: '/#artists', meaning: 'Lineup' },
   { label: 'Voyages', to: '/#gallery', meaning: 'Gallery' },

@@ -43,8 +43,8 @@ export const pastLegends: Artist[] = [
 /**
  * One slot per night of the fest: five days on the island, five stages.
  *
- * Three are announced. The other two stay as they were — dates fixed, names
- * charted in secret — because a card that says "reveal soon" is honest and a
+ * Three are announced. The other two stay as they were, dates fixed and names
+ * charted in secret, because a card that says "reveal soon" is honest and a
  * card that invents a name is not.
  */
 export type ProNight = {
@@ -87,7 +87,7 @@ export const proNights: ProNight[] = [
       role: 'Punjabi Superstar · Singer & Actor',
       tagline: 'Certified banger machine.',
       blurb:
-        'He directed Punjab’s biggest music videos, then decided he’d rather be the one on camera — and never looked back. The whole ground knows every word before the beat even drops.',
+        'He directed Punjab’s biggest music videos, then decided he’d rather be the one on camera, and never looked back. The whole ground knows every word before the beat even drops.',
       known: ['Gaal Ni Kadni', 'Shada', 'Chal Oye', 'Le Chak Main Aa Gaya'],
       mono: 'PV',
       photo: artistPhoto['Parmish Verma'],

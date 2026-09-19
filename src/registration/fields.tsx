@@ -142,6 +142,48 @@ export function ChipGroup({
   )
 }
 
+/**
+ * A consent box.
+ *
+ * Deliberately unchecked on arrival and never pre-ticked: the two places this
+ * is used both record a decision with money behind it, and a box somebody
+ * found already ticked is not a decision they made.
+ */
+export function Checkbox({
+  checked,
+  onChange,
+  error,
+  children,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  error?: string
+  children: ReactNode
+}) {
+  return (
+    <div>
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          /* The native control, tinted. An `appearance-none` box can be styled
+             more precisely but draws no tick, and a consent box whose only
+             "on" state is a filled square is worth less than a brand-perfect
+             one nobody is sure they ticked. */
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[var(--color-gold)]"
+        />
+        <span className="text-[0.82rem] leading-relaxed text-parchment/75">{children}</span>
+      </label>
+      {error && (
+        <span className="mt-1 flex items-center gap-1 text-[0.72rem] text-coral">
+          <AlertCircle size={12} /> {error}
+        </span>
+      )}
+    </div>
+  )
+}
+
 /* ---------- identity document upload ---------- */
 
 const ACCEPT = 'image/png,image/jpeg,image/webp,application/pdf'

@@ -1,7 +1,7 @@
 /**
  * Sending mail by talking SMTP directly.
  *
- * Every hosted provider — SES, ZeptoMail, Mailgun, Brevo — puts an account
+ * Every hosted provider (SES, ZeptoMail, Mailgun, Brevo) puts an account
  * review and a DNS change between you and your first email. That is the right
  * trade in September and the wrong one on launch morning. This provider has
  * neither: it signs in to a mailbox that already exists, with credentials the
@@ -10,12 +10,12 @@
  *
  * What it costs is deliverability and volume. Mail leaves as the mailbox owner,
  * so SPF and DKIM belong to that provider's domain rather than ours, and the
- * daily cap is whoever runs the mailbox — 500 a day on a personal Gmail, 2,000
+ * daily cap is whoever runs the mailbox: 500 a day on a personal Gmail, 2,000
  * on Workspace. It is the right thing to launch on and the wrong thing to still
  * be using in October; `MAIL_PROVIDER` moves back to `zeptomail` the moment the
  * domain verifies, and nothing else changes.
  *
- * Workers can open TCP sockets, but not on port 25 — Cloudflare blocks it. Use
+ * Workers can open TCP sockets, but not on port 25, which Cloudflare blocks. Use
  * 587 (STARTTLS, the default here) or 465 (TLS from the first byte). The
  * `cloudflare:sockets` import is dynamic so this file stays importable under
  * `node --test`, where that module does not exist.
@@ -281,7 +281,7 @@ export class SmtpProvider implements MailProvider {
       if (conn) await conn.close().catch(() => {})
 
       if (err instanceof SmtpError) {
-        // 4xx is the server asking for later — a full mailbox, a rate limit, a
+        // 4xx is the server asking for later: a full mailbox, a rate limit, a
         // grey-listing delay. 5xx is a refusal, and sending it again sends the
         // same refused thing.
         const retryable = err.code >= 400 && err.code < 500

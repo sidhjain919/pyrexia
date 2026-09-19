@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, BookOpen, ChevronDown, Ticket } from 'lucide-react'
+import { ChevronDown, Ticket } from 'lucide-react'
 import OceanScene from './OceanScene'
 import { Compass, MagneticButton } from './primitives'
 import { SITE } from '../data/site'
@@ -206,66 +206,38 @@ export default function Hero() {
               )}
             </MagneticButton>
           )}
-          <MagneticButton href="#legend" variant="ghost" dataCursor="ENTER" className="group">
-            Enter the Island
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-          </MagneticButton>
         </motion.div>
 
-        {/* The brochure, where people actually look.
-            It used to live only in the footer, which is to say nowhere; then it
-            sat here as a whisper of grey 10px type that nobody could see. It is
-            now the size of a thing you are meant to press, because it is: the
-            full programme, every event, in one PDF. */}
-        <motion.a
-          custom={4}
-          variants={rise}
-          initial="hidden"
-          animate="show"
-          href={asset('pyrexia-brochure.pdf')}
-          target="_blank"
-          rel="noreferrer"
-          data-cursor="READ"
-          className="group mt-6 inline-flex min-h-11 items-center gap-2.5 rounded-full border border-gold/45 bg-abyss/45 px-5 py-2.5 font-log text-[0.78rem] uppercase tracking-wide2 text-gold-bright backdrop-blur-sm transition-colors hover:border-gold/90 hover:bg-gold/10 hover:text-foil sm:mt-7 sm:text-[0.82rem]"
-        >
-          <BookOpen size={16} className="icon-caps shrink-0" />
-          Read the full 2026 brochure
-          <ArrowRight size={14} className="shrink-0 opacity-70 transition-transform group-hover:translate-x-1" />
-        </motion.a>
       </div>
 
-      {/* meta strip: in normal flow on mobile so it can't collide with the buttons above; floats at the true bottom from sm up */}
+      {/* The bottom line: the dates, and the way down.
+          This used to carry the coordinates and the edition as well, and a
+          separate "Set sail" cue in the opposite corner. Three pieces of
+          furniture for one idea. The dates are the only fact here somebody
+          acts on, and the edition still appears in the first line of The
+          Legend, immediately below. */}
       <motion.div
-        custom={4}
+        custom={3.5}
         variants={rise}
         initial="hidden"
         animate="show"
-        /* Pinned to the bottom at every width. In normal flow on mobile it ate
-           the band the ship needs; down here the only thing under it is the
-           water it is printed on. The dates are longer than the old
-           "October 2026", so mobile tracking tightens to hold one line. */
-        className="absolute inset-x-0 bottom-4 z-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 px-4 font-log text-[0.6rem] uppercase tracking-[0.12em] text-parchment/85 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:bottom-10 sm:gap-x-6 sm:px-6 sm:text-sm sm:tracking-cinema"
+        className="absolute inset-x-0 bottom-4 z-10 flex flex-col items-center gap-2 px-4 sm:bottom-8 sm:gap-3"
       >
-        <span className="whitespace-nowrap text-gold-bright">{SITE.dates}</span>
-        <span className="h-4 w-px bg-gold/40" />
-        <span className="hidden sm:inline">30°06′N&nbsp;·&nbsp;78°16′E</span>
-        <span className="hidden h-4 w-px bg-gold/40 sm:block" />
-        <span className="whitespace-nowrap">{SITE.edition}</span>
+        <span className="whitespace-nowrap font-log text-[0.62rem] uppercase tracking-[0.12em] text-gold-bright [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:text-sm sm:tracking-cinema">
+          {SITE.dates}
+        </span>
+
+        <motion.a
+          href="#legend"
+          aria-label="Scroll to begin"
+          className="flex h-8 w-8 items-center justify-center text-gold/55 transition-colors hover:text-gold-bright"
+          animate={reduce ? undefined : { y: [0, 6, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <ChevronDown size={18} />
+        </motion.a>
       </motion.div>
 
-      {/* scroll cue */}
-      <motion.a
-        href="#legend"
-        aria-label="Scroll to begin"
-        className="absolute bottom-8 right-6 z-10 hidden flex-col items-center gap-2 text-gold/60 sm:flex"
-        animate={reduce ? undefined : { y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <span className="font-log text-[0.7rem] uppercase tracking-cinema [writing-mode:vertical-rl]">
-          Set sail
-        </span>
-        <ChevronDown size={16} />
-      </motion.a>
     </section>
   )
 }

@@ -8,7 +8,7 @@
  * it in every way I can think of.
  *
  * The one step no script can do is the human tapping through Razorpay's payment
- * screen — that needs a browser and a card. Everything on our side of that
+ * screen, which needs a browser and a card. Everything on our side of that
  * moment is exercised here by signing the webhook exactly as Razorpay would.
  */
 
@@ -220,7 +220,7 @@ let aarav, aaravOrder, aaravRzpOrder, aaravRegistrationId, aaravPublicCode
   check('tapping Register twice does not register him twice', again.body.orderId === aaravOrder, `${again.body.orderId} vs ${aaravOrder}`)
   check('the second tap creates no second Razorpay order', again.body.checkout?.razorpayOrderId === aaravRzpOrder)
 
-  // Same key, different body — a genuine client bug we want surfaced.
+  // Same key, different body, a genuine client bug we want surfaced.
   const mismatched = await api('/api/registrations', {
     method: 'POST',
     headers: { 'Idempotency-Key': key },

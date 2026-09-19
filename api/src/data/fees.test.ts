@@ -56,7 +56,7 @@ test('every priced event is one a delegate can actually enter', () => {
   }
 })
 
-test('no Thunderbolt bracket is priced here — they are paid on the crew’s own form', () => {
+test('no Thunderbolt bracket is priced here, they are paid on the crew’s own form', () => {
   for (const e of registerableEvents) {
     if (e.territory.id !== 'thunderbolt') continue
     assert.equal(feeFor(e.name), null, `${e.name} must not be priced on the site`)

@@ -86,7 +86,7 @@ export default function Footer() {
             <div className="font-log text-[0.72rem] uppercase tracking-cinema text-gold/70">Set Sail</div>
             <p className="mt-4 text-[0.85rem] text-parchment/55">
               {state === 'festival'
-                ? 'You hold the Festival Pass — the full run of the island is yours. Your pass is ready whenever you want it.'
+                ? 'You hold the Festival Pass: the full run of the island is yours. Your pass is ready whenever you want it.'
                 : state === 'basic'
                   ? 'Your Basic Registration is confirmed. Add the Festival Pass any time for the full programme across the island, the pro nights included.'
                   : 'Basic Registration and the Festival Pass, which covers the full programme, are both on the official PYREXIA website. You see the price when you register.'}
@@ -96,14 +96,14 @@ export default function Footer() {
                 onClick={() => openRegister()}
                 className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
               >
-                {cta.label} →
+                {cta.label}
               </button>
             ) : (
               <Link
                 to={cta.to ?? '/pass'}
                 className="mt-4 inline-block rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-6 py-3 font-log text-[0.66rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.03]"
               >
-                {cta.label} →
+                {cta.label}
               </Link>
             )}
             <a
@@ -112,7 +112,7 @@ export default function Footer() {
               rel="noreferrer"
               className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 px-5 py-2.5 text-[0.84rem] text-gold-bright/90 transition-colors hover:border-gold/80 hover:bg-gold/10 hover:text-gold-bright"
             >
-              View the full 2026 brochure →
+              View the full 2026 brochure
             </a>
           </div>
         </div>

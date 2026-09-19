@@ -68,7 +68,7 @@ const stamp = () => new Date().toISOString().replace('T', ' ').slice(0, 16)
 function tab(name: string, title: string, headers: string[], rows: Cell[][]): Sheet {
   return {
     name,
-    rows: [[`${title} — generated ${stamp()} UTC — PYREXIA 2026`], [], headers, ...rows],
+    rows: [[`${title} · generated ${stamp()} UTC · PYREXIA 2026`], [], headers, ...rows],
   }
 }
 
@@ -87,6 +87,9 @@ const tierName = (tier: unknown) => (tier === 1 ? 'Festival Pass' : 'Basic')
 /** "basic,delegate" → "Basic + Festival Pass". */
 function bought(products: unknown, kind: unknown, eventName: unknown): string {
   if (kind === 'event') return `Event entry: ${String(eventName ?? '')}`
+  // Without this an accommodation order printed a blank cell: it has no line
+  // items, so there are no product ids below to name it by.
+  if (kind === 'accommodation') return 'Accommodation'
   const ids = String(products ?? '').split(',').filter(Boolean)
   const names = ids.map((p) => (p === 'basic' ? 'Basic Registration' : p === 'delegate' ? 'Festival Pass' : p))
   return names.join(' + ')
@@ -289,6 +292,82 @@ exports_.get('/admin/export/events', async (c) => {
       ),
     ],
     'events',
+  )
+})
+
+/* ------------------------------------------------------------------ *
+ * Accommodation: the rooming list the desk works from
+ * ------------------------------------------------------------------ */
+
+exports_.get('/admin/export/accommodation', async (c) => {
+  const { results: bookings } = await c.env.DB.prepare(
+    `SELECT b.public_code, b.gender, b.sharing, b.ac, b.days, b.arrival_date,
+            b.arrival_time, b.name, b.email, b.phone, b.college, b.course,
+            b.requirements, b.rate_paise, b.fee_paise, b.created_at,
+            r.public_code AS delegate_code, t.tier
+       FROM accommodation_bookings b
+       JOIN registrations r ON r.id = b.registration_id
+       JOIN registration_tier t ON t.registration_id = r.id
+      WHERE b.status = 'confirmed'
+      ORDER BY b.gender, b.sharing, b.ac DESC, b.arrival_date, b.name COLLATE NOCASE`,
+  ).all<Record<string, unknown>>()
+
+  // What the accommodation team actually plans from: how many bodies per room
+  // type, and therefore how many rooms of it they need to have ready.
+  const { results: occupancy } = await c.env.DB.prepare(
+    `SELECT gender, sharing, ac, count(*) AS people,
+            coalesce(sum(fee_paise), 0) AS collected_paise
+       FROM accommodation_bookings WHERE status = 'confirmed'
+      GROUP BY gender, sharing, ac
+      ORDER BY gender, sharing, ac DESC`,
+  ).all<Record<string, unknown>>()
+
+  const { results: arrivals } = await c.env.DB.prepare(
+    `SELECT arrival_date, gender, count(*) AS people
+       FROM accommodation_bookings WHERE status = 'confirmed'
+      GROUP BY arrival_date, gender ORDER BY arrival_date, gender`,
+  ).all<Record<string, unknown>>()
+
+  const room = (r: Record<string, unknown>) =>
+    `${r.sharing} seater ${r.ac === 1 ? 'AC' : 'Non-AC'}`
+
+  /** Rooms needed, rounded up: five people in 2-seaters is three rooms, not two. */
+  const roomsNeeded = (people: unknown, sharing: unknown) =>
+    typeof people === 'number' && typeof sharing === 'number' && sharing > 0
+      ? Math.ceil(people / sharing)
+      : ''
+
+  return workbook(
+    [
+      tab(
+        'Bookings',
+        'Every confirmed accommodation booking',
+        ['Reference', 'Block', 'Room', 'Nights', 'Arriving', 'Arrival time', 'Name', 'Mobile',
+         'Email', 'College', 'Course', 'Registration No', 'Tier', 'Rate/day (INR)',
+         'Paid for room (INR)', 'Requirements', 'Booked on'],
+        bookings.map((r) => [
+          r.public_code, r.gender, room(r), r.days, r.arrival_date, r.arrival_time ?? '',
+          r.name, r.phone, r.email, r.college, r.course, r.delegate_code, tierName(r.tier),
+          rupees(r.rate_paise), rupees(r.fee_paise), r.requirements ?? '', r.created_at,
+        ] as Cell[]),
+      ),
+      tab(
+        'Occupancy',
+        'People per room type, and the rooms that implies',
+        ['Block', 'Room', 'People', 'Rooms needed', 'Collected (INR)'],
+        occupancy.map((r) => [
+          r.gender, room(r), r.people, roomsNeeded(r.people, r.sharing),
+          rupees(r.collected_paise),
+        ] as Cell[]),
+      ),
+      tab(
+        'Arrivals',
+        'Who lands on which day, for staffing the desk',
+        ['Arriving', 'Block', 'People'],
+        arrivals.map((r) => [r.arrival_date, r.gender, r.people] as Cell[]),
+      ),
+    ],
+    'accommodation',
   )
 })
 

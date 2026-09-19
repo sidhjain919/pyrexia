@@ -8,7 +8,7 @@ function CountUp({ value, suffix }: { value: string; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null)
   // `amount` (a visibility threshold), never a percentage `margin`. Safari's
   // IntersectionObserver rejects a percentage rootMargin, which is what a
-  // `margin: '-20%'` compiles to — so on some iPads the observer never fired,
+  // `margin: '-20%'` compiles to, so on some iPads the observer never fired,
   // `inView` stayed false, and the number sat at 0 forever. A threshold uses no
   // rootMargin and fires everywhere.
   const inView = useInView(ref, { once: true, amount: 0.3 })
@@ -37,7 +37,7 @@ function CountUp({ value, suffix }: { value: string; suffix: string }) {
   // Belt and braces: if the observer somehow never reports this element as
   // visible (an old engine, a resize race), the real number still lands rather
   // than showing a permanent 0. Only rescues a value that ought to be on screen
-  // already — anything still below the fold is left to animate when reached.
+  // already: anything still below the fold is left to animate when reached.
   useEffect(() => {
     if (reduce || target === 0) return
     const t = window.setTimeout(() => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react'
+import { AlertCircle, Check, Loader2, LogIn, Mail, UserPlus } from 'lucide-react'
 
 import { ApiError, api, setSession } from '../api/client'
 import GoogleButton from '../auth/GoogleButton'
@@ -212,7 +212,7 @@ export default function SignIn() {
           disabled={busy || code.length !== 6}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3.5 font-log text-[0.72rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-50"
         >
-          {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
+          {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
           Confirm my email
         </button>
 
@@ -329,8 +329,10 @@ export default function SignIn() {
           <Loader2 size={15} className="animate-spin" />
         ) : mode === 'forgot' ? (
           <Mail size={15} />
+        ) : mode === 'signup' ? (
+          <UserPlus size={15} />
         ) : (
-          <ArrowRight size={15} />
+          <LogIn size={15} />
         )}
         {mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
       </button>

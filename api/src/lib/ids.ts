@@ -46,6 +46,22 @@ export function newEntryId(): string {
   return `ent_${randomCode(10)}`
 }
 
+export function newBookingId(): string {
+  return `acc_${randomCode(10)}`
+}
+
+/**
+ * The reference on an accommodation receipt, e.g. `STAY-4KD9TQ`.
+ *
+ * Read off a phone at the hostel desk at one in the morning, which is the
+ * whole reason it uses the vowel-less alphabet above rather than the booking's
+ * uuid. Like every other public code here it identifies a booking and proves
+ * nothing: the desk checks a delegate card, not this string.
+ */
+export function newStayCode(): string {
+  return `STAY-${randomCode(6)}`
+}
+
 /**
  * SHA-256, hex. Used wherever a token must be storable without being replayable
  *, session cookies, magic links, guard device tokens.

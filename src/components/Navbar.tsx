@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Menu, X, ArrowRight, LogOut, Megaphone, Star, Ticket } from 'lucide-react'
+import { Menu, X, LogOut, Megaphone, Star, Ticket } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { NAV, SITE } from '../data/site'
 import { Compass } from './primitives'
@@ -117,7 +117,7 @@ export default function Navbar() {
         <nav
           /* From 2xl up the bar shows the "2026 · AIIMS Rishikesh" block and
              the roomier link spacing, which together are wider than the old
-             78rem cap — so the Register button spilled off the right edge of
+             78rem cap, so the Register button spilled off the right edge of
              the glass. Widening the cap at that one breakpoint gives the extra
              content the room it needs and keeps everything inside the bar. */
           className={`pointer-events-auto flex w-full max-w-[78rem] items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-all duration-500 sm:gap-4 sm:px-5 2xl:max-w-[88rem] ${
@@ -385,10 +385,6 @@ export default function Navbar() {
                         </span>
                       )}
                     </span>
-                    <ArrowRight
-                      size={16}
-                      className="shrink-0 text-gold/40 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-gold-bright"
-                    />
                   </motion.button>
                 )
               })}
@@ -414,10 +410,6 @@ export default function Navbar() {
                       Announcements & results
                     </span>
                   </span>
-                  <ArrowRight
-                    size={16}
-                    className="shrink-0 text-gold/40 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-gold-bright"
-                  />
                 </Link>
               </motion.div>
             </nav>
@@ -438,7 +430,7 @@ export default function Navbar() {
                       }}
                       className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
                     >
-                      {headerCta.label} →
+                      {headerCta.label}
                     </button>
                   ) : (
                     <Link
@@ -446,7 +438,7 @@ export default function Navbar() {
                       onClick={() => setOpen(false)}
                       className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
                     >
-                      {headerCta.label} →
+                      {headerCta.label}
                     </Link>
                   )}
                   {/* Here as well as on the pass page: signing out should not
@@ -467,7 +459,7 @@ export default function Navbar() {
                     }}
                     className="font-accent block w-full rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 text-center text-base uppercase tracking-wide2 text-abyss"
                   >
-                    Join the Crew →
+                    Join the Crew
                   </button>
                   <Link
                     to="/sign-in"

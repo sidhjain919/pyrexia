@@ -13,6 +13,12 @@ import { Hono } from 'hono'
 
 import type { Env } from '../types.ts'
 import { ApiError } from '../lib/http.ts'
+import {
+  departureDate,
+  festDate,
+  roomLabel,
+  SECURITY_DEPOSIT_RUPEES,
+} from '../data/accommodation.ts'
 import { importSigningKey } from '../lib/keys.ts'
 import { signPass, PASS_VERSION, type Tier } from '../lib/pass.ts'
 import { loadProducts, ownedProducts } from '../lib/pricing.ts'
@@ -81,6 +87,25 @@ me.get('/me', async (c) => {
       created_at: string
     }>()
 
+  // The bed, if they booked one. Carried on this call rather than its own,
+  // because the pass page is where somebody looks for their booking reference
+  // on the day, quite possibly on a train with one bar of signal.
+  const booking = await c.env.DB.prepare(
+    `SELECT public_code, sharing, ac, days, arrival_date, arrival_time, fee_paise
+       FROM accommodation_bookings
+      WHERE registration_id = ? AND status = 'confirmed'`,
+  )
+    .bind(session.registrationId)
+    .first<{
+      public_code: string
+      sharing: number
+      ac: number
+      days: number
+      arrival_date: string
+      arrival_time: string | null
+      fee_paise: number
+    }>()
+
   const pass = await c.env.DB.prepare(
     'SELECT id FROM passes WHERE registration_id = ? AND revoked_at IS NULL',
   )
@@ -107,9 +132,19 @@ me.get('/me', async (c) => {
     // An account is not a registration. The UI leans on this to keep saying so.
     hasRegistration: owned.has('basic'),
     hasPass: !!pass,
-    // An event can be entered more than once now — badminton singles and
-    // doubles are two competitions — so each row carries its own id and the
+    // An event can be entered more than once now, badminton singles and
+    // doubles are two competitions, so each row carries its own id and the
     // band it was entered in, and the pass page keys on the id.
+    accommodation: booking && {
+      code: booking.public_code,
+      room: roomLabel({ sharing: booking.sharing, ac: booking.ac === 1 }),
+      days: booking.days,
+      arrival: festDate(booking.arrival_date),
+      arrivalTime: booking.arrival_time,
+      departure: festDate(departureDate(booking.arrival_date, booking.days)),
+      feePaise: booking.fee_paise,
+      depositRupees: SECURITY_DEPOSIT_RUPEES,
+    },
     entries: entries.map((e) => ({
       entryId: e.id,
       eventName: e.event_name,

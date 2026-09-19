@@ -6,7 +6,7 @@
  * Three things come out:
  *
  *   PASS_SIGNING_KEY_V1  the Ed25519 private key that seals every pass. This is
- *                        the crown jewel — anyone holding it can mint a valid
+ *                        the crown jewel: anyone holding it can mint a valid
  *                        Delegate pass for free, forever.
  *   PASS_PUBLIC_KEY_V1   its public half. Safe to print, commit, or ship in the
  *                        guard app. It can only *check* seals, never make them.
@@ -42,7 +42,7 @@ PASS_SIGNING_KEY_V1=${priv}
 SESSION_SECRET=${random(32)}
 DOC_ENCRYPTION_KEY=${random(32)}
 
-# Public half — safe to share. Goes into the guard app so it can verify
+# Public half, safe to share. Goes into the guard app so it can verify
 # passes offline. Keep a copy: you need it to check any pass ever issued
 # with the key above.
 PASS_PUBLIC_KEY_V1=${pub}

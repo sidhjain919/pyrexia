@@ -440,6 +440,18 @@ export type Me = {
   verification: { state: string; note: string | null }
   hasRegistration: boolean
   hasPass: boolean
+  /** The bed they booked, or null. Present on this call so the pass page needs no second one. */
+  accommodation: {
+    /** `STAY-4KD9TQ`, the reference the hostel desk asks for. */
+    code: string
+    room: string
+    days: number
+    arrival: string
+    arrivalTime: string | null
+    departure: string
+    feePaise: number
+    depositRupees: number
+  } | null
   entries: {
     entryId: string
     eventName: string
@@ -502,6 +514,106 @@ export type FeeVariant = {
 /** A team-mate as the person entering listed them. Not an account. */
 export type TeamMemberInput = { name: string; phone: string }
 
+export type AccommodationAdmin = {
+  settings: { open: boolean; note: string | null; updatedAt: string | null; updatedBy: string | null }
+  bookings: {
+    code: string
+    gender: string
+    room: string
+    days: number
+    arrival: string
+    arrivalTime: string | null
+    departure: string
+    name: string
+    email: string
+    phone: string
+    college: string
+    course: string
+    requirements: string | null
+    feePaise: number
+    delegateCode: string
+    bookedAt: string
+  }[]
+  /** People per room type, and the rooms that implies (rounded up). */
+  occupancy: { gender: string; room: string; people: number; rooms: number; collectedPaise: number }[]
+  arrivals: { date: string; people: number }[]
+  totals: { people: number; collectedPaise: number }
+}
+
+export type AccommodationRoom = {
+  id: string
+  gender: 'boys' | 'girls'
+  sharing: number
+  ac: boolean
+  label: string
+  /** Per person, per day. */
+  ratePaise: number
+}
+
+export type AccommodationBooking = {
+  bookingId: string
+  /** `STAY-4KD9TQ`, the reference the hostel desk reads off a phone. */
+  code: string
+  gender: string
+  sharing: number
+  ac: boolean
+  room: string
+  days: number
+  arrivalDate: string
+  arrivalTime: string | null
+  departureDate: string | null
+  name: string
+  email: string
+  phone: string
+  college: string
+  course: string
+  requirements: string | null
+  ratePaise: number
+  feePaise: number
+  status: 'pending' | 'confirmed' | 'cancelled'
+  createdAt: string
+}
+
+export type AccommodationInfo = {
+  open: boolean
+  /** Why it is shut, when it is. "Full" and "not open yet" read differently. */
+  note: string | null
+  depositRupees: number
+  allowedDays: number[]
+  /** Which days a stay of each length may start on, keyed by length. */
+  arrivalDates: Record<string, string[]>
+  rooms: AccommodationRoom[]
+  signedIn: boolean
+  /** Holds Basic Registration, which a bed requires. */
+  eligible: boolean
+  prefill: {
+    name: string
+    email: string
+    phone: string
+    college: string
+    course: string
+    /** 'boys', 'girls', or '' when their registered gender implies neither. */
+    gender: string
+  } | null
+  booking: AccommodationBooking | null
+}
+
+export type AccommodationCreated = {
+  bookingId: string
+  code: string
+  orderId: string
+  checkout: Checkout
+  room: string
+  days: number
+  arrivalDate: string
+  departureDate: string | null
+  ratePaise: number
+  subtotalPaise: number
+  conveniencePaise: number
+  totalPaise: number
+  depositRupees: number
+}
+
 export type EventInfo = {
   name: string
   tag: string
@@ -563,7 +675,7 @@ export const api = {
   /**
    * `auth: true` is not optional here.
    *
-   * `POST /registrations` requires a session — it fills in the detail columns
+   * `POST /registrations` requires a session: it fills in the detail columns
    * on the row that signing up already created, and it reads the email off the
    * session rather than the form. Without the bearer token the server saw an
    * anonymous request and answered "Sign in or create an account to register",
@@ -745,6 +857,16 @@ export const api = {
       auth: true,
     }),
 
+  adminAccommodation: () =>
+    request<AccommodationAdmin>('/api/admin/accommodation', { auth: true }),
+
+  /** Open or close bookings, with an optional line explaining why. */
+  adminSetAccommodation: (open: boolean, note?: string) =>
+    request<{ ok: boolean; open: boolean; note: string | null }>(
+      '/api/admin/accommodation/settings',
+      { method: 'POST', body: { open, note }, auth: true },
+    ),
+
   enterEvent: (payload: {
     eventName: string
     participation: 'solo' | 'team'
@@ -755,6 +877,36 @@ export const api = {
     answers: Record<string, string>
   }) =>
     request<EventEntryCreated>('/api/me/events', {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  /**
+   * The rate card, whether bookings are open, and where this person stands.
+   *
+   * Sent whether or not anyone is signed in: the rates are public, and the
+   * section renders the table for a visitor who has not registered yet.
+   * `auth` is still set so a signed-in visitor gets their prefill and their
+   * existing booking back in the same call.
+   */
+  accommodation: () => request<AccommodationInfo>('/api/accommodation', { auth: true }),
+
+  bookAccommodation: (payload: {
+    roomTypeId: string
+    days: number
+    arrivalDate: string
+    arrivalTime?: string
+    name: string
+    email: string
+    phone: string
+    college: string
+    course: string
+    requirements?: string
+    rulesAccepted: boolean
+    partnerConsent: boolean
+  }) =>
+    request<AccommodationCreated>('/api/me/accommodation', {
       method: 'POST',
       body: payload,
       auth: true,

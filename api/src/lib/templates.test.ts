@@ -1,7 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { paymentFailed, registrationConfirmed, signInLink } from './templates.ts'
+import {
+  accommodationConfirmed,
+  eventEntered,
+  paymentFailed,
+  registrationConfirmed,
+  signInLink,
+} from './templates.ts'
 
 const PASS_URL = 'https://example.test/#/enter?token=abc123&next=%2Fpass'
 
@@ -129,4 +135,159 @@ test('a confirmed registration is pointed at the announcement channel', () => {
   // The pass is still the primary action; the channel does not displace it.
   assert.match(mail.html, /View my pass/)
   assert.match(mail.text, /PYX26-ABC123/)
+})
+
+/* ------------------------------------------------------------------ *
+ * Event entry
+ * ------------------------------------------------------------------ */
+
+test('a paid event entry is announced as an entry, never as a pass upgrade', () => {
+  const mail = eventEntered({
+    name: 'Meera Nair',
+    publicCode: 'PYX26-D90T8M',
+    eventName: 'Table Tennis',
+    territory: 'Conquest Arena',
+    band: 'Mixed doubles',
+    teamName: 'Backhand Buccaneers',
+    headCount: 2,
+    amountPaise: 35000,
+    passUrl: PASS_URL,
+  })
+
+  for (const body of [mail.html, mail.text, mail.subject]) {
+    // The bug this replaced: an entry order has no line items and follows an
+    // earlier paid order, which the registration mail reads as an upgrade. A
+    // student who paid ₹350 for badminton was told their Festival Pass was
+    // ready. Nothing here may ever say that again.
+    assert.doesNotMatch(body, /upgrade/i, 'an entry is not an upgrade')
+  }
+
+  for (const body of [mail.html, mail.text]) {
+    assert.match(body, /Table Tennis/, 'the event must be named')
+    assert.match(body, /Mixed doubles/, 'the bracket they actually paid for')
+    assert.match(body, /Backhand Buccaneers/, 'the crew name')
+    assert.match(body, /₹350/, 'what they paid')
+    assert.match(body, /PYX26-D90T8M/)
+    assert.match(body, /token=abc123/)
+  }
+
+  assert.match(mail.subject, /Table Tennis/, 'searchable in an inbox')
+})
+
+test('a solo entry does not invent a crew, and a team entry says nobody else pays', () => {
+  const solo = eventEntered({
+    name: 'Aarav Sharma',
+    publicCode: 'PYX26-4KD9TQ',
+    eventName: 'Squid Game',
+    territory: 'Alfresco',
+    band: '',
+    teamName: '',
+    headCount: 1,
+    amountPaise: 8000,
+    passUrl: PASS_URL,
+  })
+  assert.doesNotMatch(solo.text, /Crew:/, 'no crew line on a solo entry')
+  assert.doesNotMatch(solo.text, /People covered/, 'one person is not worth a row')
+  // A single-band event prints no bracket: "Squid Game · Entry" says nothing.
+  assert.match(solo.subject, /^You're entered: Squid Game$/)
+
+  const team = eventEntered({
+    name: 'Aarav Sharma',
+    publicCode: 'PYX26-4KD9TQ',
+    eventName: 'Nukkad Natak',
+    territory: 'Thespians',
+    band: '',
+    teamName: 'Street Crew',
+    headCount: 9,
+    amountPaise: 70000,
+    passUrl: PASS_URL,
+  })
+  assert.match(team.text, /nobody else needs to enter or pay/i)
+  assert.match(team.text, /People covered: 9/)
+})
+
+test('an event name containing HTML cannot break the entry mail', () => {
+  const mail = eventEntered({
+    name: '<script>alert(1)</script>',
+    publicCode: 'PYX26-4KD9TQ',
+    eventName: '<img src=x onerror=alert(1)>',
+    territory: 'Alfresco',
+    band: '"><b>',
+    teamName: '',
+    headCount: 1,
+    amountPaise: 8000,
+    passUrl: PASS_URL,
+  })
+  // The payload must survive only as inert text. `onerror=` still appears in
+  // the output as characters, which is fine and is the point: it is inside an
+  // escaped `&lt;img&gt;` that no mail client will ever parse as a tag.
+  assert.doesNotMatch(mail.html, /<script>/, 'the tag must be escaped, not rendered')
+  assert.doesNotMatch(mail.html, /<img /, 'no attacker-supplied element survives')
+  assert.match(mail.html, /&lt;script&gt;/)
+  assert.match(mail.html, /&lt;img src=x/)
+})
+
+test('a free entry is confirmed without being handed a receipt for zero', () => {
+  const mail = eventEntered({
+    name: 'Ishaan Roy',
+    publicCode: 'PYX26-4KD9TQ',
+    eventName: 'Treasure Hunt',
+    territory: 'Carnival Cove',
+    band: '',
+    teamName: 'The Magpies',
+    headCount: 4,
+    amountPaise: 0,
+    passUrl: PASS_URL,
+  })
+
+  for (const body of [mail.html, mail.text]) {
+    // Most events cost nothing beyond Basic Registration. A "Paid: ₹0" line on
+    // one of those reads like a failed payment rather than a free entry.
+    assert.doesNotMatch(body, /₹0/, 'never quote a zero amount')
+    assert.doesNotMatch(body, /Paid/, 'no paid row when nothing was paid')
+    assert.doesNotMatch(body, /We received/, 'nothing was received')
+    assert.match(body, /nothing to pay/i, 'say plainly that it was free')
+    assert.match(body, /Treasure Hunt/)
+    assert.match(body, /The Magpies/)
+  }
+
+  // Still the same confirmation otherwise, so it is searchable alongside the
+  // paid ones.
+  assert.match(mail.subject, /^You're entered: Treasure Hunt$/)
+})
+
+/* ------------------------------------------------------------------ *
+ * Accommodation
+ * ------------------------------------------------------------------ */
+
+test('the accommodation receipt leads with the deposit that is not in the total', () => {
+  const mail = accommodationConfirmed({
+    name: 'Asha Rao',
+    code: 'STAY-Q6HVW4',
+    publicCode: 'PYX26-D90T8M',
+    room: '3 seater · AC',
+    days: 4,
+    arrival: '13 October',
+    departure: '16 October',
+    roomPaise: 280000,
+    amountPaise: 286608,
+    depositRupees: 500,
+    passUrl: PASS_URL,
+  })
+
+  for (const body of [mail.html, mail.text]) {
+    assert.match(body, /STAY-Q6HVW4/, 'the reference the desk asks for')
+    assert.match(body, /3 seater/)
+    assert.match(body, /13 October/)
+    assert.match(body, /16 October/)
+    // Both numbers: the room charge, and what their bank statement will say.
+    assert.match(body, /₹2,800/, 'the room charge')
+    assert.match(body, /₹2,866/, 'the total actually charged')
+    assert.match(body, /₹500/, 'the cash deposit')
+    assert.match(body, /cash/i, 'must say the deposit is cash')
+    assert.match(body, /Aadhaar/, 'what to bring to check-in')
+    assert.match(body, /not refunded/i, 'the cancellation terms')
+  }
+
+  assert.match(mail.subject, /STAY-Q6HVW4/)
 })

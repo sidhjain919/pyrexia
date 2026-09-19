@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { AlertCircle, Check, Download, Loader2, LogOut, RefreshCw, Star, Ticket } from 'lucide-react'
+import {
+  AlertCircle,
+  BedDouble,
+  Check,
+  Download,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  Star,
+  Ticket,
+} from 'lucide-react'
 
 import {
   ApiError,
@@ -227,7 +237,7 @@ export default function Pass() {
              * Back to the drawn parchment surface.
              *
              * The printed-ticket plate was stretched to whatever box the
-             * contents made — `background-size: 100% 100%` on an image with a
+             * contents made: `background-size: 100% 100%` on an image with a
              * 16:9 engraved border, filled with a tall QR card. The border came
              * out smeared and the perforated stub landed in the middle of the
              * code. The CSS surface has no fixed proportions to violate, which
@@ -330,6 +340,40 @@ export default function Pass() {
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-ember/40 bg-ember/10 p-3 text-[0.82rem] text-ember">
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
             {notice}
+          </div>
+        )}
+
+        {/* The bed. Above the events on purpose: on the day of arrival this is
+            the thing somebody opens this page to find. */}
+        {me.accommodation && (
+          <div className="mt-8 rounded-xl border border-gold/25 bg-abyss/40 p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="font-log text-[0.6rem] uppercase tracking-cinema text-gold/70">
+                  Your accommodation
+                </div>
+                <div className="mt-2 font-mono text-lg tracking-widest text-gold-bright">
+                  {me.accommodation.code}
+                </div>
+                <p className="mt-1.5 text-[0.86rem] text-parchment/70">
+                  {me.accommodation.room} · {me.accommodation.days} days
+                </p>
+                <p className="mt-0.5 text-[0.82rem] text-parchment/55">
+                  {me.accommodation.arrival} to {me.accommodation.departure}
+                  {me.accommodation.arrivalTime && `, arriving ${me.accommodation.arrivalTime}`}
+                </p>
+              </div>
+              <BedDouble size={20} className="mt-1 shrink-0 text-gold/50" />
+            </div>
+
+            <p className="mt-4 border-t border-gold/15 pt-3 text-[0.8rem] leading-relaxed text-parchment/65">
+              Show this at the accommodation desk. Bring your delegate card, college ID, Aadhaar,
+              and{' '}
+              <strong className="text-gold-bright">
+                ₹{me.accommodation.depositRupees} in cash
+              </strong>{' '}
+              for the refundable deposit.
+            </p>
           </div>
         )}
 

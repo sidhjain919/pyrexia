@@ -63,7 +63,7 @@ export default function IslandMap() {
   const shipY = useSpring(rawY, reduce ? { duration: 0 } : SAIL)
 
   /* The ship is anchored *above* the island it has reached, so on the top row
-     — Rhythm Reef, Siren's Harbor, Masquerade Bay, all at y≈12 — it sailed
+     (Rhythm Reef, Siren's Harbor, Masquerade Bay, all at y≈12) it sailed
      straight off the top edge of a chart that clips. `shipFloor` is the
      lowest `top` at which the whole sprite still fits, measured rather than
      guessed: the sprite's size is a clamp on the chart's width, so the share
@@ -158,7 +158,7 @@ export default function IslandMap() {
         <div className="mt-12 grid items-start gap-8 lg:grid-cols-[1.25fr_0.75fr]">
           {/* ------------------------------- CHART ------------------------------- */}
           {/* `min-w-0`: a grid item defaults to `min-width: auto`, so the
-              territory rail below — eleven `whitespace-nowrap` chips in a row —
+              territory rail below, eleven `whitespace-nowrap` chips in a row,
               sized this column to its own 1600px min-content and dragged the
               chart out to match, despite scrolling inside its own box. */}
           <Reveal className="min-w-0">
@@ -296,7 +296,7 @@ export default function IslandMap() {
               {/* The chart is the map; below `lg` this rail is the control.
                   At 390px wide the archipelago is 260px tall, the eleven names
                   are lettered at about six pixels and the markers are a
-                  thumb-width apart — fine to look at, impossible to aim at.
+                  thumb-width apart: fine to look at, impossible to aim at.
                   The rail names every territory at a readable size and gives
                   each one a full-height target, and the ship answers it exactly
                   as it answers the chart. */}
@@ -432,7 +432,7 @@ export default function IslandMap() {
                     <div>
                       <p className="text-[0.82rem] leading-relaxed text-parchment/65">
                         {active.id === 'auriga'
-                          ? 'No entry form. The pro nights are on your Festival Pass — three names are out, two still under wraps.'
+                          ? 'No entry form. The pro nights are on your Festival Pass: three names are out, two still under wraps.'
                           : 'No entry form. Every delegate walks into the opening ceremony on their pass.'}
                       </p>
                       {cta && (
@@ -449,8 +449,8 @@ export default function IslandMap() {
                     <div>
                       {/* "Pick an event to enter" in front of a territory whose
                           entries are not open yet sends people into a form that
-                          can only turn them away. The chips stay — they are the
-                          list of what runs here — but they stop promising a
+                          can only turn them away. The chips stay, they are the
+                          list of what runs here, but they stop promising a
                           door that is shut. */}
                       <div className="font-log text-[0.7rem] uppercase tracking-cinema text-gold/65">
                         {isOpen(active.id) ? 'Pick an event to enter' : 'What runs here'}

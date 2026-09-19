@@ -191,7 +191,7 @@ test('ses: half-configured credentials fall back to console, never crash', async
 })
 
 /* ------------------------------------------------------------------ *
- * ZeptoMail — the provider that replaced SES when AWS declined
+ * ZeptoMail, the provider that replaced SES when AWS declined
  * ------------------------------------------------------------------ */
 
 test('zeptomail: posts to the India endpoint with Zoho’s own auth scheme', async () => {
@@ -307,7 +307,7 @@ test('zeptomail: a token pasted with its header prefix still works', async () =>
 })
 
 /* ------------------------------------------------------------------ *
- * SMTP — the launch-day path, no signup and no DNS
+ * SMTP, the launch-day path, no signup and no DNS
  * ------------------------------------------------------------------ */
 
 test('smtp: the factory takes it when host, user and password are all present', () => {
@@ -335,7 +335,7 @@ test('smtp: the message it builds is one a mail server will accept', async () =>
   const { buildMime } = await import('./smtp.ts')
   const mime = buildMime(msg, 'no-reply@pyrexiaaiims.com', 'PYREXIA 2026')
 
-  // Headers, and CRLF line endings throughout — LF alone is the single most
+  // Headers, and CRLF line endings throughout: LF alone is the single most
   // common reason a hand-built message is rejected or silently mangled.
   assert.match(mime, /^From: "PYREXIA 2026" <no-reply@pyrexiaaiims\.com>\r\n/)
   assert.match(mime, /\r\nTo: "Aarav Sharma" <aarav@example\.edu>\r\n/)
@@ -351,7 +351,7 @@ test('smtp: the message it builds is one a mail server will accept', async () =>
   assert.match(mime, /Content-Type: text\/html; charset=UTF-8/)
   assert.match(mime, new RegExp(`--${boundary}--$`))
 
-  // Bodies are base64 — which is also what guarantees no body line can start
+  // Bodies are base64, which is also what guarantees no body line can start
   // with a full stop and end the DATA block early.
   const parts = mime.split(`--${boundary}`)
   for (const part of parts.slice(1, 3)) {

@@ -87,13 +87,13 @@ full bracket without touching its neighbours. An event is open only when both sa
 entry. The grid asks
 `GET /api/events/openings` once per page load via `useOpenings`, falling back to
 `DEFAULT_OPEN_TERRITORIES` in `src/data/registration.ts` while that request is in
-flight — a label, never a decision. Anything closed renders a "Coming Soon" panel with
+flight: a label, never a decision. Anything closed renders a "Coming Soon" panel with
 the rulebook still attached.
 
 **Teams enter once.** Whoever fills the form lists their crew (`members`, name and
 optional phone) and pays for everyone; there is no invitation, no token and no account
 for a team-mate to hold. `head_count` is the crew plus the entrant, snapshotted on the
-entry because three dance events price a group per head — and the server takes that
+entry because three dance events price a group per head, and the server takes that
 count from the squad it stored, never from a number the client claims.
 
 **One entry per band, not per event.** Badminton singles and doubles are two
@@ -105,9 +105,9 @@ sets `form` on its `SubEvent` (with `formTitle`/`formNote` saying what the form 
 the site links out to the crew's Google Form and `POST /api/me/events` refuses the event
 outright, so nobody ends up believing they entered twice.
 
-**Refunds.** A refund made on the Razorpay dashboard reaches `lib/refunds.ts` two ways —
+**Refunds.** A refund made on the Razorpay dashboard reaches `lib/refunds.ts` two ways:
 the `refund.created`/`refund.processed` webhooks, and the fifteen-minute sweep that lists
-Razorpay's refunds — and the `refunds` table is keyed by Razorpay's id so both paths write
+Razorpay's refunds, and the `refunds` table is keyed by Razorpay's id so both paths write
 it once. An order is undone (entitlements revoked, pass revoked if nothing is left,
 registration cancelled) only when what has come back reaches the fest's share; a partial
 refund is recorded on `orders.refunded_paise` and audited, and revokes nothing.
@@ -131,7 +131,7 @@ Setting `teamSize: undefined` in an override means "explicitly solo", and beats 
 territory default. Adding an event to `data/events.ts` needs no work here, it inherits
 its territory's default.
 
-`api/src/data/events.ts` is a **generated copy** of the form half of this file — same
+`api/src/data/events.ts` is a **generated copy** of the form half of this file, same
 definitions, different import line. Change this file, then regenerate that one, or the
 server will validate against a form the site is no longer showing.
 

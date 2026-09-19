@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Search, ArrowUpRight, BookOpen, ExternalLink, Hourglass, MoveHorizontal, Sparkles, Ticket } from 'lucide-react'
+import { Search, BookOpen, ExternalLink, Hourglass, MoveHorizontal, Sparkles, Ticket } from 'lucide-react'
 import { territories, TOTAL_EVENTS } from '../data/events'
 import { useOpenings } from '../registration/useOpenings'
 import { territoryCta, useEntitlement } from '../registration/useEntitlement'
@@ -35,7 +35,7 @@ type Row = {
  *
  * Fahrenheit and Auriga used to be handled by leaving one out of the grid and
  * letting the other render a "Coming Soon" button that would never become
- * anything. Both are real parts of the fest and both belong here — they just
+ * anything. Both are real parts of the fest and both belong here, they just
  * offer something other than a form.
  */
 const rows: Row[] = territories.flatMap((t) =>
@@ -215,7 +215,10 @@ export default function EventsGrid() {
                     {/* The rulebook, one tap from the card. Somebody deciding
                         whether to enter wants the rules, not a second click
                         through a modal to find them. */}
-                    {r.rulebook ? (
+                    {/* Only when there is one to open. This used to fall back
+                        to a pill containing a single arrow and no label, which
+                        looked like a control and did nothing. */}
+                    {r.rulebook && (
                       <a
                         href={asset(`rulebooks/${r.rulebook}`)}
                         target="_blank"
@@ -227,10 +230,6 @@ export default function EventsGrid() {
                         <BookOpen size={12} />
                         Rules
                       </a>
-                    ) : (
-                      <span className="flex items-center gap-1 rounded-full px-3 py-2.5 font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/65 ring-1 ring-inset ring-gold/35">
-                        <ArrowUpRight size={12} />
-                      </span>
                     )}
                   </div>
                 </div>
