@@ -130,7 +130,7 @@ export default function Legend() {
                     </div>
                     <div className={last ? 'pb-1' : 'pb-9'}>
                       <h3 className="font-display text-xl text-offwhite">{c.title}</h3>
-                      <p className="mt-1.5 max-w-md text-balance text-[0.92rem] leading-relaxed text-parchment/65">
+                      <p className="mt-1.5 max-w-md text-pretty text-[0.92rem] leading-relaxed text-parchment/65">
                         {c.body}
                       </p>
                     </div>

@@ -184,10 +184,10 @@ function HeadlinerCard({ night }: { night: ProNight }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4 pt-3.5">
-        <p className="text-balance text-[0.84rem] leading-relaxed text-parchment/70">{a.blurb}</p>
+        <p className="text-pretty text-[0.84rem] leading-relaxed text-parchment/70">{a.blurb}</p>
         <div className="mt-3.5 flex items-start gap-2 border-t border-gold/12 pt-3.5">
           <Music2 size={13} className="mt-0.5 shrink-0 text-gold/70" />
-          <p className="text-balance text-[0.78rem] leading-relaxed text-parchment/55">
+          <p className="text-pretty text-[0.78rem] leading-relaxed text-parchment/55">
             {a.known.join(' · ')}
           </p>
         </div>

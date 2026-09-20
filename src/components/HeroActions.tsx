@@ -1,76 +1,104 @@
+import type { ReactNode } from 'react'
+
+import { Reveal } from './primitives'
+import { TOTAL_EVENTS, territories } from '../data/events'
 import { asset } from '../lib/asset'
 import { useRegistration } from '../registration/context'
 import { useNavTo } from './routing'
 
 /**
- * The three ways in, directly under the hero.
+ * Three ways in, directly under the hero.
  *
  * The hero used to carry four things you could press, with the navbar's own
  * button above them. Five invitations over a wordmark is a toolbar, not a
- * landing page, so the hero now makes one offer and the rest live here.
+ * landing page, so the hero makes one offer and these carry the rest.
  *
- * Deliberately not a band. The first version of this was a full-bleed strip
- * with a rule top and bottom, and because its content was capped at 896px
- * while the rules ran edge to edge, a 1920px screen drew 512px of empty
- * bordered line at each end and the whole thing read as an unfinished table.
- * Text centred on the page background cannot do that: it is only ever as wide
- * as the words in it.
+ * Two earlier attempts at this were furniture: a full-bleed band whose rules
+ * ran edge to edge while its content stopped at 896px, leaving 512px of empty
+ * line at each end of a wide screen, and then a row of plain labels that read
+ * as a breadcrumb. Both looked like navigation bolted under a photograph. Each
+ * card now leads with a fact rather than a label, which is the difference
+ * between telling somebody where to click and telling them something worth
+ * knowing.
  *
- * No "Register" here either. The hero's button is already that, a hundred
- * pixels up, and it changes to "My Pass" once somebody holds one.
+ * No "Register" here. The hero's button is already that, a hundred pixels up,
+ * and it becomes "My Pass" once somebody holds one.
  */
 export default function HeroActions() {
   const { openAccommodation } = useRegistration()
   const navTo = useNavTo()
 
   return (
-    <div className="relative z-10 px-6 pb-2 pt-7 sm:pt-8">
-      {/* A column of three on a phone, one line with marks between from sm up.
-          Wrapping an inline list would strand a separator at the end of a
-          line, which is worse than simply stacking. */}
-      <nav
-        aria-label="Quick links"
-        className="mx-auto flex max-w-3xl flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-0"
-      >
-        <Action label="Explore the events" onClick={() => navTo('/#island')} cursor="GO" />
-        <Mark />
-        <Action label="Book your stay" onClick={openAccommodation} cursor="STAY" />
-        <Mark />
-        <Action label="Read the brochure" href={asset('pyrexia-brochure.pdf')} cursor="READ" />
-      </nav>
+    <div className="relative z-10 px-6 pb-4 pt-10 sm:pt-12">
+      <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-3">
+        <Reveal>
+          <Card
+            lead={String(TOTAL_EVENTS)}
+            label="Events to enter"
+            body={`${territories.length} territories, from the dance floor to the arena. Find the ones that are yours.`}
+            onClick={() => navTo('/#island')}
+            cursor="GO"
+          />
+        </Reveal>
+
+        <Reveal delay={0.06}>
+          <Card
+            lead="5"
+            label="Days on the island"
+            body="Book a bed for the fest, and it will be waiting for you when you arrive."
+            onClick={openAccommodation}
+            cursor="STAY"
+          />
+        </Reveal>
+
+        <Reveal delay={0.12}>
+          <Card
+            lead="1"
+            label="Full programme"
+            body="Every event, every rule and every date, in a single download."
+            href={asset('pyrexia-brochure.pdf')}
+            cursor="READ"
+          />
+        </Reveal>
+      </div>
     </div>
   )
 }
 
-/** The separator. Decoration, so it is hidden from the accessibility tree. */
-function Mark() {
-  return (
-    <span aria-hidden className="hidden px-4 text-[0.5rem] text-gold/40 sm:inline lg:px-5">
-      ◆
-    </span>
-  )
-}
-
-function Action({
+function Card({
+  lead,
   label,
+  body,
   href,
   onClick,
   cursor,
 }: {
+  lead: string
   label: string
+  body: string
   href?: string
   onClick?: () => void
   cursor: string
 }) {
-  // A minimum tap height on a phone, where these are stacked and thumbed.
+  // No arrow anywhere. The border and the figure brighten together on hover,
+  // which is what says "this is a thing you can press" here.
   const className =
-    'group inline-flex min-h-11 items-center font-log text-[0.72rem] uppercase tracking-wide2 text-parchment/70 transition-colors hover:text-gold-bright sm:min-h-0 sm:text-[0.74rem]'
+    'group flex h-full w-full flex-col items-start rounded-xl border border-gold/15 bg-ocean/30 p-5 text-left transition-colors hover:border-gold/45 hover:bg-ocean/55'
 
-  const inner = (
-    <span className="relative">
-      {label}
-      <span className="absolute -bottom-1 left-0 h-px w-0 bg-gold-bright/70 transition-all duration-300 group-hover:w-full" />
-    </span>
+  const inner: ReactNode = (
+    <>
+      <span className="flex items-baseline gap-2.5">
+        <span className="font-display text-[2rem] leading-none text-gold/80 transition-colors group-hover:text-gold-bright">
+          {lead}
+        </span>
+        <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/55">
+          {label}
+        </span>
+      </span>
+      <span className="mt-3 text-pretty text-[0.88rem] leading-relaxed text-parchment/70">
+        {body}
+      </span>
+    </>
   )
 
   if (href) {

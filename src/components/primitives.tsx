@@ -125,7 +125,7 @@ export function SectionTitle({
       {kicker && (
         <Reveal delay={0.12}>
           <p
-            className={`mt-4 max-w-xl text-balance text-[0.98rem] leading-relaxed text-parchment/70 ${
+            className={`mt-4 max-w-2xl text-pretty text-[0.98rem] leading-relaxed text-parchment/70 ${
               align === 'center' ? 'mx-auto' : ''
             }`}
           >

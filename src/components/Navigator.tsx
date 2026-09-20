@@ -11,7 +11,6 @@ export default function Navigator() {
     <section id="contact" className="relative overflow-hidden py-14 sm:py-18 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <SectionTitle
-          index="09"
           eyebrow="The Navigator's Desk"
           title="Charts & Queries"
           meaning="Contact & FAQ"

@@ -39,7 +39,7 @@ export const GIRLS_RATES: readonly StayRate[] = [
  * nobody reads a price list before they have decided to come.
  */
 export const STAY_FACTS = [
-  "Separate boys' and girls' blocks, on campus and with our hospitality partners.",
+  "Separate boys' and girls' blocks, allocated by the accommodation team.",
   'Two, three, four or five to a room, AC or non-AC.',
   'Stay four days or all five, arriving on the day that suits your train.',
   'Security guards on the premises, and beds, mattresses and an almirah in every room.',
@@ -47,19 +47,6 @@ export const STAY_FACTS = [
 
 /** Cash, at the desk, refundable at check-out. Never charged online. */
 export const SECURITY_DEPOSIT = 500
-
-/**
- * What the stay actually is, in the accommodation team's own words.
- *
- * Worth keeping close to the brochure's wording: somebody comparing the two
- * should not find a difference to worry about.
- */
-export const AMENITIES = [
-  'Rooms at the AIIMS Rishikesh campus and with our trusted hospitality partners.',
-  'Each room has beds, mattresses and an almirah.',
-  'Fans, buckets and mugs in every room.',
-  'Security guards on the premises throughout the fest.',
-] as const
 
 export const HOUSE_RULES = [
   'Smoking and alcohol are strictly prohibited on the premises. Anything prohibited found in a room means immediate expulsion and loss of the deposit.',
