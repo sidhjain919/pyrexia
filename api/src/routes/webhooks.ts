@@ -19,11 +19,11 @@ import { Hono } from 'hono'
 import type { Env } from '../types.ts'
 import { readRaw } from '../lib/http.ts'
 import { newId } from '../lib/ids.ts'
-import { newPassId } from '../lib/pass.ts'
+import { issuePassIfNeeded } from '../lib/grant.ts'
 import * as audit from '../lib/audit.ts'
 import { isHandledEvent, razorpayConfig, verifyWebhookSignature, type WebhookEvent } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
-import { requestSheetSyncForEntry } from '../jobs/sheets.ts'
+import { requestAccommodationSheetSync, requestSheetSyncForEntry } from '../jobs/sheets.ts'
 
 export const webhooks = new Hono<{ Bindings: Env }>()
 
@@ -243,6 +243,8 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
   // order, so every paid entry used to be announced as a Festival Pass
   // upgrade to somebody who had just paid for badminton.
   if (order.kind === 'accommodation' && order.accommodation_booking_id) {
+    // The rooming list the accommodation team works from.
+    await requestAccommodationSheetSync(env)
     // The receipt the hostel desk asks to see at check-in, which is a
     // different document from a registration confirmation.
     await env.JOBS.send({
@@ -263,47 +265,6 @@ async function onPaymentCaptured(env: Env, event: WebhookEvent): Promise<void> {
       orderId: order.id,
     })
   }
-}
-
-/**
- * Issue a pass, once, per registration.
- *
- * `tier_floor` records what they hold right now. If they upgrade later this row
- * is untouched: the gate reads the current tier from the synced manifest and
- * takes whichever is higher, so an already-printed QR keeps working.
- */
-async function issuePassIfNeeded(env: Env, registrationId: string): Promise<void> {
-  const existing = await env.DB.prepare(
-    'SELECT id FROM passes WHERE registration_id = ? AND revoked_at IS NULL',
-  )
-    .bind(registrationId)
-    .first<{ id: string }>()
-
-  if (existing) return
-
-  const tier = await env.DB.prepare(
-    'SELECT tier FROM registration_tier WHERE registration_id = ?',
-  )
-    .bind(registrationId)
-    .first<{ tier: number }>()
-
-  const passId = newPassId()
-  const keyId = Number(env.PASS_KEY_ID ?? '1')
-
-  await env.DB.prepare(
-    'INSERT INTO passes (id, registration_id, tier_floor, key_id) VALUES (?, ?, ?, ?)',
-  )
-    .bind(passId, registrationId, tier?.tier ?? 0, keyId)
-    .run()
-
-  await audit.record(env, {
-    action: 'pass.issue',
-    entity: 'pass',
-    entityId: passId,
-    after: { registrationId, tierFloor: tier?.tier ?? 0, keyId },
-  })
-
-  await env.JOBS.send({ kind: 'pass.render_pdf', passId })
 }
 
 /* ------------------------------------------------------------------ *

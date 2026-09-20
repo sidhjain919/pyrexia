@@ -18,9 +18,18 @@ import { DEFAULT_OPEN_TERRITORIES } from '../data/registration'
  * event's own. An event is open only when both are.
  */
 
-type Openings = { open: ReadonlySet<string>; closedEvents: ReadonlySet<string> }
+type Openings = {
+  open: ReadonlySet<string>
+  /** Verticals that have taken entries at some point, whether or not they are now. */
+  everOpened: ReadonlySet<string>
+  closedEvents: ReadonlySet<string>
+}
 
-const DEFAULT: Openings = { open: DEFAULT_OPEN_TERRITORIES, closedEvents: new Set() }
+const DEFAULT: Openings = {
+  open: DEFAULT_OPEN_TERRITORIES,
+  everOpened: DEFAULT_OPEN_TERRITORIES,
+  closedEvents: new Set(),
+}
 
 let cache: Openings | null = null
 let inflight: Promise<Openings> | null = null
@@ -31,7 +40,14 @@ function load(): Promise<Openings> {
   inflight ??= api
     .openings()
     .then((res) => {
-      cache = { open: new Set(res.open), closedEvents: new Set(res.closedEvents ?? []) }
+      cache = {
+        open: new Set(res.open),
+        // An older API answers without this. Falling back to what is open now
+        // means a card can only ever under-claim, saying "coming soon" where
+        // it might have said "closed", never the other way round.
+        everOpened: new Set(res.everOpened ?? res.open),
+        closedEvents: new Set(res.closedEvents ?? []),
+      }
       for (const fn of listeners) fn(cache)
       return cache
     })
@@ -78,6 +94,13 @@ export function useOpenings() {
      */
     isOpen: (territoryId: string, eventName?: string) =>
       state.open.has(territoryId) && (eventName === undefined || !state.closedEvents.has(eventName)),
+
+    /**
+     * What a shut card should say. "Coming Soon" invites somebody to check
+     * back, which is right before entries open and a small lie afterwards.
+     */
+    shutLabel: (territoryId: string) =>
+      state.everOpened.has(territoryId) ? 'Entries Closed' : 'Coming Soon',
     settled,
   }
 }

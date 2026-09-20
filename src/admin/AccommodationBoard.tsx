@@ -153,7 +153,7 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
               <table className="data w-full">
                 <thead>
                   <tr>
-                    <th>Block</th>
+                    <th>Gender</th>
                     <th>Room</th>
                     <th className="n">People</th>
                     <th className="n">Rooms</th>

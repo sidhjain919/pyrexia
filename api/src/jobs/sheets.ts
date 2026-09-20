@@ -53,6 +53,34 @@ export const SEPARATE_SHEET_VERTICALS = new Set(['velocity'])
 export const sheetEvents = registerableEvents.filter((e) => !resolveEvent(e.name)?.externalForm)
 
 /**
+ * The accommodation rooming list, which rides the event-sheet machinery under
+ * a reserved name.
+ *
+ * It is not an event, but it wants exactly what an event sheet already has: a
+ * spreadsheet the committee can open, discovery by tag so renaming it changes
+ * nothing, ordered writes so two syncs racing cannot leave the older list on
+ * screen, and a content hash so an unchanged list is not rewritten every
+ * quarter of an hour. Reusing all of that costs one reserved string and one
+ * branch; a parallel implementation would have cost a second of everything.
+ *
+ * The leading underscores keep it out of reach of any real event name.
+ */
+export const ACCOMMODATION_SHEET = '__accommodation'
+
+/** The tab's title in Drive, and what `setUp` names the spreadsheet. */
+export const ACCOMMODATION_SHEET_TITLE = 'Accommodation'
+
+/** Ask for the rooming list to be brought up to date. Never throws. */
+export async function requestAccommodationSheetSync(env: Env): Promise<void> {
+  if (!config(env)) return
+  try {
+    await env.JOBS.send({ kind: 'sheets.sync', eventName: ACCOMMODATION_SHEET })
+  } catch (err) {
+    console.error('could not queue the accommodation sheet sync', err)
+  }
+}
+
+/**
  * Ask for an event's sheet to be brought up to date.
  *
  * Never throws: a sheet is a convenience, and nothing a student is waiting on
@@ -174,6 +202,84 @@ export function buildGrid(eventName: string, entries: EntryRow[]): SheetValue[][
   return [headers, ...rows]
 }
 
+type BookingRow = {
+  public_code: string
+  gender: string
+  sharing: number
+  ac: number
+  days: number
+  arrival_date: string
+  arrival_time: string | null
+  name: string
+  email: string
+  phone: string
+  college: string
+  course: string
+  fee_paise: number
+  created_at: string
+  delegate_code: string
+}
+
+const BOOKING_SQL = `
+  SELECT b.public_code, b.gender, b.sharing, b.ac, b.days, b.arrival_date, b.arrival_time,
+         b.name, b.email, b.phone, b.college, b.course, b.fee_paise, b.created_at,
+         r.public_code AS delegate_code
+    FROM accommodation_bookings b
+    JOIN registrations r ON r.id = b.registration_id
+   WHERE b.status = 'confirmed'
+   ORDER BY b.created_at, b.id`
+
+/**
+ * The rooming list, as the accommodation desk works from it.
+ *
+ * Grouped the way a room is allocated (gender, then size, then AC) rather
+ * than by when somebody booked, because the sheet is read while standing at a
+ * desk deciding who goes where. `created_at` still breaks ties, so a new
+ * booking lands at the bottom of its group instead of shuffling the list.
+ */
+export function buildAccommodationGrid(bookings: BookingRow[]): SheetValue[][] {
+  const headers = [
+    '#', 'Reference', 'Gender', 'Room', 'AC', 'Nights', 'Arriving', 'Arrival time',
+    'Name', 'Mobile', 'Email', 'College', 'Course', 'Registration No',
+    'Paid for room (INR)', 'Booked on (IST)',
+  ]
+
+  const sorted = [...bookings].sort(
+    (a, b) =>
+      a.gender.localeCompare(b.gender) ||
+      a.sharing - b.sharing ||
+      b.ac - a.ac ||
+      a.arrival_date.localeCompare(b.arrival_date) ||
+      a.created_at.localeCompare(b.created_at),
+  )
+
+  const rows = sorted.map((b, i) => [
+    i + 1,
+    b.public_code,
+    b.gender,
+    `${b.sharing} seater`,
+    b.ac === 1 ? 'AC' : 'Non-AC',
+    b.days,
+    b.arrival_date,
+    b.arrival_time ?? '',
+    b.name,
+    b.phone,
+    b.email,
+    b.college,
+    b.course,
+    b.delegate_code,
+    Math.round(b.fee_paise) / 100,
+    toIst(b.created_at),
+  ] as SheetValue[])
+
+  return [headers, ...rows]
+}
+
+async function loadBookingGrid(env: Env): Promise<SheetValue[][]> {
+  const { results } = await env.DB.prepare(BOOKING_SQL).all<BookingRow>()
+  return buildAccommodationGrid(results)
+}
+
 async function hashGrid(grid: SheetValue[][]): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(grid)))
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
@@ -208,11 +314,18 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
   // Taken before the read: a write carrying an older snapshot of the entries
   // always carries a smaller version, whichever request reaches Google first.
   const version = Date.now()
-  const { results } = await env.DB.prepare(`${ENTRY_SQL} AND ev.event_name = ?${ORDER}`)
-    .bind(eventName)
-    .all<EntryRow>()
 
-  const grid = buildGrid(eventName, results)
+  // The one branch the reserved name costs: everything after this point is
+  // identical for a rooming list and an event's entries.
+  let grid: SheetValue[][]
+  if (eventName === ACCOMMODATION_SHEET) {
+    grid = await loadBookingGrid(env)
+  } else {
+    const { results } = await env.DB.prepare(`${ENTRY_SQL} AND ev.event_name = ?${ORDER}`)
+      .bind(eventName)
+      .all<EntryRow>()
+    grid = buildGrid(eventName, results)
+  }
   const hash = await hashGrid(grid)
   if (hash === record.content_hash) {
     // The tab already shows exactly this. An error left on the row came from
@@ -271,7 +384,7 @@ export async function discoverSheets(env: Env): Promise<number> {
   const cfg = config(env)
   if (!cfg) return 0
 
-  const known = new Set(sheetEvents.map((e) => e.name))
+  const known = new Set([...sheetEvents.map((e) => e.name), ACCOMMODATION_SHEET])
   const matched = (await listSheets(cfg)).filter((f) => known.has(f.event))
 
   if (matched.length) {
@@ -327,9 +440,17 @@ export async function sweepSheets(env: Env): Promise<{ found: number; queued: nu
     byEvent.set(e.event_name, list)
   }
 
+  const bookingGrid = records.some((r) => r.event_name === ACCOMMODATION_SHEET)
+    ? await loadBookingGrid(env)
+    : null
+
   const stale: string[] = []
   for (const r of records) {
-    const hash = await hashGrid(buildGrid(r.event_name, byEvent.get(r.event_name) ?? []))
+    const hash = await hashGrid(
+      r.event_name === ACCOMMODATION_SHEET
+        ? (bookingGrid ?? [])
+        : buildGrid(r.event_name, byEvent.get(r.event_name) ?? []),
+    )
     // An error flag is re-checked too: the sync either rewrites the tab or,
     // finding it already current, clears the flag.
     if (hash !== r.content_hash || r.last_error) stale.push(r.event_name)

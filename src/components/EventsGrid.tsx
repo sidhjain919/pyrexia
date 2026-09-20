@@ -59,7 +59,7 @@ const rows: Row[] = territories.flatMap((t) =>
 
 export default function EventsGrid() {
   const { openRegister } = useRegistration()
-  const { isOpen } = useOpenings()
+  const { isOpen, shutLabel } = useOpenings()
   const { state: entitlement } = useEntitlement()
   const navTo = useNavTo()
   const reduce = useReducedMotion()
@@ -198,7 +198,7 @@ export default function EventsGrid() {
                       ) : !isOpen(r.terrId, r.name) ? (
                         <>
                           <Hourglass size={13} />
-                          Coming Soon
+                          {shutLabel(r.terrId)}
                         </>
                       ) : r.externalForm ? (
                         <>

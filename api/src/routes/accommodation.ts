@@ -155,8 +155,8 @@ accommodation.get('/accommodation', async (c) => {
         phone: reg.phone,
         college: reg.college,
         course: reg.course,
-        // Only ever a suggestion for which block to show first. A room is
-        // allocated by the block somebody picks on the form, not by this.
+        // Only ever a suggestion for which side to show first. A room is
+        // allocated by what somebody picks on the form, not by this.
         gender: reg.gender === 'Male' ? 'boys' : reg.gender === 'Female' ? 'girls' : '',
       }
     }
@@ -296,8 +296,8 @@ accommodation.post('/me/accommodation', async (c) => {
       `INSERT INTO accommodation_bookings
          (id, public_code, registration_id, gender, sharing, ac, days,
           arrival_date, arrival_time, name, email, phone, college, course,
-          requirements, rules_accepted, partner_consent, rate_paise, fee_paise, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 'pending')`,
+          rules_accepted, rate_paise, fee_paise, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'pending')`,
     ).bind(
       bookingId,
       code,
@@ -313,7 +313,6 @@ accommodation.post('/me/accommodation', async (c) => {
       value.phone,
       value.college,
       value.course,
-      value.requirements || null,
       stay.ratePaise,
       stay.feePaise,
     ),

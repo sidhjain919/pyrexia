@@ -28,7 +28,14 @@ import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
-import { sheetEvents, SEPARATE_SHEET_VERTICALS, SHEET_TAG, VERTICAL_TAG } from '../src/jobs/sheets.ts'
+import {
+  ACCOMMODATION_SHEET,
+  ACCOMMODATION_SHEET_TITLE,
+  sheetEvents,
+  SEPARATE_SHEET_VERTICALS,
+  SHEET_TAG,
+  VERTICAL_TAG,
+} from '../src/jobs/sheets.ts'
 
 const args = process.argv.slice(2)
 const flag = (name) => args.flatMap((a, i) => (a === name && args[i + 1] ? [args[i + 1]] : []))
@@ -51,7 +58,13 @@ for (const e of editors) {
 }
 
 // [event, vertical, whether it gets a spreadsheet of its own]
-const events = sheetEvents.map((e) => [e.name, e.territory.code, SEPARATE_SHEET_VERTICALS.has(e.territory.id)])
+// The rooming list rides this list under a reserved name. It is not an event,
+// but it wants the same spreadsheet, the same discovery by tag and the same
+// ordered writes, so it is carried as one that owns its own file.
+const events = [
+  ...sheetEvents.map((e) => [e.name, e.territory.code, SEPARATE_SHEET_VERTICALS.has(e.territory.id)]),
+  [ACCOMMODATION_SHEET, ACCOMMODATION_SHEET_TITLE, true],
+]
 
 const script = `/**
  * PYREXIA 2026: live Google Sheets for event entries.
@@ -86,6 +99,9 @@ const EVENT_TAG = ${JSON.stringify(SHEET_TAG)}
 const VERTICAL_TAG = ${JSON.stringify(VERTICAL_TAG)}
 // Developer metadata on a tab, naming the event it holds.
 const TAB_KEY = 'pyrexia-event'
+// The rooming list's reserved name, so its file is titled and tabbed as what
+// it is rather than as an event.
+const ACCOMMODATION = ${JSON.stringify(ACCOMMODATION_SHEET)}
 
 // [event, vertical, own spreadsheet?]
 const EVENTS = [
@@ -109,8 +125,9 @@ function setUp() {
   for (const [name, vertical, own] of EVENTS) {
     if (own) {
       if (files.events[name]) continue
-      const ss = SpreadsheetApp.create(vertical + ' · ' + name + ' — PYREXIA 2026')
-      header_(ss.getSheets()[0].setName('Entries'))
+      const title = name === ACCOMMODATION ? vertical : vertical + ' · ' + name
+      const ss = SpreadsheetApp.create(title + ' — PYREXIA 2026')
+      header_(ss.getSheets()[0].setName(name === ACCOMMODATION ? 'Bookings' : 'Entries'))
       files.events[name] = place_(ss, EVENT_TAG + name, folder)
       madeFiles++
       continue

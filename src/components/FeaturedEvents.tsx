@@ -28,7 +28,7 @@ const picks: Pick[] = [
 export default function FeaturedEvents() {
   const track = useRef<HTMLDivElement>(null)
   const { openRegister } = useRegistration()
-  const { isOpen } = useOpenings()
+  const { isOpen, shutLabel } = useOpenings()
   const { state: entitlement } = useEntitlement()
   const navTo = useNavTo()
   const scrollBy = (dir: number) => {
@@ -131,7 +131,7 @@ export default function FeaturedEvents() {
                         </>
                       ) : (
                         <>
-                          <Hourglass size={13} /> Coming Soon
+                          <Hourglass size={13} /> {shutLabel(t.id)}
                         </>
                       )}
                     </button>

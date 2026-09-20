@@ -97,6 +97,7 @@ export const artistPhoto: Record<string, string> = {
   "Mohit Chauhan": p('artists/mohit-chauhan.webp'),
   "B Praak": p('artists/b-praak.webp'),
   "Aditi Singh Sharma": p('artists/aditi-singh-sharma.webp'),
+  "Shilpa Rao": p('artists/shilpa-rao.webp'),
 }
 
 /** Opening-ceremony frames, doubling as section backdrops. */

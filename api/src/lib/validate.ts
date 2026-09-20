@@ -151,12 +151,9 @@ export type AccommodationContact = {
   phone: string
   college: string
   course: string
-  /** Free text: ground floor, a medical condition, anything the team should know. */
-  requirements: string
   /** Free text on purpose: "late evening" beats a precise number somebody invented. */
   arrivalTime: string
   rulesAccepted: boolean
-  partnerConsent: boolean
 }
 
 /**
@@ -185,10 +182,8 @@ export function validateAccommodation(body: unknown): {
     phone: normalisePhone(str(b.phone)),
     college: str(b.college),
     course: str(b.course),
-    requirements: str(b.requirements).slice(0, 600),
     arrivalTime: str(b.arrivalTime).slice(0, 60),
     rulesAccepted: b.rulesAccepted === true,
-    partnerConsent: b.partnerConsent === true,
   }
 
   if (value.name.length < 2) errors.name = 'Tell us your name.'
@@ -203,12 +198,9 @@ export function validateAccommodation(body: unknown): {
   if (value.college.length < 2) errors.college = 'Which port do you sail from?'
   if (value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
 
-  // Both refused rather than defaulted. The terms behind them have teeth: a
+  // Refused rather than defaulted. The terms behind it have teeth: a
   // cancellation is not refunded, and damage is charged against the deposit.
   if (!value.rulesAccepted) errors.rulesAccepted = 'Please read and accept the house rules.'
-  if (!value.partnerConsent) {
-    errors.partnerConsent = 'We need this to hand your booking to the hotel.'
-  }
 
   return { ok: Object.keys(errors).length === 0, errors, value }
 }

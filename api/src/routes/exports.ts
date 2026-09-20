@@ -171,8 +171,9 @@ exports_.get('/admin/export/registrations', async (c) => {
 exports_.get('/admin/export/payments', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT o.id, r.public_code, r.name, r.email, r.phone, o.kind,
-            o.amount_paise, o.convenience_paise, o.fee_paise, o.tax_paise,
+            o.amount_paise, o.convenience_paise, o.discount_paise, o.fee_paise, o.tax_paise,
             o.method, o.status, o.razorpay_order_id, o.razorpay_payment_id,
+            o.collected_by, o.payment_reference,
             o.created_at, o.paid_at, o.failure_reason,
             (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items,
             (SELECT ev.event_name FROM event_entries ev WHERE ev.id = o.event_entry_id) AS event_name
@@ -185,10 +186,11 @@ exports_.get('/admin/export/payments', async (c) => {
       tab(
         'Payments',
         'Every payment attempt',
-        ['Order', 'Registration No', 'Name', 'Email', 'Mobile', 'Bought',
-         'Amount charged (INR)', 'of which gateway charge (INR)',
+        ['Order', 'Registration No', 'Name', 'Email', 'Mobile', 'Bought', 'Channel',
+         'Amount charged (INR)', 'of which gateway charge (INR)', 'Discount given (INR)',
          'Razorpay fee (INR)', 'GST on fee (INR)', 'Net to fest (INR)',
          'Method', 'Status', 'Razorpay Order ID', 'Razorpay Payment ID',
+         'Collected by', 'Payment reference',
          'Started', 'Paid at', 'Failure reason'],
         results.map((r) => {
           const amount = Number(r.amount_paise ?? 0)
@@ -196,10 +198,14 @@ exports_.get('/admin/export/payments', async (c) => {
           return [
             r.id, r.public_code, r.name, r.email, r.phone,
             bought(r.items, r.kind, r.event_name),
-            rupees(amount), rupees(r.convenience_paise),
+            // Which till it came through. A desk row has no Razorpay ids and
+            // no gateway fee, so the two never have to be told apart by eye.
+            r.kind === 'desk' ? 'Desk' : 'Online',
+            rupees(amount), rupees(r.convenience_paise), rupees(r.discount_paise),
             rupees(r.fee_paise), rupees(r.tax_paise),
             rupees(r.status === 'paid' ? amount - fee : 0),
             r.method, r.status, r.razorpay_order_id, r.razorpay_payment_id,
+            r.collected_by ?? '', r.payment_reference ?? '',
             r.created_at, r.paid_at, r.failure_reason,
           ] as Cell[]
         }),
@@ -303,7 +309,7 @@ exports_.get('/admin/export/accommodation', async (c) => {
   const { results: bookings } = await c.env.DB.prepare(
     `SELECT b.public_code, b.gender, b.sharing, b.ac, b.days, b.arrival_date,
             b.arrival_time, b.name, b.email, b.phone, b.college, b.course,
-            b.requirements, b.rate_paise, b.fee_paise, b.created_at,
+            b.rate_paise, b.fee_paise, b.created_at,
             r.public_code AS delegate_code, t.tier
        FROM accommodation_bookings b
        JOIN registrations r ON r.id = b.registration_id
@@ -342,19 +348,19 @@ exports_.get('/admin/export/accommodation', async (c) => {
       tab(
         'Bookings',
         'Every confirmed accommodation booking',
-        ['Reference', 'Block', 'Room', 'Nights', 'Arriving', 'Arrival time', 'Name', 'Mobile',
+        ['Reference', 'Gender', 'Room', 'Nights', 'Arriving', 'Arrival time', 'Name', 'Mobile',
          'Email', 'College', 'Course', 'Registration No', 'Tier', 'Rate/day (INR)',
-         'Paid for room (INR)', 'Requirements', 'Booked on'],
+         'Paid for room (INR)', 'Booked on'],
         bookings.map((r) => [
           r.public_code, r.gender, room(r), r.days, r.arrival_date, r.arrival_time ?? '',
           r.name, r.phone, r.email, r.college, r.course, r.delegate_code, tierName(r.tier),
-          rupees(r.rate_paise), rupees(r.fee_paise), r.requirements ?? '', r.created_at,
+          rupees(r.rate_paise), rupees(r.fee_paise), r.created_at,
         ] as Cell[]),
       ),
       tab(
         'Occupancy',
         'People per room type, and the rooms that implies',
-        ['Block', 'Room', 'People', 'Rooms needed', 'Collected (INR)'],
+        ['Gender', 'Room', 'People', 'Rooms needed', 'Collected (INR)'],
         occupancy.map((r) => [
           r.gender, room(r), r.people, roomsNeeded(r.people, r.sharing),
           rupees(r.collected_paise),
@@ -363,7 +369,7 @@ exports_.get('/admin/export/accommodation', async (c) => {
       tab(
         'Arrivals',
         'Who lands on which day, for staffing the desk',
-        ['Arriving', 'Block', 'People'],
+        ['Arriving', 'Gender', 'People'],
         arrivals.map((r) => [r.arrival_date, r.gender, r.people] as Cell[]),
       ),
     ],

@@ -29,7 +29,13 @@ import type { Env } from '../types.ts'
 import { ApiError, readJson } from '../lib/http.ts'
 import { newEntryId, newOrderId } from '../lib/ids.ts'
 import { allowsTeam, requiresTeam, resolveEvent } from '../data/events.ts'
-import { closedEventNames, isEventOpen, listOpenings, openTerritoryIds } from '../data/openings.ts'
+import {
+  closedEventNames,
+  everOpenedTerritoryIds,
+  isEventOpen,
+  listOpenings,
+  openTerritoryIds,
+} from '../data/openings.ts'
 import { feeFor, priceEntry } from '../data/fees.ts'
 import { conveniencePaise } from '../lib/pricing.ts'
 import { createOrder, razorpayConfig } from '../lib/razorpay.ts'
@@ -74,13 +80,16 @@ function readMembers(raw: unknown): Member[] {
  * requests.
  */
 events.get('/events/openings', async (c) => {
-  const [open, closed, rows] = await Promise.all([
+  const [open, closed, everOpened, rows] = await Promise.all([
     openTerritoryIds(c.env),
     closedEventNames(c.env),
+    everOpenedTerritoryIds(c.env),
     listOpenings(c.env),
   ])
   return c.json({
     open: [...open],
+    /** Have taken entries at some point. Lets a shut card say which kind of shut. */
+    everOpened: [...everOpened],
     /** Events shut on their own switch inside an open vertical. */
     closedEvents: [...closed],
     territories: rows.map((r) => ({
@@ -100,6 +109,9 @@ events.get('/events/:name', async (c) => {
 
   const session = await resolveSession(c.env, readToken(c.req.raw.headers))
   const open = await isEventOpen(c.env, resolved.name)
+  // Whether this vertical has ever taken entries, so a shut form can say
+  // "closed" rather than inviting somebody to wait for one that is over.
+  const everOpened = (await everOpenedTerritoryIds(c.env)).has(resolved.territory.id)
   const fee = feeFor(name)
 
   let eligible = false
@@ -141,6 +153,7 @@ events.get('/events/:name', async (c) => {
     formTitle: resolved.formTitle ?? null,
     formNote: resolved.formNote ?? null,
     open,
+    everOpened,
     fee: fee && {
       unit: fee.unit,
       variants: fee.variants.map((v) => ({

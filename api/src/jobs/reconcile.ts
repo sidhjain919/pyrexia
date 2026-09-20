@@ -13,11 +13,11 @@
 
 import type { Env } from '../types.ts'
 import { newId } from '../lib/ids.ts'
-import { newPassId } from '../lib/pass.ts'
 import * as audit from '../lib/audit.ts'
+import { issuePassIfNeeded } from '../lib/grant.ts'
 import { RazorpayError, fetchOrderPayments, fetchRefunds } from '../lib/razorpay.ts'
 import { applyRefund } from '../lib/refunds.ts'
-import { requestSheetSyncForEntry } from './sheets.ts'
+import { requestAccommodationSheetSync, requestSheetSyncForEntry } from './sheets.ts'
 
 /** Give the webhook a fair chance before going looking. */
 const GRACE_MINUTES = 30
@@ -234,7 +234,7 @@ async function settle(
   // bed does: the pass came with the registration. Tested positively, so a
   // fourth kind of order cannot quietly inherit the pass-issuing branch.
   if (isEntry) await requestSheetSyncForEntry(env, order.event_entry_id)
-  else if (!isBooking) await issuePassIfMissing(env, order.registration_id)
+  else if (!isBooking) await issuePassIfNeeded(env, order.registration_id)
 
   await audit.record(env, {
     action: 'order.reconciled',
@@ -251,6 +251,7 @@ async function settle(
   // Same routing as the webhook, for the same reason: an entry settled by the
   // sweep must not be announced as a Festival Pass upgrade either.
   if (isBooking) {
+    await requestAccommodationSheetSync(env)
     await env.JOBS.send({
       kind: 'email.accommodation_confirmed',
       registrationId: order.registration_id,
@@ -269,30 +270,6 @@ async function settle(
       orderId: order.id,
     })
   }
-}
-
-async function issuePassIfMissing(env: Env, registrationId: string): Promise<void> {
-  const existingPass = await env.DB.prepare(
-    'SELECT id FROM passes WHERE registration_id = ? AND revoked_at IS NULL',
-  )
-    .bind(registrationId)
-    .first<{ id: string }>()
-  if (existingPass) return
-
-  const tier = await env.DB.prepare(
-    'SELECT tier FROM registration_tier WHERE registration_id = ?',
-  )
-    .bind(registrationId)
-    .first<{ tier: number }>()
-
-  const passId = newPassId()
-  await env.DB.prepare(
-    'INSERT INTO passes (id, registration_id, tier_floor, key_id) VALUES (?, ?, ?, ?)',
-  )
-    .bind(passId, registrationId, tier?.tier ?? 0, Number(env.PASS_KEY_ID ?? '1'))
-    .run()
-
-  await env.JOBS.send({ kind: 'pass.render_pdf', passId })
 }
 
 /**
@@ -379,6 +356,7 @@ export async function repairUnconfirmedBookings(env: Env): Promise<void> {
       registrationId: booking.registration_id,
       bookingId: booking.id,
     })
+    await requestAccommodationSheetSync(env)
   }
   if (results.length) console.log('confirmed bookings left pending on paid orders', results.length)
 }

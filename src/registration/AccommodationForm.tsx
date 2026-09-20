@@ -19,8 +19,7 @@ import {
   type AccommodationRoom,
 } from '../api/client'
 import { openCheckout, PaymentCancelled } from './razorpay'
-import { Checkbox, Field, TextArea, TextInput } from './fields'
-import { CONVENIENCE_NOTE } from '../data/registration'
+import { Checkbox, Field, TextInput } from './fields'
 import {
   BOYS_RATES,
   BRING_TO_CHECKIN,
@@ -73,9 +72,7 @@ export default function AccommodationForm({
   const [phone, setPhone] = useState('')
   const [college, setCollege] = useState('')
   const [course, setCourse] = useState('')
-  const [requirements, setRequirements] = useState('')
   const [rulesAccepted, setRulesAccepted] = useState(false)
-  const [partnerConsent, setPartnerConsent] = useState(false)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -96,7 +93,7 @@ export default function AccommodationForm({
           setPhone(a.prefill.phone)
           setCollege(a.prefill.college)
           setCourse(a.prefill.course)
-          // Only a suggestion for which block to open on. They can change it,
+          // Only a suggestion for which side to open on. They can change it,
           // and a registration that recorded "Other" or nothing opens on
           // neither rather than guessing.
           if (a.prefill.gender === 'boys' || a.prefill.gender === 'girls') {
@@ -113,7 +110,7 @@ export default function AccommodationForm({
     }
   }, [])
 
-  /** The rooms on offer in the chosen block, at the chosen AC setting. */
+  /** The rooms on offer for the chosen gender, at the chosen AC setting. */
   const options = useMemo<AccommodationRoom[]>(() => {
     if (!info || !gender || ac === null) return []
     return info.rooms
@@ -134,7 +131,7 @@ export default function AccommodationForm({
   )
 
   /*
-   * A five-seater exists only in the boys' block, and four days can start on
+   * A five-seater exists only in the boys' rooms, and four days can start on
    * a day five days cannot. Switching either one can therefore strand a choice
    * that was valid a moment ago, so the dependent choice is dropped rather
    * than left sitting there about to be rejected by the server.
@@ -155,7 +152,7 @@ export default function AccommodationForm({
   const totalPaise = subtotalPaise + conveniencePaise
 
   const ready =
-    !!picked && !!days && !!arrivalDate && rulesAccepted && partnerConsent && !busy
+    !!picked && !!days && !!arrivalDate && rulesAccepted && !busy
 
   /**
    * Book, and pay.
@@ -180,9 +177,7 @@ export default function AccommodationForm({
         phone: phone.trim(),
         college: college.trim(),
         course: course.trim(),
-        requirements: requirements.trim() || undefined,
         rulesAccepted,
-        partnerConsent,
       })
 
       setPaying('Opening payment…')
@@ -376,9 +371,9 @@ export default function AccommodationForm({
 
   return (
     <div className="space-y-6">
-      {/* 1. Which block */}
+      {/* 1. Gender */}
       <div>
-        <Legend n="1" label="Which block" />
+        <Legend n="1" label="Gender" />
         <div className="mt-2 grid grid-cols-2 gap-2">
           {(['boys', 'girls'] as const).map((g) => (
             <Choice key={g} on={gender === g} onClick={() => setGender(g)}>
@@ -387,8 +382,7 @@ export default function AccommodationForm({
           ))}
         </div>
         <p className="mt-2 text-[0.74rem] text-parchment/45">
-          Rooms are single-gender. The boys' block has rooms up to five to a room; the girls' block
-          goes up to four.
+          Rooms are single-gender. Boys' rooms go up to five to a room; girls' rooms up to four.
         </p>
       </div>
 
@@ -456,7 +450,14 @@ export default function AccommodationForm({
         <div>
           <Legend n="5" label="When you arrive" />
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            {/* Labelled, so its top edge lines up with the time field beside
+                it. Without a label here the buttons sat a label's height above
+                the input, which read as a mistake because it was one. */}
             <div>
+              <span className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
+                Which day
+              </span>
+              <div className="mt-1.5" />
               {arrivalChoices.length > 1 ? (
                 <div className="grid grid-cols-2 gap-2">
                   {arrivalChoices.map((d) => (
@@ -466,12 +467,14 @@ export default function AccommodationForm({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-gold/25 bg-ocean/50 px-3.5 py-2.5 text-[0.92rem] text-offwhite">
-                  {prettyDate(arrivalDate)}
-                  <span className="ml-2 text-[0.76rem] text-parchment/45">
-                    the only start for a {days}-day stay
+                <>
+                  <div className="rounded-lg border border-gold/25 bg-ocean/50 px-3.5 py-2.5 text-[0.92rem] text-offwhite">
+                    {prettyDate(arrivalDate)}
+                  </div>
+                  <span className="mt-1 block text-[0.72rem] text-parchment/45">
+                    The only start for a {days}-day stay.
                   </span>
-                </div>
+                </>
               )}
               {errors.arrivalDate && <FieldError>{errors.arrivalDate}</FieldError>}
             </div>
@@ -542,19 +545,6 @@ export default function AccommodationForm({
                 />
               </Field>
             </div>
-            <div className="sm:col-span-2">
-              <Field
-                label="Anything we should know"
-                hint="Ground floor, a medical condition, arriving with a friend you would like to be near. Optional."
-              >
-                <TextArea
-                  value={requirements}
-                  onChange={setRequirements}
-                  maxLength={600}
-                  placeholder="Optional"
-                />
-              </Field>
-            </div>
           </div>
         </div>
       )}
@@ -594,7 +584,6 @@ export default function AccommodationForm({
             </p>
           </div>
 
-          <p className="mt-2 text-[0.72rem] text-parchment/45">{CONVENIENCE_NOTE}</p>
         </div>
       )}
 
@@ -611,14 +600,6 @@ export default function AccommodationForm({
             <strong className="text-parchment">a cancellation is not refunded</strong>.
           </Checkbox>
 
-          <Checkbox
-            checked={partnerConsent}
-            onChange={setPartnerConsent}
-            error={errors.partnerConsent}
-          >
-            I agree to my name, phone number and college being shared with the hotel or hostel
-            PYREXIA places me in, so they can check me in.
-          </Checkbox>
         </div>
       )}
 
@@ -745,7 +726,7 @@ function FieldError({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * What a bed costs, both blocks.
+ * What a bed costs, for both.
  *
  * Lives here rather than on the landing page: two fourteen-row tables on the
  * front of the site read as a tariff board. It is shown in every state where

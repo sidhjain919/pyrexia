@@ -16,6 +16,7 @@ import type { Env, Job } from './types.ts'
 import { ApiError } from './lib/http.ts'
 import { accommodation } from './routes/accommodation.ts'
 import { admin } from './routes/admin.ts'
+import { desk } from './routes/desk.ts'
 import { auth } from './routes/auth.ts'
 import { exports_ } from './routes/exports.ts'
 import { events } from './routes/events.ts'
@@ -92,6 +93,7 @@ app.route('/api', auth)
 app.route('/api', me)
 app.route('/api', events)
 app.route('/api', admin)
+app.route('/api', desk)
 app.route('/api', exports_)
 app.route('/api', notices)
 app.route('/api', documents)

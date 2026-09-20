@@ -53,6 +53,20 @@ export async function openTerritoryIds(env: Env): Promise<Set<string>> {
   return new Set(results.map((r) => r.territory_id).filter(isOpenable))
 }
 
+/**
+ * Verticals that have taken entries at some point, open or not right now.
+ *
+ * The difference between a card that says "Coming Soon" and one that says
+ * "Entries Closed". Nothing under a vertical can have been open before the
+ * vertical was, so this answers for its events too.
+ */
+export async function everOpenedTerritoryIds(env: Env): Promise<Set<string>> {
+  const { results } = await env.DB.prepare(
+    'SELECT territory_id FROM event_openings WHERE was_open = 1',
+  ).all<{ territory_id: string }>()
+  return new Set(results.map((r) => r.territory_id).filter(isOpenable))
+}
+
 /** Events shut on their own switch, regardless of their vertical. */
 export async function closedEventNames(env: Env): Promise<Set<string>> {
   const { results } = await env.DB.prepare(
@@ -165,14 +179,17 @@ export async function setOpening(
 ): Promise<boolean> {
   if (!isOpenable(territoryId)) return false
   await env.DB.prepare(
-    `INSERT INTO event_openings (territory_id, open, updated_at, updated_by)
-     VALUES (?, ?, datetime('now'), ?)
+    `INSERT INTO event_openings (territory_id, open, was_open, updated_at, updated_by)
+     VALUES (?, ?, ?, datetime('now'), ?)
      ON CONFLICT (territory_id) DO UPDATE SET
        open = excluded.open,
+       -- Latched, never cleared: it is what lets a card say "closed" rather
+       -- than "coming soon" once entries have actually been and gone.
+       was_open = max(event_openings.was_open, excluded.open),
        updated_at = excluded.updated_at,
        updated_by = excluded.updated_by`,
   )
-    .bind(territoryId, open ? 1 : 0, by)
+    .bind(territoryId, open ? 1 : 0, open ? 1 : 0, by)
     .run()
   return true
 }

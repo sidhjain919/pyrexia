@@ -62,6 +62,8 @@ admin.get('/admin/me', (c) => {
       verify: PRIVILEGED.has(me.role) || me.role === 'verifier',
       notices: PRIVILEGED.has(me.role),
       desk: PRIVILEGED.has(me.role) || me.role === 'gate_supervisor',
+      /** Take a registration at a counter, paid in cash or by UPI. */
+      deskRegister: PRIVILEGED.has(me.role) || me.role === 'desk_agent',
     },
   })
 })

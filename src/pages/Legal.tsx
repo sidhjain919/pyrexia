@@ -280,11 +280,10 @@ function privacy() {
             <li><strong className="text-parchment">Our email provider</strong>, to deliver your pass and confirmations.</li>
             <li><strong className="text-parchment">Cloudflare</strong>, where the website and database are hosted.</li>
             <li>
-              <strong className="text-parchment">The hotel or hostel you are placed in</strong>, if
-              you book accommodation. Some rooms are off campus, with hospitality partners who have
-              to be able to check you in, so they are given your name, phone number and college and
-              nothing else. We ask you to agree to this on the booking form rather than assuming
-              it, and if you do not book a room, nobody outside {SITE.name} is told anything.
+              <strong className="text-parchment">Whoever runs the accommodation you are placed
+              in</strong>, if you book a room. They are given your name, phone number and college
+              so they can check you in, and nothing else. This is part of providing the room you
+              booked; if you do not book one, nobody outside {SITE.name} is told anything.
             </li>
           </L>
         </Block>

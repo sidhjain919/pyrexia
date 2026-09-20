@@ -12,6 +12,10 @@ import { SITE } from '../data/site'
  * ones keep the locked slot they had, at a smaller size, so the row reads as
  * "three of five revealed" rather than five equal placeholders.
  */
+/** Small counts read better as words in a sentence than as digits. */
+const spellOut = (n: number) =>
+  ['Nothing', 'One', 'Two', 'Three', 'Four', 'Five'][n] ?? String(n)
+
 export default function Artists() {
   const announced = proNights.filter((n) => n.artist)
   const locked = proNights.filter((n) => !n.artist)
@@ -28,7 +32,11 @@ export default function Artists() {
           eyebrow="Auriga · The Pro Nights"
           title="Starlight Summit"
           meaning="Lineup"
-          kicker={`Five nights on the island, ${SITE.dates}. Three names are out. Two are still charted in secret.`}
+          kicker={`Five nights on the island, ${SITE.dates}. ${
+            announced.length === proNights.length
+              ? 'Every name is out.'
+              : `${spellOut(announced.length)} ${announced.length === 1 ? 'name is' : 'names are'} out. ${spellOut(proNights.length - announced.length)} still charted in secret.`
+          }`}
         />
 
         {/* the announced headliners */}

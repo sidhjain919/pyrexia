@@ -59,6 +59,20 @@ export const STAY_STEPS = [
   },
 ] as const
 
+/**
+ * The accommodation team's own two documents, as handed over.
+ *
+ * `details` is the five-page notice (amenities, rules, room types, the
+ * coordinators); `rates` is the one-page rate schedule. The notice was 20MB of
+ * poster-sized PNGs and is recompressed to about half a megabyte here, which
+ * is the difference between a link a delegate opens on mobile data and one
+ * they give up on.
+ */
+export const STAY_DOCUMENTS = [
+  { label: 'Accommodation details', file: 'accommodation-details.pdf', note: 'Rules, amenities and the coordinators' },
+  { label: 'Rate card', file: 'accommodation-rates.pdf', note: 'Every room type, per person per day' },
+] as const
+
 /** Cash, at the desk, refundable at check-out. Never charged online. */
 export const SECURITY_DEPOSIT = 500
 

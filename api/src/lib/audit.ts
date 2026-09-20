@@ -44,6 +44,7 @@ export type AuditAction =
   | 'export.download'
   | 'settings.event_openings'
   | 'settings.accommodation'
+  | 'desk.register'
 
 export type AuditEntry = {
   action: AuditAction

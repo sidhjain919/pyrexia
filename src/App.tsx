@@ -11,6 +11,7 @@ import VoyageProgress from './components/VoyageProgress'
 import { ScrollManager } from './components/routing'
 import Home from './pages/Home'
 import Admin from './pages/Admin'
+import Desk from './pages/Desk'
 import Legal from './pages/Legal'
 import Notices from './pages/Notices'
 import Reset from './pages/Reset'
@@ -41,6 +42,7 @@ export default function App() {
     '/sign-in',
     '/reset',
     '/admin',
+    '/desk',
     '/notices',
     '/terms',
     '/privacy',
@@ -72,6 +74,9 @@ export default function App() {
               broken screen to anyone who isn't crew. */}
           <Route path="/admin" element={<Admin />} />
           <Route path="/notices" element={<Notices />} />
+          {/* The registration counter. Same story as /admin: not the security
+              boundary, just a sentence instead of a broken screen. */}
+          <Route path="/desk" element={<Desk />} />
 
           {/* Razorpay checks for all four of these before activating live
               payments, and rejects applications that are missing them. */}

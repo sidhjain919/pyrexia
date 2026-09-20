@@ -43,7 +43,7 @@ export const pastLegends: Artist[] = [
 /**
  * One slot per night of the fest: five days on the island, five stages.
  *
- * Three are announced. The other two stay as they were, dates fixed and names
+ * Four are announced. Opening night stays as it was, date fixed and the name
  * charted in secret, because a card that says "reveal soon" is honest and a
  * card that invents a name is not.
  */
@@ -133,6 +133,17 @@ export const proNights: ProNight[] = [
     date: '16 Oct',
     hint: 'Saving the biggest for last',
     accent: '#e6c25e',
+    artist: {
+      name: 'Shilpa Rao',
+      role: 'Playback Powerhouse · Live',
+      tagline: 'That voice. Live. Closing night.',
+      blurb:
+        'Hindustani classical training, then two decades of the songs you already knew every word of before you knew whose voice it was, from Khuda Jaane to Bulleya to Ghungroo. She took the National Award for Chaleya, and she is the one closing the island out.',
+      known: ['Chaleya', 'Ghungroo', 'Bulleya', 'Khuda Jaane'],
+      mono: 'SR',
+      photo: artistPhoto['Shilpa Rao'],
+      focus: '50% 28%',
+    },
   },
 ]
 

@@ -207,10 +207,13 @@ export default function EventForm({
         {header}
         <div className="glass flex flex-col items-center gap-3 rounded-xl px-6 py-10 text-center">
           <Hourglass size={22} className="text-gold/60" />
-          <p className="font-display text-2xl text-offwhite">Coming Soon</p>
+          <p className="font-display text-2xl text-offwhite">
+            {info.everOpened ? 'Entries Closed' : 'Coming Soon'}
+          </p>
           <p className="max-w-sm text-[0.86rem] leading-relaxed text-parchment/65">
-            Entries for {info.name} aren't open yet. The crew is still finalising the details; the
-            form lands here well before the fest.
+            {info.everOpened
+              ? `Entries for ${info.name} have closed. Anyone already entered keeps their place; if you think that should be you, ring the crew on the Navigator.`
+              : `Entries for ${info.name} aren't open yet. The crew is still finalising the details; the form lands here well before the fest.`}
           </p>
         </div>
         {rulesBlock}

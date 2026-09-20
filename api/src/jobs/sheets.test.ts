@@ -6,7 +6,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { SEPARATE_SHEET_VERTICALS, buildGrid, sheetEvents, toIst } from './sheets.ts'
+import {
+  ACCOMMODATION_SHEET,
+  SEPARATE_SHEET_VERTICALS,
+  buildAccommodationGrid,
+  buildGrid,
+  sheetEvents,
+  toIst,
+} from './sheets.ts'
 import { SheetsScriptError, sheetUrl, writeSheet } from '../lib/sheets.ts'
 import { buildXlsx } from '../lib/xlsx.ts'
 
@@ -136,4 +143,81 @@ test('the script client tells a stale write, a refusal and an outage apart', asy
   } finally {
     globalThis.fetch = real
   }
+})
+
+
+/* ------------------------------------------------------------------ *
+ * The rooming list
+ * ------------------------------------------------------------------ */
+
+const booking = (over: Record<string, unknown> = {}) => ({
+  public_code: 'STAY-AAAAAA',
+  gender: 'girls',
+  sharing: 3,
+  ac: 1,
+  days: 4,
+  arrival_date: '2026-10-13',
+  arrival_time: 'late evening',
+  name: 'Asha Rao',
+  email: 'asha@example.com',
+  phone: '9876543210',
+  college: 'AIIMS Rishikesh',
+  course: 'MBBS 2023',
+  fee_paise: 280000,
+  created_at: '2026-09-20 06:15:00',
+  delegate_code: 'PYX26-DEV5FB',
+  ...over,
+})
+
+test('the rooming list is ordered the way a room is allocated', () => {
+  // Deliberately shuffled, and deliberately not in booking order: the desk
+  // reads this while deciding who goes where, so gender, then size, then AC.
+  const grid = buildAccommodationGrid([
+    booking({ public_code: 'A', gender: 'girls', sharing: 4, ac: 0 }),
+    booking({ public_code: 'B', gender: 'boys', sharing: 2, ac: 1 }),
+    booking({ public_code: 'C', gender: 'girls', sharing: 3, ac: 0 }),
+    booking({ public_code: 'D', gender: 'girls', sharing: 3, ac: 1 }),
+  ] as never)
+
+  assert.deepEqual(
+    grid.slice(1).map((r) => r[1]),
+    ['B', 'D', 'C', 'A'],
+    'boys first, then girls by room size, AC before non-AC',
+  )
+})
+
+test('a booking row carries what the desk needs to check somebody in', () => {
+  const [headers, row] = buildAccommodationGrid([booking()] as never)
+
+  const col = (name: string) => row[headers.indexOf(name)]
+  assert.equal(col('Reference'), 'STAY-AAAAAA')
+  assert.equal(col('Registration No'), 'PYX26-DEV5FB')
+  assert.equal(col('Room'), '3 seater')
+  assert.equal(col('AC'), 'AC')
+  assert.equal(col('Nights'), 4)
+  assert.equal(col('Arriving'), '2026-10-13')
+  assert.equal(col('Mobile'), '9876543210')
+  // Rupees as a number, so the column sums in the spreadsheet.
+  assert.equal(col('Paid for room (INR)'), 2800)
+  // IST, like every other time the committee reads.
+  assert.equal(col('Booked on (IST)'), '2026-09-20 11:45')
+})
+
+test('non-AC and an empty arrival time do not print as blanks or booleans', () => {
+  const [headers, row] = buildAccommodationGrid([
+    booking({ ac: 0, arrival_time: null }),
+  ] as never)
+  assert.equal(row[headers.indexOf('AC')], 'Non-AC')
+  assert.equal(row[headers.indexOf('Arrival time')], '')
+})
+
+test('an empty rooming list still has its header row', () => {
+  const grid = buildAccommodationGrid([])
+  assert.equal(grid.length, 1)
+  assert.ok(grid[0].includes('Reference'))
+})
+
+test('the reserved name cannot collide with a real event', () => {
+  assert.ok(ACCOMMODATION_SHEET.startsWith('__'))
+  assert.ok(!sheetEvents.some((e) => e.name === ACCOMMODATION_SHEET))
 })

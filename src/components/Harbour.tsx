@@ -1,8 +1,9 @@
-import { BedDouble } from 'lucide-react'
+import { BedDouble, FileText } from 'lucide-react'
 
 import { Reveal, SectionTitle } from './primitives'
 import { useRegistration } from '../registration/context'
-import { STAY_STEPS } from '../data/accommodation'
+import { STAY_DOCUMENTS, STAY_STEPS } from '../data/accommodation'
+import { asset } from '../lib/asset'
 
 /**
  * Where to sleep.
@@ -72,10 +73,33 @@ export default function Harbour() {
 
         <Reveal delay={0.24}>
           <div className="mt-12 flex flex-col gap-6 border-t border-gold/15 pt-7 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-xl text-pretty text-[0.86rem] leading-relaxed text-parchment/55">
-              Slots are limited and go first come, first served. A refundable deposit is collected
-              in cash on arrival, and the rates and house rules are on the booking form.
-            </p>
+            <div className="max-w-xl">
+              <p className="text-pretty text-[0.86rem] leading-relaxed text-parchment/55">
+                Slots are limited and go first come, first served. A refundable deposit is
+                collected in cash on arrival.
+              </p>
+
+              {/* The accommodation team's own two documents, for anybody who
+                  wants the full text rather than the summary above. */}
+              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                {STAY_DOCUMENTS.map((doc) => (
+                  <a
+                    key={doc.file}
+                    href={asset(doc.file)}
+                    target="_blank"
+                    rel="noreferrer"
+                    data-cursor="READ"
+                    className="group inline-flex items-center gap-2 text-[0.82rem] text-parchment/70 transition-colors hover:text-gold-bright"
+                  >
+                    <FileText size={14} className="shrink-0 text-gold/60 transition-colors group-hover:text-gold-bright" />
+                    <span className="underline decoration-gold/30 underline-offset-4 transition-colors group-hover:decoration-gold-bright">
+                      {doc.label}
+                    </span>
+                    <span className="text-[0.76rem] text-parchment/40">PDF</span>
+                  </a>
+                ))}
+              </div>
+            </div>
 
             <button
               type="button"

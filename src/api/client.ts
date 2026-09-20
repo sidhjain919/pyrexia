@@ -626,6 +626,8 @@ export type EventInfo = {
   formTitle: string | null
   formNote: string | null
   open: boolean
+  /** Its vertical has taken entries at some point: shut now means closed, not pending. */
+  everOpened?: boolean
   /** null when the event costs nothing to enter. */
   fee: { unit: 'person' | 'team'; variants: FeeVariant[] } | null
   form: {
@@ -762,7 +764,54 @@ export const api = {
   signOut: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST', auth: true }),
 
   /** Answers 403 for anyone not in the admins table, the page uses it as the gate. */
-  adminMe: () => request<{ email: string; name: string | null }>('/api/admin/me', { auth: true }),
+  adminMe: () =>
+    request<{
+      email: string
+      name: string | null
+      role?: string
+      can?: {
+        money: boolean
+        verify: boolean
+        notices: boolean
+        desk: boolean
+        /** May take a registration at a counter, paid in cash or by UPI. */
+        deskRegister: boolean
+      }
+    }>('/api/admin/me', { auth: true }),
+
+  /**
+   * Take a registration at the desk.
+   *
+   * The amount is never sent: this names products and the server reads what
+   * they cost, exactly as the gateway path does.
+   */
+  deskRegister: (payload: {
+    name: string
+    email: string
+    phone: string
+    gender: string
+    college: string
+    city: string
+    course: string
+    year: string
+    emergencyName: string
+    emergencyPhone: string
+    products: string[]
+    /** What was actually taken. May be under the list price; never over it. */
+    amountRupees: number
+    paymentMethod: 'cash' | 'upi'
+    paymentReference: string
+  }) =>
+    request<{
+      registrationId: string
+      publicCode: string
+      orderId: string
+      listPaise: number
+      amountPaise: number
+      discountPaise: number
+      products: { id: string; name: string }[]
+      completedExisting: boolean
+    }>('/api/admin/desk/registrations', { method: 'POST', body: payload, auth: true }),
 
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
 
@@ -841,6 +890,8 @@ export const api = {
   openings: () =>
     request<{
       open: string[]
+      /** Have taken entries at some point, so a shut card can say which kind of shut. */
+      everOpened?: string[]
       /** Events shut on their own switch inside an open vertical. */
       closedEvents: string[]
       territories: { id: string; code: string; name: string; events: number; open: boolean }[]
@@ -902,9 +953,7 @@ export const api = {
     phone: string
     college: string
     course: string
-    requirements?: string
     rulesAccepted: boolean
-    partnerConsent: boolean
   }) =>
     request<AccommodationCreated>('/api/me/accommodation', {
       method: 'POST',
