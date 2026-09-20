@@ -72,13 +72,13 @@ export default function CTA() {
         >
           <div className="glass rounded-xl p-4">
             <div className="font-display text-[1.05rem] text-offwhite">Basic Registration</div>
-            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
+            <p className="mt-1.5 text-balance text-[0.8rem] leading-relaxed text-parchment/65">
               Compulsory for everyone. Enter the fest and compete in any event.
             </p>
           </div>
           <div className="glass rounded-xl border-gold/40 p-4">
             <div className="font-display text-[1.05rem] text-offwhite">Festival Pass</div>
-            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-parchment/65">
+            <p className="mt-1.5 text-balance text-[0.8rem] leading-relaxed text-parchment/65">
               On top of BR. Access to the full programme across the island, the pro nights included.
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function CTA() {
             className="mx-auto mt-4 flex max-w-lg items-center gap-3 rounded-xl border border-gold/45 bg-gold/[0.08] px-4 py-3.5 text-left"
           >
             <Zap size={16} className="shrink-0 text-gold-bright" />
-            <p className="text-[0.85rem] leading-relaxed text-parchment/85">
+            <p className="text-balance text-[0.85rem] leading-relaxed text-parchment/85">
               <span className="font-log uppercase tracking-wide2 text-gold-bright">Early bird</span>{' '}
               {EARLY_BIRD.blurb}
             </p>

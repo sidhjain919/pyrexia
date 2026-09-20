@@ -136,7 +136,7 @@ export default function IslandMap() {
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="relative">
           <SectionTitle
-            index="02"
+            index="03"
             eyebrow="Explore the Island"
             title="Eleven Territories"
             eyebrowFont="plain"

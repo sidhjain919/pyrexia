@@ -63,6 +63,11 @@ export const sectionPhoto = {
   register: fromGallery('Pro Nights', 1),
   eventsHero: sceneShots[2],
   scheduleHero: fromGallery('Campus', 1),
+  /** The campus lit up after dark, for The Harbour. Not a room: we have no
+   *  photographs of the rooms, and a stock hotel interior would be a promise
+   *  nobody made. The night frame is also the only one in the campus set that
+   *  sits in the same register as the rest of the page. */
+  harbour: fromGallery('Campus', 5),
   artistsHero: fromGallery('Pro Nights', 2),
   watch: fromGallery('Pro Nights', 3),
 } as const

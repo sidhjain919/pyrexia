@@ -21,7 +21,14 @@ import {
 import { openCheckout, PaymentCancelled } from './razorpay'
 import { Checkbox, Field, TextArea, TextInput } from './fields'
 import { CONVENIENCE_NOTE } from '../data/registration'
-import { BRING_TO_CHECKIN, HOUSE_RULES, STAY_COORDINATORS } from '../data/accommodation'
+import {
+  BOYS_RATES,
+  BRING_TO_CHECKIN,
+  GIRLS_RATES,
+  HOUSE_RULES,
+  STAY_COORDINATORS,
+  type StayRate,
+} from '../data/accommodation'
 
 /**
  * Booking a bed.
@@ -280,14 +287,17 @@ export default function AccommodationForm({
 
   if (!info.open) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-gold/20 bg-ocean/40 px-6 py-10 text-center">
-        <Hourglass size={22} className="text-gold/60" />
-        <p className="font-display text-2xl text-offwhite">Not open yet</p>
-        <p className="max-w-sm text-[0.86rem] leading-relaxed text-parchment/65">
-          {info.note ??
-            'Bookings open closer to the fest. Slots are limited and go first come, first served, so it is worth checking back.'}
-        </p>
-        <Coordinators />
+      <div className="space-y-5">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-gold/20 bg-ocean/40 px-6 py-10 text-center">
+          <Hourglass size={22} className="text-gold/60" />
+          <p className="font-display text-2xl text-offwhite">Not open yet</p>
+          <p className="max-w-sm text-[0.86rem] leading-relaxed text-parchment/65">
+            {info.note ??
+              'Bookings open closer to the fest. Slots are limited and go first come, first served, so it is worth checking back.'}
+          </p>
+          <Coordinators />
+        </div>
+        <RateCard deposit={info.depositRupees} />
       </div>
     )
   }
@@ -296,6 +306,7 @@ export default function AccommodationForm({
 
   if (!info.signedIn) {
     return (
+      <div className="space-y-5">
       <div className="rounded-xl border border-gold/25 bg-ocean/40 p-5">
         <div className="flex items-start gap-3">
           <LogIn size={18} className="mt-0.5 shrink-0 text-gold-bright" />
@@ -325,6 +336,8 @@ export default function AccommodationForm({
           </button>
         </div>
       </div>
+      <RateCard deposit={info.depositRupees} />
+      </div>
     )
   }
 
@@ -332,6 +345,7 @@ export default function AccommodationForm({
 
   if (!info.eligible) {
     return (
+      <div className="space-y-5">
       <div className="rounded-xl border border-gold/25 bg-ocean/40 p-5">
         <div className="flex items-start gap-3">
           <Ticket size={18} className="mt-0.5 shrink-0 text-gold-bright" />
@@ -352,6 +366,8 @@ export default function AccommodationForm({
         >
           <Ticket size={15} /> Complete registration
         </button>
+      </div>
+      <RateCard deposit={info.depositRupees} />
       </div>
     )
   }
@@ -725,6 +741,71 @@ function FieldError({ children }: { children: React.ReactNode }) {
     <span className="mt-1.5 flex items-center gap-1 text-[0.72rem] text-coral">
       <AlertCircle size={12} /> {children}
     </span>
+  )
+}
+
+/**
+ * What a bed costs, both blocks.
+ *
+ * Lives here rather than on the landing page: two fourteen-row tables on the
+ * front of the site read as a tariff board. It is shown in every state where
+ * the booking form itself is not, because with no figure anywhere on the page
+ * this is the only way somebody can find out the price without first making
+ * an account. Once the form is open, each room carries its own rate and this
+ * would only repeat it.
+ */
+function RateCard({ deposit }: { deposit: number }) {
+  return (
+    <div className="rounded-xl border border-gold/20 bg-abyss/40 p-5">
+      <div className="font-log text-[0.62rem] uppercase tracking-wide2 text-gold/70">
+        What a bed costs
+      </div>
+      <p className="mt-1.5 text-[0.78rem] text-parchment/50">
+        Per person, per day. Book four days or all five.
+      </p>
+
+      <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        <RateTable title="Boys" rates={BOYS_RATES} />
+        <RateTable title="Girls" rates={GIRLS_RATES} />
+      </div>
+
+      <p className="mt-4 border-t border-gold/15 pt-3 text-[0.78rem] leading-relaxed text-parchment/55">
+        A refundable ₹{deposit} security deposit is collected in cash at check-in and returned when
+        you leave. Payment gateway charges are added at checkout.
+      </p>
+    </div>
+  )
+}
+
+function RateTable({ title, rates }: { title: string; rates: readonly StayRate[] }) {
+  return (
+    <div>
+      <div className="font-display text-[0.98rem] text-offwhite">{title}</div>
+      <table className="mt-2 w-full border-collapse text-[0.82rem]">
+        <thead>
+          <tr className="font-log text-[0.56rem] uppercase tracking-wide2 text-parchment/45">
+            <th scope="col" className="pb-1.5 text-left font-normal">Room</th>
+            <th scope="col" className="pb-1.5 text-right font-normal">AC</th>
+            <th scope="col" className="pb-1.5 text-right font-normal">Non-AC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rates.map((r) => (
+            <tr key={r.sharing} className="border-t border-gold/12">
+              <th scope="row" className="py-1.5 text-left font-normal text-parchment/70">
+                {r.sharing} seater
+              </th>
+              <td className="py-1.5 text-right font-mono text-gold-bright">
+                ₹{r.ac.toLocaleString('en-IN')}
+              </td>
+              <td className="py-1.5 text-right font-mono text-parchment/65">
+                ₹{r.nonAc.toLocaleString('en-IN')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

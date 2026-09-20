@@ -175,7 +175,7 @@ export default function EventsGrid() {
                 {/* body */}
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="font-display text-xl text-offwhite">{r.name}</h3>
-                  <p className="mt-1 text-[0.85rem] text-parchment/60">{r.tag}</p>
+                  <p className="mt-1 text-balance text-[0.85rem] text-parchment/60">{r.tag}</p>
                   {/* `mt-auto`, not a fixed margin: a two-line tag would
                       otherwise push its buttons a row lower than its
                       neighbours', and a rail of cards whose buttons don't line

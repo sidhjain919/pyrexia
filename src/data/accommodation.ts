@@ -31,6 +31,20 @@ export const GIRLS_RATES: readonly StayRate[] = [
   { sharing: 4, ac: 550, nonAc: 500 },
 ]
 
+/**
+ * What the section on the landing page says about a bed.
+ *
+ * Facts, not figures. Every rate lives behind the booking form now: two
+ * fourteen-row tables on the front page turned it into a tariff board, and
+ * nobody reads a price list before they have decided to come.
+ */
+export const STAY_FACTS = [
+  "Separate boys' and girls' blocks, on campus and with our hospitality partners.",
+  'Two, three, four or five to a room, AC or non-AC.',
+  'Stay four days or all five, arriving on the day that suits your train.',
+  'Security guards on the premises, and beds, mattresses and an almirah in every room.',
+] as const
+
 /** Cash, at the desk, refundable at check-out. Never charged online. */
 export const SECURITY_DEPOSIT = 500
 

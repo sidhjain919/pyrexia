@@ -29,7 +29,7 @@ export default function Reels() {
 
       <div className="relative mx-auto max-w-6xl px-6">
         <SectionTitle
-          index="02"
+          index="07"
           eyebrow="Moving Pictures"
           title="The Reveal"
           meaning="Teaser & trailer"

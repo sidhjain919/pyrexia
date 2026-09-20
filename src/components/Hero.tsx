@@ -74,7 +74,7 @@ export default function Hero() {
          out; `justify-center` overflows both ways, which is how the
          announcement pill ended up printed across "AIIMS RISHIKESH PRESENTS"
          on any screen shorter than about 800px. */
-      className="grain relative flex min-h-[100svh] flex-col items-center overflow-hidden pb-16 pt-[calc(var(--header-h,7rem)+1rem)] sm:pb-20 sm:pt-[calc(var(--header-h,7rem)+1.5rem)]"
+      className="grain relative flex min-h-[100svh] flex-col items-center overflow-hidden pb-16 pt-[calc(var(--header-h,7rem)+1rem)] sm:pb-20 sm:pt-[calc(var(--header-h,7rem)+1.5rem)] [@media(max-height:880px)]:pb-7 [@media(max-height:880px)]:pt-[calc(var(--header-h,7rem)+0.5rem)]"
     >
       <OceanScene />
 
@@ -124,7 +124,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="relative mt-5 flex items-center justify-center sm:mt-8"
+          className="relative mt-5 flex items-center justify-center sm:mt-8 [@media(max-height:880px)]:mt-4"
         >
           {/* soft dark halo so the wordmark pops off the scene */}
           <div
@@ -140,7 +140,7 @@ export default function Hero() {
                720px-tall laptop pushed the dates off the bottom of the frame;
                `svh` gives the cap back to whatever screen is actually there
                and does nothing at all on a tall one. */
-            className="anim-float relative max-h-[20svh] w-[min(58vw,400px)] object-contain sm:max-h-[34svh]"
+            className="anim-float relative max-h-[20svh] w-[min(58vw,400px)] object-contain sm:max-h-[34svh] [@media(max-height:880px)]:max-h-[23svh]"
             style={{ filter: 'drop-shadow(0 10px 26px rgba(0,0,0,0.5))' }}
           />
         </motion.div>
@@ -151,7 +151,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:mt-6"
+          className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:mt-6 [@media(max-height:880px)]:mt-4"
         >
           <span className="hidden h-px w-8 bg-gold/50 sm:block sm:w-14" />
           {/* Tracking loosens only from sm up: at 390px the wide setting broke
@@ -172,7 +172,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-3.5 max-w-md text-[0.86rem] leading-relaxed text-parchment/80 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:mt-7 sm:text-[0.95rem]"
+          className="mt-3.5 max-w-md text-[0.86rem] leading-relaxed text-parchment/80 [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:mt-7 sm:text-[0.95rem] [@media(max-height:880px)]:mt-4"
         >
           The island has been lost. The treasure is waiting.
           <br className="hidden sm:block" /> Your voyage begins here.
@@ -183,7 +183,7 @@ export default function Hero() {
           variants={rise}
           initial="hidden"
           animate="show"
-          className="mt-5 flex w-full max-w-[17rem] flex-col items-center gap-2 sm:mt-9 sm:w-auto sm:max-w-none sm:flex-row sm:gap-3"
+          className="mt-5 flex w-full max-w-[17rem] flex-col items-center gap-2 sm:mt-9 sm:w-auto sm:max-w-none sm:flex-row sm:gap-3 [@media(max-height:880px)]:mt-5"
         >
           {cta.action === 'register' ? (
             <MagneticButton onClick={() => openRegister()} dataCursor="JOIN">
@@ -215,13 +215,22 @@ export default function Hero() {
           separate "Set sail" cue in the opposite corner. Three pieces of
           furniture for one idea. The dates are the only fact here somebody
           acts on, and the edition still appears in the first line of The
-          Legend, immediately below. */}
+          Legend, immediately below.
+
+          In normal flow, not pinned to the bottom, and that is the whole
+          point. Absolutely positioned, it was invisible to the flex layout,
+          so the `my-auto` title block above simply grew into it: the dates
+          printed across the Register button on any viewport under about
+          740px tall, which is most laptops once the browser chrome is taken
+          off. Down here the auto margins above do the work, spacing the two
+          apart when there is room and collapsing to nothing when there
+          isn't. They cannot overlap because flex will not let them. */}
       <motion.div
         custom={3.5}
         variants={rise}
         initial="hidden"
         animate="show"
-        className="absolute inset-x-0 bottom-4 z-10 flex flex-col items-center gap-2 px-4 sm:bottom-8 sm:gap-3"
+        className="relative z-10 mt-8 flex w-full flex-col items-center gap-2 px-4 sm:gap-3 [@media(max-height:880px)]:mt-5 [@media(max-height:880px)]:gap-1.5"
       >
         <span className="whitespace-nowrap font-log text-[0.62rem] uppercase tracking-[0.12em] text-gold-bright [text-shadow:0_2px_12px_rgba(3,11,15,0.95)] sm:text-sm sm:tracking-cinema">
           {SITE.dates}

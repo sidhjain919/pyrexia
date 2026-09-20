@@ -40,7 +40,7 @@ export default function FeaturedEvents() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex items-end justify-between gap-6">
           <SectionTitle
-            index="03"
+            index="02"
             eyebrow="Treasure Cards"
             title="Marquee Events"
             kicker="Map fragments from across the island: a taste of what the crews will fight for."
@@ -110,7 +110,7 @@ export default function FeaturedEvents() {
                     {t.code}
                   </div>
                   <h3 className="mt-2 font-display text-2xl leading-tight text-offwhite">{p.event}</h3>
-                  <p className="mt-1.5 text-[0.82rem] text-parchment/60">{sub?.tag ?? t.subtitle}</p>
+                  <p className="mt-1.5 text-balance text-[0.82rem] text-parchment/60">{sub?.tag ?? t.subtitle}</p>
 
                   <div className="mt-auto flex items-center gap-2 pt-5">
                     {/* The pro nights are not a form. Sending somebody at a

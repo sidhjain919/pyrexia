@@ -24,20 +24,30 @@ export default function Home() {
       <Hero />
       {/* The secondary invitations the hero used to stack on top of itself. */}
       <HeroActions />
+
+      {/* What this is, and how big. */}
       <Legend />
-      {/* Renders nothing until a reel link is set in src/data/videos.ts. */}
-      <Reels />
       <Stats />
-      {/* Before the events, not after: beds are limited and first come, first
-          served, so somebody who scrolls only this far has still seen it. */}
-      <Harbour />
+
+      {/* What is on: the hook, the map, then the whole searchable list. */}
       <FeaturedEvents />
       <IslandMap />
       <EventsGrid />
       <PhotoMarquee />
+
+      {/* When, and who. */}
       <CaptainsLog />
       <Artists />
+
+      {/* What it looks like. The gallery is past editions and the teaser is
+          this one, so they read in that order: that was then, here is what is
+          coming. Renders nothing until a reel link is set in data/videos.ts. */}
       <Gallery />
+      <Reels />
+
+      {/* Only now the practical part. Nobody decides where to sleep before
+          they have decided to come, which is why this used to sit too early. */}
+      <Harbour />
       <CTA />
       <Navigator />
     </>

@@ -1,26 +1,23 @@
-import { BedDouble, Check, Wallet } from 'lucide-react'
+import { BedDouble, Check } from 'lucide-react'
 
 import { Reveal, SectionTitle } from './primitives'
 import { useRegistration } from '../registration/context'
-import {
-  BOYS_RATES,
-  BRING_TO_CHECKIN,
-  GIRLS_RATES,
-  SECURITY_DEPOSIT,
-  type StayRate,
-} from '../data/accommodation'
+import { sectionPhoto } from '../data/media'
+import { STAY_FACTS } from '../data/accommodation'
 
 /**
  * Where to sleep.
  *
- * Near the top of the page on purpose: slots are limited and allocated first
- * come, first served, so this is the one thing on the landing page where being
- * seen late actually costs somebody something.
+ * Carries no prices, by decision. The first version of this section printed
+ * both rate cards in full, fourteen rows of them, which turned a landing page
+ * into a tariff board. Everything to do with money now lives inside the
+ * booking form, where somebody has already decided they want a bed.
  *
- * The section sells and the modal transacts. Everything here is readable
- * without signing in, including the full rate card, because the first question
- * anybody has is what it costs and making them sign in to find out is how you
- * lose them.
+ * That makes one thing load-bearing elsewhere: the rate card has to be visible
+ * inside that form to a signed-out visitor, not just to somebody who has
+ * already made an account. With no figure on this page and none before
+ * sign-in, the cost of a bed would otherwise be undiscoverable. See
+ * `AccommodationForm`.
  */
 export default function Harbour() {
   const { openAccommodation } = useRegistration()
@@ -31,139 +28,67 @@ export default function Harbour() {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: 'radial-gradient(80% 60% at 50% 0%, rgba(200,155,60,0.10), transparent 62%)',
+          background: 'radial-gradient(80% 60% at 50% 0%, rgba(200,155,60,0.09), transparent 62%)',
         }}
       />
 
       <div className="relative mx-auto max-w-5xl px-6">
         <SectionTitle
-          /* Not a numeral: the section sits between 02 and 03, and the marker
-             EventsGrid already uses avoids renumbering the whole page to slot
-             one section into the middle of it. */
-          index="◆"
+          index="08"
           eyebrow="Make port"
           title="The Harbour"
           meaning="Stay & accommodation"
           align="center"
-          kicker="Five days is a long way from home. Rooms on the AIIMS Rishikesh campus and with our hospitality partners, booked and paid for here. Slots are limited and go first come, first served."
+          kicker="Five days is a long way from home. Rooms on the AIIMS Rishikesh campus and with our hospitality partners, booked and paid for here."
         />
 
-        {/* The rate card, both blocks side by side. */}
-        <div className="mt-10 grid gap-4 sm:mt-12 lg:grid-cols-2">
+        <div className="mt-10 grid items-center gap-8 sm:mt-12 lg:grid-cols-2 lg:gap-12">
           <Reveal>
-            <RateCard title="Boys" rates={BOYS_RATES} />
-          </Reveal>
-          <Reveal delay={0.06}>
-            <RateCard title="Girls" rates={GIRLS_RATES} />
-          </Reveal>
-        </div>
-
-        <Reveal delay={0.1}>
-          <p className="mt-4 text-center text-[0.78rem] text-parchment/45">
-            Per person, per day. Book four days or all five. Payment gateway charges are added at
-            checkout.
-          </p>
-        </Reveal>
-
-        {/* The two things people turn up without. */}
-        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2">
-          <Reveal delay={0.12}>
-            <div className="h-full rounded-xl border border-gold/30 bg-gold/5 p-5">
-              <div className="flex items-center gap-2.5">
-                <Wallet size={16} className="shrink-0 text-gold-bright" />
-                <span className="font-log text-[0.64rem] uppercase tracking-wide2 text-gold/80">
-                  The deposit
-                </span>
-              </div>
-              <p className="mt-3 text-[0.88rem] leading-relaxed text-parchment/75">
-                A refundable{' '}
-                <strong className="text-gold-bright">₹{SECURITY_DEPOSIT} security deposit</strong> is
-                collected in cash at check-in and returned when you leave. It is separate from the
-                room rate and cannot be paid online, so carry it.
-              </p>
+            {/* The campus at night. The rooms themselves are not photographed
+                and a stock hotel interior would be a lie, so this is the place
+                rather than the bed. */}
+            <div className="relative overflow-hidden rounded-xl border border-gold/20">
+              <img
+                src={sectionPhoto.harbour}
+                alt="The AIIMS Rishikesh campus at night"
+                loading="lazy"
+                className="h-56 w-full object-cover sm:h-72 lg:h-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-abyss via-abyss/25 to-transparent" />
             </div>
           </Reveal>
 
-          <Reveal delay={0.16}>
-            <div className="h-full rounded-xl border border-gold/20 bg-ocean/40 p-5">
-              <div className="font-log text-[0.64rem] uppercase tracking-wide2 text-gold/75">
-                Bring to check-in
-              </div>
-              <ul className="mt-3 space-y-1.5">
-                {BRING_TO_CHECKIN.map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-start gap-2 text-[0.86rem] leading-relaxed text-parchment/75"
-                  >
-                    <Check size={13} className="mt-1 shrink-0 text-gold-bright" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Reveal>
-        </div>
+          <Reveal delay={0.08}>
+            <ul className="space-y-3.5">
+              {STAY_FACTS.map((fact) => (
+                <li key={fact} className="flex items-start gap-3">
+                  <Check size={15} className="mt-1 shrink-0 text-gold-bright" />
+                  <span className="text-balance text-[0.94rem] leading-relaxed text-parchment/80">{fact}</span>
+                </li>
+              ))}
+            </ul>
 
-        <Reveal delay={0.2}>
-          <div className="mt-8 flex justify-center sm:mt-10">
+            <p className="mt-6 text-balance text-[0.86rem] leading-relaxed text-parchment/55">
+              Slots are limited and go first come, first served. A refundable security deposit is
+              collected in cash when you arrive.
+            </p>
+
             <button
               type="button"
               onClick={openAccommodation}
               data-cursor="STAY"
-              className="flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-8 py-3.5 font-log text-[0.74rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02]"
+              className="mt-7 flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-8 py-3.5 font-log text-[0.74rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.02] sm:w-auto"
             >
               <BedDouble size={16} />
               Book your stay
             </button>
-          </div>
-        </Reveal>
+
+            <p className="mt-3 text-balance text-[0.76rem] text-parchment/45">
+              Rates, house rules and what to bring are all on the booking form.
+            </p>
+          </Reveal>
+        </div>
       </div>
     </section>
-  )
-}
-
-/**
- * One block's rates.
- *
- * A real table rather than a grid of divs: it is tabular data, somebody will
- * read it with a screen reader, and the AC and non-AC columns only mean
- * anything next to their headers.
- */
-function RateCard({ title, rates }: { title: string; rates: readonly StayRate[] }) {
-  return (
-    <div className="h-full rounded-xl border border-gold/20 bg-ocean/40 p-5">
-      <div className="font-display text-[1.1rem] text-offwhite">{title}</div>
-
-      <table className="mt-3 w-full border-collapse text-[0.86rem]">
-        <thead>
-          <tr className="font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50">
-            <th scope="col" className="pb-2 text-left font-normal">
-              Room
-            </th>
-            <th scope="col" className="pb-2 text-right font-normal">
-              AC
-            </th>
-            <th scope="col" className="pb-2 text-right font-normal">
-              Non-AC
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rates.map((r) => (
-            <tr key={r.sharing} className="border-t border-gold/15">
-              <th scope="row" className="py-2 text-left font-normal text-parchment/75">
-                {r.sharing} seater
-              </th>
-              <td className="py-2 text-right font-mono text-gold-bright">
-                ₹{r.ac.toLocaleString('en-IN')}
-              </td>
-              <td className="py-2 text-right font-mono text-parchment/70">
-                ₹{r.nonAc.toLocaleString('en-IN')}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   )
 }
