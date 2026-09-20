@@ -1,28 +1,30 @@
-import { BedDouble, Check } from 'lucide-react'
+import { BedDouble } from 'lucide-react'
 
 import { Reveal, SectionTitle } from './primitives'
 import { useRegistration } from '../registration/context'
-import { STAY_FACTS } from '../data/accommodation'
+import { STAY_STEPS } from '../data/accommodation'
 
 /**
  * Where to sleep.
  *
- * Two things this section deliberately does not have.
+ * Three things this section deliberately does not do.
  *
- * It carries no prices. It printed both rate cards in full to begin with,
- * fourteen rows, which turned a landing page into a tariff board. Everything
- * to do with money lives inside the booking form now, where somebody has
- * already decided they want a bed. That makes the rate card inside that form
- * load-bearing for signed-out visitors: with no figure here and none before
- * sign-in, the cost would otherwise be undiscoverable. See `AccommodationForm`.
+ * It quotes no prices. It printed both rate cards in full to begin with,
+ * fourteen rows, which turned a landing page into a tariff board. Money lives
+ * inside the booking form now, where somebody has already decided they want a
+ * bed. That makes the rate card inside that form load-bearing for signed-out
+ * visitors: with no figure here and none before sign-in, the cost would
+ * otherwise be undiscoverable. See `AccommodationForm`.
  *
- * It carries no photograph either, and that is an answer rather than a gap.
- * Nothing in the photo library shows a room. Every other candidate either
- * shows the campus, which would imply the stay is on it, or shows an
- * auditorium, which has nothing to do with sleeping. Where somebody is placed
- * is decided by the accommodation team between the campus and the partner
- * hotels, so this page promises a bed, a block and what is in the room, and
- * says nothing at all about where it is.
+ * It says nothing about where the rooms are. Placement is the accommodation
+ * team's to make between the campus and the partner hotels, and a delegate who
+ * booked expecting one and was given the other would have been told something
+ * untrue by this page.
+ *
+ * And it does not inventory the room. An earlier version listed the furniture,
+ * which reads as a hostel brochure from 1994 and sells nothing. What is here
+ * instead is the shape of the decision: what you choose, and what happens once
+ * you have paid.
  */
 export default function Harbour() {
   const { openAccommodation } = useRegistration()
@@ -38,9 +40,6 @@ export default function Harbour() {
       />
 
       <div className="relative mx-auto max-w-6xl px-6">
-        {/* Left, like every other section on the page. This was the only one
-            centred, which is what made it read as a different kind of thing
-            from the eight around it. */}
         <SectionTitle
           index="08"
           eyebrow="Make port"
@@ -49,25 +48,33 @@ export default function Harbour() {
           kicker="Five days is a long way from home. Book a bed for the fest here, and it will be waiting for you when you arrive."
         />
 
-        <div className="mt-10 grid gap-x-10 gap-y-4 sm:mt-12 sm:grid-cols-2">
-          {STAY_FACTS.map((fact, i) => (
-            <Reveal key={fact} delay={0.04 * i}>
-              <div className="flex h-full items-start gap-3 rounded-xl border border-gold/15 bg-ocean/30 p-4">
-                <Check size={15} className="mt-0.5 shrink-0 text-gold-bright" />
-                <span className="text-pretty text-[0.92rem] leading-relaxed text-parchment/80">
-                  {fact}
+        {/* Three steps rather than a list of features. The rule trailing off to
+            the right of each numeral carries the eye across the row, which is
+            what makes it read as a sequence instead of three unrelated notes. */}
+        <ol className="mt-11 grid gap-9 sm:mt-14 sm:grid-cols-3 sm:gap-8">
+          {STAY_STEPS.map((step, i) => (
+            <Reveal key={step.title} delay={0.06 * i} as="li">
+              <div className="flex items-center gap-4">
+                <span className="font-display text-[1.5rem] leading-none text-gold-bright">
+                  {String(i + 1).padStart(2, '0')}
                 </span>
+                <span className="h-px flex-1 bg-gradient-to-r from-gold/45 to-transparent" />
               </div>
+              <h3 className="mt-4 font-display text-[1.22rem] leading-snug text-offwhite">
+                {step.title}
+              </h3>
+              <p className="mt-2 max-w-sm text-pretty text-[0.92rem] leading-relaxed text-parchment/70">
+                {step.body}
+              </p>
             </Reveal>
           ))}
-        </div>
+        </ol>
 
-        <Reveal delay={0.18}>
-          <div className="mt-8 flex flex-col gap-5 sm:mt-10 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-xl text-pretty text-[0.88rem] leading-relaxed text-parchment/60">
-              Slots are limited and go first come, first served. A refundable security deposit is
-              collected in cash when you arrive, and the rates, house rules and what to bring are
-              all on the booking form.
+        <Reveal delay={0.24}>
+          <div className="mt-12 flex flex-col gap-6 border-t border-gold/15 pt-7 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl text-pretty text-[0.86rem] leading-relaxed text-parchment/55">
+              Slots are limited and go first come, first served. A refundable deposit is collected
+              in cash on arrival, and the rates and house rules are on the booking form.
             </p>
 
             <button

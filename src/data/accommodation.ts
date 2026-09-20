@@ -32,17 +32,31 @@ export const GIRLS_RATES: readonly StayRate[] = [
 ]
 
 /**
- * What the section on the landing page says about a bed.
+ * How booking a bed works, in three steps.
  *
- * Facts, not figures. Every rate lives behind the booking form now: two
- * fourteen-row tables on the front page turned it into a tariff board, and
- * nobody reads a price list before they have decided to come.
+ * Not a list of what is in the room. The first version of this section
+ * inventoried the furniture, which is both unappealing and beside the point:
+ * nobody chooses a fest by its almirahs. What somebody actually wants to know
+ * before they commit is what they get to decide, and what happens after they
+ * pay. That is what these say.
+ *
+ * Deliberately silent on where the rooms are. Placement is the accommodation
+ * team's to make between the campus and the partner hotels, so promising
+ * either here would be telling somebody something that might not hold.
  */
-export const STAY_FACTS = [
-  "Separate boys' and girls' blocks, allocated by the accommodation team.",
-  'Two, three, four or five to a room, AC or non-AC.',
-  'Stay four days or all five, arriving on the day that suits your train.',
-  'Security guards on the premises, and beds, mattresses and an almirah in every room.',
+export const STAY_STEPS = [
+  {
+    title: 'Choose your room',
+    body: 'Boys and girls separately, two to five sharing, with or without AC.',
+  },
+  {
+    title: 'Choose your days',
+    body: 'Four days or all five, arriving on the day your train actually gets in.',
+  },
+  {
+    title: "Pay, and it's yours",
+    body: 'The receipt reaches you by email. Bring it and your ID when you turn up.',
+  },
 ] as const
 
 /** Cash, at the desk, refundable at check-out. Never charged online. */

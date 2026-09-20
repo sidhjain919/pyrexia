@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 
 import { Reveal } from './primitives'
-import { TOTAL_EVENTS, territories } from '../data/events'
 import { asset } from '../lib/asset'
 import { useRegistration } from '../registration/context'
 import { useNavTo } from './routing'
+import { BedDouble, BookOpen, Compass as CompassIcon } from 'lucide-react'
 
 /**
  * Three ways in, directly under the hero.
@@ -13,13 +13,18 @@ import { useNavTo } from './routing'
  * button above them. Five invitations over a wordmark is a toolbar, not a
  * landing page, so the hero makes one offer and these carry the rest.
  *
- * Two earlier attempts at this were furniture: a full-bleed band whose rules
- * ran edge to edge while its content stopped at 896px, leaving 512px of empty
- * line at each end of a wide screen, and then a row of plain labels that read
- * as a breadcrumb. Both looked like navigation bolted under a photograph. Each
- * card now leads with a fact rather than a label, which is the difference
- * between telling somebody where to click and telling them something worth
- * knowing.
+ * Three earlier attempts were furniture, and all three shared one trait: a
+ * bordered box with text in it. A full-bleed band whose rules ran edge to edge
+ * while its content stopped at 896px, leaving 512px of empty line at each end
+ * of a wide screen; a row of plain labels that read as a breadcrumb; then
+ * cards, which were the generic pattern outright. What is here now has no box
+ * at all, only hairlines between the columns, so nothing can be left stranded
+ * and nothing reads as a widget.
+ *
+ * The order is deliberate and is not the order of importance: the brochure
+ * leads because it is what somebody who knows nothing yet actually wants, and
+ * the bed comes last because it is the thing you think about only once you
+ * have decided to come.
  *
  * No "Register" here. The hero's button is already that, a hundred pixels up,
  * and it becomes "My Pass" once somebody holds one.
@@ -29,73 +34,72 @@ export default function HeroActions() {
   const navTo = useNavTo()
 
   return (
-    <div className="relative z-10 px-6 pb-4 pt-10 sm:pt-12">
-      <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-3">
-        <Reveal>
-          <Card
-            lead={String(TOTAL_EVENTS)}
-            label="Events to enter"
-            body={`${territories.length} territories, from the dance floor to the arena. Find the ones that are yours.`}
-            onClick={() => navTo('/#island')}
-            cursor="GO"
-          />
-        </Reveal>
-
-        <Reveal delay={0.06}>
-          <Card
-            lead="5"
-            label="Days on the island"
-            body="Book a bed for the fest, and it will be waiting for you when you arrive."
-            onClick={openAccommodation}
-            cursor="STAY"
-          />
-        </Reveal>
-
-        <Reveal delay={0.12}>
-          <Card
-            lead="1"
-            label="Full programme"
-            body="Every event, every rule and every date, in a single download."
+    <div className="relative z-10 px-6 pb-4 pt-9 sm:pt-11">
+      <Reveal>
+        <nav
+          aria-label="Quick links"
+          className="mx-auto grid max-w-4xl divide-y divide-gold/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+        >
+          <Item
+            icon={<BookOpen size={17} />}
+            title="The brochure"
+            body="The whole programme, one download."
             href={asset('pyrexia-brochure.pdf')}
             cursor="READ"
           />
-        </Reveal>
-      </div>
+          <Item
+            icon={<CompassIcon size={17} />}
+            title="The events"
+            body="From the arena to the dance floor."
+            onClick={() => navTo('/#island')}
+            cursor="GO"
+          />
+          <Item
+            icon={<BedDouble size={17} />}
+            title="Your stay"
+            body="A bed for the five days, booked here."
+            onClick={openAccommodation}
+            cursor="STAY"
+          />
+        </nav>
+      </Reveal>
     </div>
   )
 }
 
-function Card({
-  lead,
-  label,
+function Item({
+  icon,
+  title,
   body,
   href,
   onClick,
   cursor,
 }: {
-  lead: string
-  label: string
+  icon: ReactNode
+  title: string
   body: string
   href?: string
   onClick?: () => void
   cursor: string
 }) {
-  // No arrow anywhere. The border and the figure brighten together on hover,
-  // which is what says "this is a thing you can press" here.
+  /* A flex column anchored to the top, not `block`. A button whose content is
+     shorter than its grid cell has that content centred vertically by the
+     browser, which dropped the one-line third column 11px below the other
+     two while the two-line middle column happened to line up by accident. */
   const className =
-    'group flex h-full w-full flex-col items-start rounded-xl border border-gold/15 bg-ocean/30 p-5 text-left transition-colors hover:border-gold/45 hover:bg-ocean/55'
+    'group flex h-full w-full flex-col items-start justify-start px-6 py-4 text-left'
 
-  const inner: ReactNode = (
+  const inner = (
     <>
-      <span className="flex items-baseline gap-2.5">
-        <span className="font-display text-[2rem] leading-none text-gold/80 transition-colors group-hover:text-gold-bright">
-          {lead}
+      <span className="flex items-center gap-2.5">
+        <span className="shrink-0 text-gold/70 transition-colors group-hover:text-gold-bright">
+          {icon}
         </span>
-        <span className="font-log text-[0.62rem] uppercase tracking-wide2 text-parchment/55">
-          {label}
+        <span className="font-display text-[1.15rem] leading-none text-offwhite transition-colors group-hover:text-gold-bright">
+          {title}
         </span>
       </span>
-      <span className="mt-3 text-pretty text-[0.88rem] leading-relaxed text-parchment/70">
+      <span className="mt-2.5 block text-pretty text-[0.82rem] leading-relaxed text-parchment/55">
         {body}
       </span>
     </>

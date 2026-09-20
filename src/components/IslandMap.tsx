@@ -140,7 +140,7 @@ export default function IslandMap() {
             eyebrow="Explore the Island"
             title="Eleven Territories"
             eyebrowFont="plain"
-            kicker="Every vertical of PYREXIA is a stretch of the lost archipelago. Click an island and the ship sets a course. Its wake marks the way, and an X is left on every shore you've made landfall on."
+            kicker="Every vertical is a stretch of the lost archipelago. Pick an island and the ship sets a course."
           />
           {/* the captain keeps the empty half of the title row company */}
           <img
