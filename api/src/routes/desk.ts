@@ -1,14 +1,20 @@
 /**
  * The registration desk.
  *
+ *   GET  /api/admin/desk/lookup          who holds this address already
  *   POST /api/admin/desk/registrations   take a registration, paid in person
+ *   POST /api/admin/desk/upgrades        sell the Festival Pass to somebody
+ *                                        who already holds Basic
  *
  * This is the only path in the system that turns a person into a paid
  * delegate without money passing through Razorpay, which makes it the highest
  * risk surface here. Everything below is shaped by that.
  *
- *  - **Allowlisted.** Only `desk_agent` and the money roles. `desk_agent` can
- *    do nothing else at all.
+ *  - **Allowlisted by name.** Two addresses, written below, and nobody else.
+ *    Not a role: a role is a row a superadmin can edit, and the committee's
+ *    decision was that not even a superadmin takes money at a counter. The
+ *    only way to add a third person is a commit and a deploy, which is the
+ *    point — it leaves a reviewable trail that a database UPDATE does not.
  *  - **Bounded by the server.** The browser names products and states what was
  *    collected; the list price still comes from the products table, and the
  *    collected amount may not exceed it. A desk can discount, which is the
@@ -41,8 +47,24 @@ export const desk = new Hono<{ Bindings: Env; Variables: { agent: Agent } }>()
 
 type Agent = { id: string; email: string; role: string }
 
-/** Roles that may take money at a counter. */
-const DESK_ROLES = new Set(['superadmin', 'core', 'finance', 'desk_agent'])
+/**
+ * Who may take money at a counter, by address.
+ *
+ * The committee named these two people and asked that nobody else hold it,
+ * superadmins included. So this is not a role check: every role in the admins
+ * table is grantable by somebody sitting in the admin portal, and this is the
+ * one capability that must not be grantable that way.
+ *
+ * A person here must still be an active admin. The list narrows who may reach
+ * the desk; it does not let somebody in who was never an admin at all, and
+ * deactivating an account still shuts this door with it.
+ *
+ * Lower-case, because the lookup lower-cases the session address.
+ */
+export const DESK_AGENTS: ReadonlySet<string> = new Set([
+  'pushkarj320@gmail.com',
+  'sidhswg@gmail.com',
+])
 
 /** How the money actually arrived. Anything else is refused. */
 const METHODS = new Set(['cash', 'upi'])
@@ -59,7 +81,7 @@ desk.use('/admin/desk/*', async (c, next) => {
 
   // Deliberately the same message a signed-out visitor gets, so probing this
   // endpoint tells somebody nothing about whether it exists.
-  if (!row || !DESK_ROLES.has(row.role)) {
+  if (!row || !DESK_AGENTS.has(row.email.toLowerCase())) {
     throw new ApiError('forbidden', 'You do not have access to this.')
   }
 
@@ -67,22 +89,110 @@ desk.use('/admin/desk/*', async (c, next) => {
   await next()
 })
 
+/**
+ * How the money arrived and what proves it.
+ *
+ * Both counters ask for the same two things, and the reference is the one
+ * that makes a row reconcilable later: a UPI transaction id, or whatever is
+ * written on the cash receipt, but never nothing.
+ */
+function paymentDetails(body: Record<string, unknown>) {
+  const method = String(body.paymentMethod ?? '').trim().toLowerCase()
+  const reference = String(body.paymentReference ?? '').trim().slice(0, 120)
+
+  const errors: Record<string, string> = {}
+  if (!METHODS.has(method)) errors.paymentMethod = 'Cash or UPI.'
+  if (reference.length < 3) errors.paymentReference = 'A UPI reference or receipt number.'
+
+  return { method, reference, errors }
+}
+
+/**
+ * What was actually taken, in whole rupees, bounded by the list price.
+ *
+ * The desk types this because the committee discounts at a counter: a
+ * contingent rate, a volunteer, a comp. It may go under the published price
+ * and the gap is recorded; it may never go over, because a counter that can
+ * invent a price above the published one is a counter nobody can audit.
+ */
+function amountCollected(body: Record<string, unknown>, listPaise: number): number {
+  const raw = Number(body.amountRupees)
+  if (!Number.isFinite(raw) || !Number.isInteger(raw) || raw < 0) {
+    throw new ApiError('validation_failed', 'Some details need another look.', {
+      fields: { amountRupees: 'A whole number of rupees.' },
+    })
+  }
+
+  const amountPaise = raw * 100
+  if (amountPaise > listPaise) {
+    throw new ApiError('validation_failed', 'Some details need another look.', {
+      fields: { amountRupees: `That is more than the list price of ₹${listPaise / 100}.` },
+    })
+  }
+
+  return amountPaise
+}
+
+/* ------------------------------------------------------------------ *
+ * Who is this?
+ * ------------------------------------------------------------------ */
+
+/**
+ * What the desk already knows about an address, before it charges it.
+ *
+ * The upgrade below sells to somebody who is already registered, so the agent
+ * has to see who they are about to take money from: an address read off a
+ * phone screen across a counter is an address that gets mistyped. It answers
+ * for anybody it finds, including somebody who cannot be upgraded, because
+ * "no such person" and "they already hold it" are different problems at a
+ * counter and the agent has to be able to tell them apart.
+ */
+desk.get('/admin/desk/lookup', async (c) => {
+  const email = String(c.req.query('email') ?? '').trim().toLowerCase()
+  if (!email) throw new ApiError('bad_request', 'An email address to look up.')
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, public_code, name, email, phone, college
+       FROM registrations WHERE lower(email) = ?`,
+  )
+    .bind(email)
+    .first<{
+      id: string
+      public_code: string
+      name: string
+      email: string
+      phone: string
+      college: string
+    }>()
+
+  if (!row) return c.json({ found: false })
+
+  const owned = await ownedProducts(c.env, row.id)
+
+  return c.json({
+    found: true,
+    publicCode: row.public_code,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    college: row.college,
+    hasBasic: owned.has('basic'),
+    hasDelegate: owned.has('delegate'),
+  })
+})
+
+/* ------------------------------------------------------------------ *
+ * A registration, taken in person
+ * ------------------------------------------------------------------ */
+
 desk.post('/admin/desk/registrations', async (c) => {
   const agent = c.get('agent')
   const body = (await readJson(c)) as Record<string, unknown>
 
   const { ok, errors, value } = validateRegistration(body)
 
-  const method = String(body.paymentMethod ?? '').trim().toLowerCase()
-  const reference = String(body.paymentReference ?? '').trim().slice(0, 120)
-
-  const fieldErrors: Record<string, string> = { ...errors }
-  if (!METHODS.has(method)) fieldErrors.paymentMethod = 'Cash or UPI.'
-  // The one thing that makes this reconcilable later. A UPI transaction id, or
-  // whatever is written on the cash receipt, but never nothing.
-  if (reference.length < 3) {
-    fieldErrors.paymentReference = 'A UPI reference or receipt number.'
-  }
+  const { method, reference, errors: paymentErrors } = paymentDetails(body)
+  const fieldErrors: Record<string, string> = { ...errors, ...paymentErrors }
 
   if (!ok || Object.keys(fieldErrors).length) {
     throw new ApiError('validation_failed', 'Some details need another look.', {
@@ -110,7 +220,7 @@ desk.post('/admin/desk/registrations', async (c) => {
   if (owned.has('basic')) {
     throw new ApiError(
       'already_registered',
-      `${value.email} already holds a registration (${existing?.public_code}). Add the Festival Pass from the dashboard instead.`,
+      `${value.email} already holds a registration (${existing?.public_code}). Sell them the Festival Pass on its own if that is what they want.`,
     )
   }
 
@@ -141,26 +251,7 @@ desk.post('/admin/desk/registrations', async (c) => {
   // No gateway, so no gateway charge. Adding 2.36% to a cash payment would be
   // inventing a fee that nobody is charging us.
   const listPaise = priced.quote.subtotalPaise
-
-  // What was actually taken. The desk types this because the committee
-  // discounts at a counter: a contingent rate, a volunteer, a comp. Read in
-  // whole rupees, because that is what changes hands.
-  const rupeesRaw = Number(body.amountRupees)
-  if (!Number.isFinite(rupeesRaw) || !Number.isInteger(rupeesRaw) || rupeesRaw < 0) {
-    throw new ApiError('validation_failed', 'Some details need another look.', {
-      fields: { amountRupees: 'A whole number of rupees.' },
-    })
-  }
-
-  const amountPaise = rupeesRaw * 100
-  if (amountPaise > listPaise) {
-    throw new ApiError('validation_failed', 'Some details need another look.', {
-      fields: {
-        amountRupees: `That is more than the list price of ₹${listPaise / 100}.`,
-      },
-    })
-  }
-
+  const amountPaise = amountCollected(body, listPaise)
   const discountPaise = listPaise - amountPaise
 
   /* ---------- write it ---------- */
@@ -269,6 +360,168 @@ desk.post('/admin/desk/registrations', async (c) => {
       discountPaise,
       products: priced.quote.lines.map((l) => ({ id: l.productId, name: l.name })),
       completedExisting: !!existing,
+    },
+    201,
+  )
+})
+
+/* ------------------------------------------------------------------ *
+ * The Festival Pass, on its own
+ * ------------------------------------------------------------------ */
+
+/**
+ * Sell the Festival Pass to somebody who already holds Basic Registration.
+ *
+ * A separate route rather than a branch inside the one above, because the two
+ * transactions have almost nothing in common. This one creates nobody, asks
+ * for no form, and must not touch a single column on the registration: the
+ * person exists, their details were checked when they registered, and making
+ * an agent retype a name and a college to sell an upgrade is how a good row
+ * turns into a typo. All it needs is who, how much, and what proves it.
+ *
+ * `delegate` requires `basic` in the products table, so the prerequisite is
+ * enforced by the quote as well as by the check below. That is deliberate
+ * duplication: the check gives the agent a sentence they can act on at a
+ * counter, and the quote is what makes it true.
+ */
+desk.post('/admin/desk/upgrades', async (c) => {
+  const agent = c.get('agent')
+  const body = (await readJson(c)) as Record<string, unknown>
+
+  const email = String(body.email ?? '').trim().toLowerCase()
+  const { method, reference, errors } = paymentDetails(body)
+
+  const fieldErrors: Record<string, string> = { ...errors }
+  if (!email) fieldErrors.email = 'Their email address.'
+
+  if (Object.keys(fieldErrors).length) {
+    throw new ApiError('validation_failed', 'Some details need another look.', {
+      fields: fieldErrors,
+    })
+  }
+
+  /* ---------- who this is ---------- */
+
+  const existing = await c.env.DB.prepare(
+    'SELECT id, public_code, name FROM registrations WHERE lower(email) = ?',
+  )
+    .bind(email)
+    .first<{ id: string; public_code: string; name: string }>()
+
+  // Each of these is a different thing for the agent to do next, so each says
+  // which one it is rather than all three sharing one refusal.
+  if (!existing) {
+    throw new ApiError(
+      'not_found',
+      `Nobody is registered with ${email}. Take a Basic Registration for them instead, or check the spelling.`,
+      { fields: { email: 'No registration with this address.' } },
+    )
+  }
+
+  const owned = await ownedProducts(c.env, existing.id)
+
+  if (!owned.has('basic')) {
+    throw new ApiError(
+      'bad_request',
+      `${existing.public_code} started an account but never paid for Basic Registration. Take a Basic + Festival Pass registration for them instead.`,
+      { fields: { email: 'This account has not paid for Basic Registration.' } },
+    )
+  }
+
+  if (owned.has('delegate')) {
+    throw new ApiError(
+      'already_registered',
+      `${existing.public_code} already holds the Festival Pass. Take no money.`,
+      { fields: { email: 'Already holds the Festival Pass.' } },
+    )
+  }
+
+  /* ---------- what it costs ---------- */
+
+  const products = await loadProducts(c.env)
+  const priced = quote(['delegate'], products, owned)
+  if (!priced.ok) {
+    throw new ApiError('bad_request', 'The Festival Pass cannot be sold right now.', {
+      extra: { reason: priced.failure },
+    })
+  }
+
+  const listPaise = priced.quote.subtotalPaise
+  const amountPaise = amountCollected(body, listPaise)
+  const discountPaise = listPaise - amountPaise
+
+  /* ---------- write it ---------- */
+
+  const orderId = newOrderId()
+
+  const statements: D1PreparedStatement[] = [
+    c.env.DB.prepare(
+      `INSERT INTO orders (id, registration_id, amount_paise, convenience_paise, discount_paise,
+                           kind, status, method, collected_by, payment_reference, paid_at)
+       VALUES (?, ?, ?, 0, ?, 'desk', 'paid', ?, ?, ?, datetime('now'))`,
+    ).bind(orderId, existing.id, amountPaise, discountPaise, method, agent.email, reference),
+    ...priced.quote.lines.map((line) =>
+      c.env.DB.prepare(
+        'INSERT INTO order_items (id, order_id, product_id, amount_paise) VALUES (?, ?, ?, ?)',
+      ).bind(newId(), orderId, line.productId, line.amountPaise),
+    ),
+    ...priced.quote.lines.map((line) =>
+      c.env.DB.prepare(
+        `INSERT OR IGNORE INTO entitlements (id, registration_id, product_id, order_id)
+         VALUES (?, ?, ?, ?)`,
+      ).bind(newId(), existing.id, line.productId, orderId),
+    ),
+  ]
+
+  try {
+    await c.env.DB.batch(statements)
+  } catch (err) {
+    console.error('desk upgrade failed', err)
+    throw new ApiError('conflict', 'That upgrade could not be recorded. Try again.')
+  }
+
+  await issuePassIfNeeded(c.env, existing.id)
+
+  await audit.record(c.env, {
+    actorId: agent.id,
+    actorEmail: agent.email,
+    action: 'desk.upgrade',
+    entity: 'order',
+    entityId: orderId,
+    after: {
+      registrationId: existing.id,
+      publicCode: existing.public_code,
+      email,
+      products: priced.quote.lines.map((l) => l.productId),
+      listPaise,
+      amountPaise,
+      discountPaise,
+      method,
+      reference,
+    },
+    ip: clientIp(c),
+  })
+
+  // The same job the gateway queues. It reads this order as an upgrade on its
+  // own — a paid order that follows an earlier one and adds no `basic` — and
+  // sends "Festival Pass added" rather than "welcome", which is what somebody
+  // who registered a month ago should receive.
+  await c.env.JOBS.send({
+    kind: 'email.registration_confirmed',
+    registrationId: existing.id,
+    orderId,
+  })
+
+  return c.json(
+    {
+      registrationId: existing.id,
+      publicCode: existing.public_code,
+      name: existing.name,
+      orderId,
+      listPaise,
+      amountPaise,
+      discountPaise,
+      products: priced.quote.lines.map((l) => ({ id: l.productId, name: l.name })),
     },
     201,
   )

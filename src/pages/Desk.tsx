@@ -27,11 +27,29 @@ import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 const YEARS = ['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate', 'Not a student']
 const GENDERS = ['Female', 'Male', 'Other', 'Prefer not to say']
 
-type Done = { publicCode: string; amountPaise: number; completedExisting: boolean }
+type Done = {
+  publicCode: string
+  amountPaise: number
+  completedExisting: boolean
+  /** The Festival Pass sold on its own, to somebody already registered. */
+  upgraded: boolean
+}
+
+/** Somebody the lookup found, as the counter needs to see them. */
+type Found = Awaited<ReturnType<typeof api.deskLookup>>
+
+/**
+ * What this counter is selling.
+ *
+ * `upgrade` is the Festival Pass on its own. It is a different transaction
+ * from the other two rather than a variation of one: the person already
+ * exists, so nothing is typed about them and nothing about them is changed.
+ */
+type Tier = 'basic' | 'delegate' | 'upgrade'
 
 export default function Desk() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [tier, setTier] = useState<'basic' | 'delegate'>('basic')
+  const [tier, setTier] = useState<Tier>('basic')
   const [method, setMethod] = useState<'upi' | 'cash'>('upi')
   const [reference, setReference] = useState('')
   /** What was actually taken. Typed, not computed: the desk discounts. */
@@ -40,6 +58,11 @@ export default function Desk() {
     name: '', email: '', phone: '', gender: '', college: '', city: '',
     course: '', year: '', emergencyName: '', emergencyPhone: '',
   })
+  /** The upgrade flow: an address, and who the server says holds it. */
+  const [lookupEmail, setLookupEmail] = useState('')
+  const [found, setFound] = useState<Found | null>(null)
+  const [looking, setLooking] = useState(false)
+
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [fatal, setFatal] = useState<string | null>(null)
@@ -58,13 +81,59 @@ export default function Desk() {
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
-  const total = tier === 'delegate' ? BASIC_AMOUNT + DELEGATE_ADDON : BASIC_AMOUNT
+  const total =
+    tier === 'upgrade' ? DELEGATE_ADDON
+      : tier === 'delegate' ? BASIC_AMOUNT + DELEGATE_ADDON
+        : BASIC_AMOUNT
+
+  /** Whether the person the lookup found can actually be sold the upgrade. */
+  const upgradable = !!found && found.found && found.hasBasic && !found.hasDelegate
+
+  /**
+   * Find who holds an address, before any money is taken.
+   *
+   * Its own step rather than something the submit does silently, because the
+   * agent is about to charge somebody and should read the name back to them
+   * first. A failure here is shown in the panel, not as a fatal: not finding
+   * somebody is an ordinary outcome at a counter.
+   */
+  const lookUp = async () => {
+    const email = lookupEmail.trim()
+    if (!email) return
+    setLooking(true)
+    setFatal(null)
+    setErrors({})
+    setFound(null)
+    try {
+      setFound(await api.deskLookup(email))
+    } catch (err) {
+      setFatal(err instanceof Error ? err.message : 'Could not look that address up.')
+    } finally {
+      setLooking(false)
+    }
+  }
 
   const submit = async () => {
     setBusy(true)
     setFatal(null)
     setErrors({})
     try {
+      if (tier === 'upgrade') {
+        const res = await api.deskUpgrade({
+          email: lookupEmail.trim(),
+          amountRupees: Number(amount),
+          paymentMethod: method,
+          paymentReference: reference.trim(),
+        })
+        setDone({
+          publicCode: res.publicCode,
+          amountPaise: res.amountPaise,
+          completedExisting: false,
+          upgraded: true,
+        })
+        return
+      }
+
       const res = await api.deskRegister({
         ...form,
         products: tier === 'delegate' ? ['basic', 'delegate'] : ['basic'],
@@ -76,6 +145,7 @@ export default function Desk() {
         publicCode: res.publicCode,
         amountPaise: res.amountPaise,
         completedExisting: res.completedExisting,
+        upgraded: false,
       })
     } catch (err) {
       if (err instanceof ApiError && err.fields) setErrors(err.fields)
@@ -89,6 +159,8 @@ export default function Desk() {
     setDone(null)
     setReference('')
     setAmount('')
+    setLookupEmail('')
+    setFound(null)
     setForm({
       name: '', email: '', phone: '', gender: '', college: '', city: '',
       course: '', year: '', emergencyName: '', emergencyPhone: '',
@@ -137,7 +209,9 @@ export default function Desk() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-gold-bright to-gold-deep">
             <Check size={26} className="text-abyss" />
           </div>
-          <h1 className="mt-4 font-display text-3xl text-foil">Registered.</h1>
+          <h1 className="mt-4 font-display text-3xl text-foil">
+            {done.upgraded ? 'Pass added.' : 'Registered.'}
+          </h1>
 
           <div className="mt-5 rounded-xl border border-gold/25 bg-abyss/50 px-6 py-5">
             <div className="font-log text-[0.6rem] uppercase tracking-wide2 text-parchment/50">
@@ -149,8 +223,10 @@ export default function Desk() {
           </div>
 
           <p className="mt-4 text-[0.88rem] leading-relaxed text-parchment/70">
-            ₹{(done.amountPaise / 100).toLocaleString('en-IN')} collected. Their pass and QR are on
-            the way to their inbox. Read them the number above if they want it now.
+            ₹{(done.amountPaise / 100).toLocaleString('en-IN')} collected.{' '}
+            {done.upgraded
+              ? 'They are on the Festival Pass now. Their registration number has not changed, and the confirmation is on its way to their inbox.'
+              : 'Their pass and QR are on the way to their inbox. Read them the number above if they want it now.'}
           </p>
           {done.completedExisting && (
             <p className="mt-3 text-[0.82rem] leading-relaxed text-parchment/50">
@@ -163,7 +239,8 @@ export default function Desk() {
             onClick={again}
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep px-7 py-3 font-log text-[0.7rem] uppercase tracking-wide2 text-abyss"
           >
-            <UserPlus size={15} /> Register the next person
+            <UserPlus size={15} />{' '}
+            {done.upgraded ? 'Serve the next person' : 'Register the next person'}
           </button>
         </div>
       </Shell>
@@ -187,12 +264,20 @@ export default function Desk() {
         {/* What they are buying */}
         <div className="mt-8">
           <Legend n="1" label="What they are paying for" />
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
             <Choice on={tier === 'basic'} onClick={() => setTier('basic')}>
               Basic Registration
             </Choice>
             <Choice on={tier === 'delegate'} onClick={() => setTier('delegate')}>
               Basic + Festival Pass
+            </Choice>
+            <Choice on={tier === 'upgrade'} onClick={() => setTier('upgrade')}>
+              <span>
+                Festival Pass only
+                <span className="mt-0.5 block text-[0.72rem] text-parchment/50">
+                  Already registered
+                </span>
+              </span>
             </Choice>
           </div>
 
@@ -254,7 +339,83 @@ export default function Desk() {
           </div>
         </div>
 
+        {/* Who is upgrading: an address, and who the server says holds it. */}
+        {tier === 'upgrade' && (
+          <div className="mt-8">
+            <Legend n="3" label="Who is upgrading" />
+            <div className="mt-3 max-w-md">
+              <Field
+                label="Their email"
+                required
+                error={errors.email}
+                hint="The address they registered with. Look them up before taking the money."
+              >
+                <div className="flex gap-2">
+                  <TextInput
+                    value={lookupEmail}
+                    onChange={(v) => {
+                      setLookupEmail(v)
+                      setFound(null)
+                    }}
+                    invalid={!!errors.email}
+                    type="email"
+                    maxLength={200}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void lookUp()}
+                    disabled={looking || !lookupEmail.trim()}
+                    className="shrink-0 rounded-lg px-4 font-log text-[0.66rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/40 transition-colors hover:ring-gold/70 disabled:opacity-40"
+                  >
+                    {looking ? <Loader2 size={14} className="animate-spin" /> : 'Look up'}
+                  </button>
+                </div>
+              </Field>
+
+              {found && !found.found && (
+                <p className="mt-3 flex items-start gap-2 text-[0.84rem] leading-relaxed text-coral">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                  Nobody is registered with that address. Check the spelling, or take a Basic +
+                  Festival Pass registration for them instead.
+                </p>
+              )}
+
+              {found?.found && (
+                <div className="mt-3 rounded-lg border border-gold/25 bg-abyss/40 px-4 py-3">
+                  <div className="font-mono text-[0.9rem] tracking-widest text-gold-bright">
+                    {found.publicCode}
+                  </div>
+                  <div className="mt-1 text-[0.9rem] text-offwhite">{found.name}</div>
+                  <div className="text-[0.78rem] text-parchment/55">{found.college}</div>
+
+                  {/* Read this back before taking the money. */}
+                  {found.hasDelegate ? (
+                    <p className="mt-2.5 text-[0.82rem] leading-relaxed text-coral">
+                      They already hold the Festival Pass. Take no money.
+                    </p>
+                  ) : !found.hasBasic ? (
+                    <p className="mt-2.5 text-[0.82rem] leading-relaxed text-coral">
+                      They started an account but never paid for Basic Registration. Take a Basic +
+                      Festival Pass registration for them instead.
+                    </p>
+                  ) : (
+                    <p className="mt-2.5 text-[0.82rem] leading-relaxed text-parchment/60">
+                      On Basic Registration. The Festival Pass can be added for ₹{DELEGATE_ADDON}.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <p className="mt-3 text-[0.74rem] leading-relaxed text-parchment/45">
+                Nothing on their registration is changed. Only the pass is added, and the
+                confirmation goes to the address above.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Who they are */}
+        {tier !== 'upgrade' && (
         <div className="mt-8">
           <Legend n="3" label="Who they are" />
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -293,6 +454,7 @@ export default function Desk() {
             </Field>
           </div>
         </div>
+        )}
 
         {fatal && (
           <div className="mt-6 flex items-start gap-2 rounded-lg border border-coral/40 bg-coral/10 p-3.5 text-[0.86rem] leading-relaxed text-coral">
@@ -301,13 +463,20 @@ export default function Desk() {
           </div>
         )}
 
+        {/* An upgrade cannot be confirmed until somebody has been found and
+            can actually take it: the server refuses anyway, but refusing after
+            the cash is in the drawer is not the same as refusing before. */}
         <button
           onClick={() => void submit()}
-          disabled={busy}
+          disabled={busy || (tier === 'upgrade' && !upgradable)}
           className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-4 font-log text-[0.74rem] uppercase tracking-wide2 text-abyss transition-transform hover:scale-[1.01] disabled:opacity-50"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-          {amount === '' ? 'Confirm and register' : `Confirm ₹${Number(amount)} collected`}
+          {amount === ''
+            ? tier === 'upgrade'
+              ? 'Confirm and add the pass'
+              : 'Confirm and register'
+            : `Confirm ₹${Number(amount)} collected`}
         </button>
       </div>
     </Shell>

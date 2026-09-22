@@ -644,7 +644,10 @@ export function Payments({ payments }: { payments: AdminStats['payments'] }) {
   const attempts = payments.paid + payments.failed
   const rate = attempts > 0 ? Math.round((payments.paid / attempts) * 100) : null
   const max = Math.max(1, ...payments.methods.map((m) => m.n))
-  const pretty = (m: string) => ({ upi: 'UPI', card: 'Card', netbanking: 'Net banking', wallet: 'Wallet', emi: 'EMI', unknown: 'Not recorded' })[m] ?? m
+  // `cash` only ever comes from the registration desk. Desk UPI is indexed
+  // under the same `upi` as the gateway's, so that bar is both tills together;
+  // the payments export splits them by channel.
+  const pretty = (m: string) => ({ upi: 'UPI', card: 'Card', netbanking: 'Net banking', wallet: 'Wallet', emi: 'EMI', cash: 'Cash (desk)', unknown: 'Not recorded' })[m] ?? m
 
   return (
     <Card
@@ -804,8 +807,31 @@ export function SplitBars({
  * ------------------------------------------------------------------ */
 
 export function Recent({ recent }: { recent: AdminStats['recent'] }) {
-  const what = (r: AdminStats['recent'][number]) =>
-    r.kind === 'event' ? 'Event entry' : r.products.includes('delegate') ? (r.products.includes('basic') ? 'Basic + Festival Pass' : 'Festival Pass') : 'Basic Registration'
+  /**
+   * What this payment bought.
+   *
+   * Read the kind before the products. An accommodation order has no line
+   * items at all — the bed is priced from the rate card, not the products
+   * table — so falling straight through to the product check printed every
+   * booking as "Basic Registration", which is somebody else's purchase.
+   */
+  const what = (r: AdminStats['recent'][number]) => {
+    const bought =
+      r.kind === 'event'
+        ? 'Event entry'
+        : r.kind === 'accommodation'
+          ? 'Accommodation'
+          : r.products.includes('delegate')
+            ? r.products.includes('basic')
+              ? 'Basic + Festival Pass'
+              : 'Festival Pass'
+            : 'Basic Registration'
+
+    // Cash or UPI taken at a counter rather than through the gateway. Said on
+    // the face of it because these are the rows a treasurer reconciles against
+    // a cash box by hand, and nothing else on this card would tell them apart.
+    return r.kind === 'desk' ? `${bought} · Desk` : bought
+  }
 
   return (
     <Card title="Latest payments" definition="The most recent successful payments, newest first.">

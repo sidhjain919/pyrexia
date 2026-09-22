@@ -3,9 +3,11 @@
  *
  * Four workbooks, one per thing the committee asks for:
  *
- *   /admin/export/registrations   two tabs: every login, then everyone who paid
- *                                 with everything they typed into the form
- *   /admin/export/payments        every payment attempt, whatever became of it
+ *   /admin/export/registrations   three tabs: every login, then everyone who
+ *                                 paid with everything they typed into the
+ *                                 form, then the counter's own take
+ *   /admin/export/payments        two tabs: every payment attempt, then the
+ *                                 counter's own take
  *   /admin/export/events          every confirmed event entry, plus a per-event count
  *   /admin/export/event-sheets    one row per live Google spreadsheet, with its link
  *
@@ -16,7 +18,9 @@
  *    person holding paper can know that is if the paper says when it was made.
  *
  *  - **Sorted by name, not by when they registered.** Nobody finds "Meera" in
- *    a list ordered by signup time.
+ *    a list ordered by signup time. The two desk tabs are the exception and
+ *    run newest first: they are read while reconciling a cash box against a
+ *    shift, which happens in the order the money came in.
  *
  * Amounts land in numeric cells so they sum in Excel; text lands in typed
  * string cells, so a name beginning `=` is never a formula.
@@ -132,6 +136,27 @@ exports_.get('/admin/export/registrations', async (c) => {
       ORDER BY r.name COLLATE NOCASE`,
   ).all<Record<string, unknown>>()
 
+  /**
+   * What the counter took, one row per transaction.
+   *
+   * A transaction rather than a person, because one delegate can appear twice
+   * — registered at the desk on the Monday, upgraded at the desk on the
+   * Wednesday — and collapsing those two into one row would hide a payment
+   * somebody has to account for. Newest first, which is the order a shift is
+   * reconciled in.
+   */
+  const { results: desk } = await c.env.DB.prepare(
+    `SELECT r.public_code, r.name, r.email, r.phone, r.college, r.city, r.course, r.year,
+            t.tier, o.id AS order_id, o.amount_paise, o.discount_paise, o.method,
+            o.collected_by, o.payment_reference, o.paid_at,
+            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items
+       FROM orders o
+       JOIN registrations r ON r.id = o.registration_id
+       JOIN registration_tier t ON t.registration_id = r.id
+      WHERE o.kind = 'desk' AND o.status = 'paid'
+      ORDER BY o.paid_at DESC`,
+  ).all<Record<string, unknown>>()
+
   return workbook(
     [
       tab(
@@ -159,6 +184,19 @@ exports_.get('/admin/export/registrations', async (c) => {
           rupees(r.paid), r.first_paid_at, r.created_at,
         ] as Cell[]),
       ),
+      tab(
+        'Desk registrations',
+        'Taken at a counter, newest first',
+        ['Registration No', 'Name', 'Email', 'Mobile', 'College', 'City', 'Course', 'Year',
+         'Tier now', 'Sold', 'Collected (INR)', 'Discount given (INR)',
+         'Method', 'Collected by', 'Payment reference', 'Taken at', 'Order'],
+        desk.map((r) => [
+          r.public_code, r.name, r.email, r.phone, r.college, r.city, r.course, r.year,
+          tierName(r.tier), bought(r.items, 'desk', null),
+          rupees(r.amount_paise), rupees(r.discount_paise),
+          r.method, r.collected_by ?? '', r.payment_reference ?? '', r.paid_at, r.order_id,
+        ] as Cell[]),
+      ),
     ],
     'registrations',
   )
@@ -167,6 +205,35 @@ exports_.get('/admin/export/registrations', async (c) => {
 /* ------------------------------------------------------------------ *
  * Payments: every attempt, whatever happened to it
  * ------------------------------------------------------------------ */
+
+/** Every column the payments workbook prints, for either of its two tabs. */
+const PAYMENT_COLUMNS = [
+  'Order', 'Registration No', 'Name', 'Email', 'Mobile', 'Bought', 'Channel',
+  'Amount charged (INR)', 'of which gateway charge (INR)', 'Discount given (INR)',
+  'Razorpay fee (INR)', 'GST on fee (INR)', 'Net to fest (INR)',
+  'Method', 'Status', 'Razorpay Order ID', 'Razorpay Payment ID',
+  'Collected by', 'Payment reference',
+  'Started', 'Paid at', 'Failure reason',
+]
+
+/** One payment as a row. Shared, so the desk tab can never drift from the main one. */
+function paymentRow(r: Record<string, unknown>): Cell[] {
+  const amount = Number(r.amount_paise ?? 0)
+  const fee = Number(r.fee_paise ?? 0) + Number(r.tax_paise ?? 0)
+  return [
+    r.id, r.public_code, r.name, r.email, r.phone,
+    bought(r.items, r.kind, r.event_name),
+    // Which till it came through. A desk row has no Razorpay ids and
+    // no gateway fee, so the two never have to be told apart by eye.
+    r.kind === 'desk' ? 'Desk' : 'Online',
+    rupees(amount), rupees(r.convenience_paise), rupees(r.discount_paise),
+    rupees(r.fee_paise), rupees(r.tax_paise),
+    rupees(r.status === 'paid' ? amount - fee : 0),
+    r.method, r.status, r.razorpay_order_id, r.razorpay_payment_id,
+    r.collected_by ?? '', r.payment_reference ?? '',
+    r.created_at, r.paid_at, r.failure_reason,
+  ] as Cell[]
+}
 
 exports_.get('/admin/export/payments', async (c) => {
   const { results } = await c.env.DB.prepare(
@@ -181,34 +248,20 @@ exports_.get('/admin/export/payments', async (c) => {
       ORDER BY o.created_at DESC`,
   ).all<Record<string, unknown>>()
 
+  // The counter's own take, pulled out of the list above rather than fetched
+  // again. The same rows appear on both tabs on purpose: the first is the
+  // ledger, the second is the one somebody reconciles a cash box against, and
+  // a treasurer should not have to filter a thousand rows to find nine.
+  const deskRows = results.filter((r) => r.kind === 'desk')
+
   return workbook(
     [
+      tab('Payments', 'Every payment attempt', PAYMENT_COLUMNS, results.map(paymentRow)),
       tab(
-        'Payments',
-        'Every payment attempt',
-        ['Order', 'Registration No', 'Name', 'Email', 'Mobile', 'Bought', 'Channel',
-         'Amount charged (INR)', 'of which gateway charge (INR)', 'Discount given (INR)',
-         'Razorpay fee (INR)', 'GST on fee (INR)', 'Net to fest (INR)',
-         'Method', 'Status', 'Razorpay Order ID', 'Razorpay Payment ID',
-         'Collected by', 'Payment reference',
-         'Started', 'Paid at', 'Failure reason'],
-        results.map((r) => {
-          const amount = Number(r.amount_paise ?? 0)
-          const fee = Number(r.fee_paise ?? 0) + Number(r.tax_paise ?? 0)
-          return [
-            r.id, r.public_code, r.name, r.email, r.phone,
-            bought(r.items, r.kind, r.event_name),
-            // Which till it came through. A desk row has no Razorpay ids and
-            // no gateway fee, so the two never have to be told apart by eye.
-            r.kind === 'desk' ? 'Desk' : 'Online',
-            rupees(amount), rupees(r.convenience_paise), rupees(r.discount_paise),
-            rupees(r.fee_paise), rupees(r.tax_paise),
-            rupees(r.status === 'paid' ? amount - fee : 0),
-            r.method, r.status, r.razorpay_order_id, r.razorpay_payment_id,
-            r.collected_by ?? '', r.payment_reference ?? '',
-            r.created_at, r.paid_at, r.failure_reason,
-          ] as Cell[]
-        }),
+        'Desk payments',
+        'Taken at a counter, in cash or by UPI',
+        PAYMENT_COLUMNS,
+        deskRows.map(paymentRow),
       ),
     ],
     'payments',

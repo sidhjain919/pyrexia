@@ -813,6 +813,51 @@ export const api = {
       completedExisting: boolean
     }>('/api/admin/desk/registrations', { method: 'POST', body: payload, auth: true }),
 
+  /**
+   * Who already holds this address, so the desk can see them before it charges
+   * them. Answers `{ found: false }` rather than failing: at a counter, "no
+   * such person" is an answer, not an error.
+   */
+  deskLookup: (email: string) =>
+    request<
+      | { found: false }
+      | {
+          found: true
+          publicCode: string
+          name: string
+          email: string
+          phone: string
+          college: string
+          hasBasic: boolean
+          hasDelegate: boolean
+        }
+    >(`/api/admin/desk/lookup?email=${encodeURIComponent(email)}`, { auth: true }),
+
+  /**
+   * Sell the Festival Pass on its own to somebody who already holds Basic.
+   *
+   * No form: the person exists and their details were checked when they
+   * registered, so this names them by address and nothing on the registration
+   * is touched.
+   */
+  deskUpgrade: (payload: {
+    email: string
+    /** What was actually taken. May be under the list price; never over it. */
+    amountRupees: number
+    paymentMethod: 'cash' | 'upi'
+    paymentReference: string
+  }) =>
+    request<{
+      registrationId: string
+      publicCode: string
+      name: string
+      orderId: string
+      listPaise: number
+      amountPaise: number
+      discountPaise: number
+      products: { id: string; name: string }[]
+    }>('/api/admin/desk/upgrades', { method: 'POST', body: payload, auth: true }),
+
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
 
   /** Published, unexpired notices. No session needed, this is the public board. */

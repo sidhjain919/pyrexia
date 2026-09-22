@@ -24,6 +24,7 @@ import {
   setAccommodationOpen,
 } from '../data/accommodation.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
+import { DESK_AGENTS } from './desk.ts'
 import * as audit from '../lib/audit.ts'
 
 type Admin = { id: string; email: string; role: string; registrationId: string }
@@ -62,8 +63,15 @@ admin.get('/admin/me', (c) => {
       verify: PRIVILEGED.has(me.role) || me.role === 'verifier',
       notices: PRIVILEGED.has(me.role),
       desk: PRIVILEGED.has(me.role) || me.role === 'gate_supervisor',
-      /** Take a registration at a counter, paid in cash or by UPI. */
-      deskRegister: PRIVILEGED.has(me.role) || me.role === 'desk_agent',
+      /**
+       * Take a registration at a counter, paid in cash or by UPI.
+       *
+       * By address, not by role, and deliberately not widened by superadmin:
+       * see DESK_AGENTS. This flag only decides whether the portal draws the
+       * link — the route checks the same list for itself, because a button
+       * somebody cannot see is not a button somebody cannot press.
+       */
+      deskRegister: DESK_AGENTS.has(me.email.toLowerCase()),
     },
   })
 })
@@ -710,4 +718,76 @@ admin.post('/admin/accommodation/settings', async (c) => {
   })
 
   return c.json({ ok: true, open, note })
+})
+
+/* ------------------------------------------------------------------ *
+ * One-off: the pass-type correction
+ * ------------------------------------------------------------------ */
+
+/**
+ * Tell the delegates who were wrongly sent "Festival Pass confirmed".
+ *
+ * Before event entries had an email of their own, a paid entry was announced
+ * by the registration mail, which reads an order with no line items following
+ * an earlier one as an upgrade. Nothing was ever granted, so the repair is a
+ * sentence rather than a refund.
+ *
+ * The cohort is worked out here rather than passed in. A list of ids from a
+ * browser is a list somebody can edit, and this sends real email to real
+ * people: the only safe input is none. Anybody who has since bought the
+ * Festival Pass for real is excluded, because for them the email was true.
+ *
+ * `dryRun` is the default. It returns exactly who would be written to and
+ * sends nothing, so the list can be read before anything leaves the building.
+ */
+admin.post('/admin/corrections/pass-type', async (c) => {
+  const me = c.get('admin')
+  if (!PRIVILEGED.has(me.role)) {
+    throw new ApiError('forbidden', 'Only the core team can send a correction.')
+  }
+
+  const body = (await readJson(c)) as Record<string, unknown>
+  const send = body.send === true
+
+  // The moment the entry email went live. An entry paid after this was
+  // announced correctly and its owner must not be written to.
+  const FIXED_AT = '2026-09-19 19:09:00'
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT DISTINCT r.id, r.public_code, r.name, r.email
+       FROM orders o
+       JOIN registrations r ON r.id = o.registration_id
+       JOIN registration_tier t ON t.registration_id = r.id
+      WHERE o.kind = 'event'
+        AND o.status = 'paid'
+        AND o.paid_at < ?
+        AND t.tier = 0
+      ORDER BY r.public_code`,
+  )
+    .bind(FIXED_AT)
+    .all<{ id: string; public_code: string; name: string; email: string }>()
+
+  if (!send) {
+    return c.json({
+      dryRun: true,
+      count: results.length,
+      people: results.map((r) => ({ code: r.public_code, name: r.name, email: r.email })),
+    })
+  }
+
+  for (const r of results) {
+    await c.env.JOBS.send({ kind: 'email.pass_correction', registrationId: r.id })
+  }
+
+  await audit.record(c.env, {
+    actorId: me.id,
+    actorEmail: me.email,
+    action: 'correction.pass_type',
+    entity: 'registration',
+    entityId: `${results.length} delegates`,
+    after: { sent: results.length, codes: results.map((r) => r.public_code) },
+    ip: clientIp(c),
+  })
+
+  return c.json({ dryRun: false, queued: results.length })
 })

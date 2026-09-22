@@ -45,6 +45,8 @@ export type AuditAction =
   | 'settings.event_openings'
   | 'settings.accommodation'
   | 'desk.register'
+  | 'desk.upgrade'
+  | 'correction.pass_type'
 
 export type AuditEntry = {
   action: AuditAction
