@@ -9,7 +9,8 @@
  *   /admin/export/payments        two tabs: every payment attempt, then the
  *                                 counter's own take
  *   /admin/export/events          every confirmed event entry, plus a per-event count
- *   /admin/export/event-sheets    one row per live Google spreadsheet, with its link
+ *   /admin/export/event-sheets    one row per live Google spreadsheet, with its
+ *                                 link — the rooming list included
  *
  * Two things matter more here than for a normal download:
  *
@@ -35,7 +36,14 @@ import { xlsxResponse, type Cell, type Sheet } from '../lib/xlsx.ts'
 import * as audit from '../lib/audit.ts'
 import { sheetUrl } from '../lib/sheets.ts'
 import { registerableEvents, resolveEvent } from '../data/events.ts'
-import { SEPARATE_SHEET_VERTICALS, sheetEvents, sweepSheets, toIst } from '../jobs/sheets.ts'
+import {
+  ACCOMMODATION_SHEET,
+  ACCOMMODATION_SHEET_TITLE,
+  SEPARATE_SHEET_VERTICALS,
+  sheetEvents,
+  sweepSheets,
+  toIst,
+} from '../jobs/sheets.ts'
 
 export const exports_ = new Hono<{ Bindings: Env }>()
 
@@ -476,6 +484,22 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     books.set(place.spreadsheet_id, book)
   }
 
+  /*
+   * The rooming list, which is a spreadsheet in the same folder but not an
+   * event, so the loop above cannot see it.
+   *
+   * Without this row its link appeared nowhere in the portal at all: the
+   * accommodation workbook carries the bookings but not the live sheet, and
+   * this tab is where somebody looks for a link. A file nobody can find is
+   * the same as a file that was never made.
+   */
+  const stay = byEvent.get(ACCOMMODATION_SHEET)
+  const stayCount = stay
+    ? await c.env.DB.prepare(
+        `SELECT count(*) AS n FROM accommodation_bookings WHERE status = 'confirmed'`,
+      ).first<{ n: number }>()
+    : null
+
   const rows: Cell[][] = [...books.entries()].map(([id, book]) => {
     const own = book.events.length === 1 && SEPARATE_SHEET_VERTICALS.has(
       sheetEvents.find((e) => e.name === book.events[0])?.territory.id ?? '',
@@ -497,6 +521,20 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     ]
   })
 
+  if (stay) {
+    rows.push([
+      ACCOMMODATION_SHEET_TITLE,
+      // Not a vertical, and saying so beats inventing one.
+      '—',
+      { link: sheetUrl(stay.spreadsheet_id), text: 'Open spreadsheet' },
+      1,
+      'Bookings',
+      stayCount?.n ?? 0,
+      stay.synced_at ? toIst(stay.synced_at) : '',
+      stay.last_error ? 'Last write failed (retried automatically)' : 'Live',
+    ])
+  }
+
   if (unplaced.length) {
     rows.push([
       'Not set up yet', '', '', unplaced.length, unplaced.join(', '),
@@ -516,7 +554,7 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     [
       tab(
         'Spreadsheets',
-        `${books.size} live Google spreadsheets: one per vertical with a tab per event, one per Velocity event`,
+        `${books.size + (stay ? 1 : 0)} live Google spreadsheets: one per vertical with a tab per event, one per Velocity event, and the accommodation rooming list`,
         ['Spreadsheet', 'Vertical', 'Link', 'Tabs', 'Events inside', 'Confirmed entries',
          'Last changed (IST)', 'Status'],
         rows,
