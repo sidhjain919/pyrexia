@@ -66,13 +66,12 @@ test('the girls block has no five-bed room, the boys block does', () => {
   assert.ok(roomTypeById('boys-5-nonac'))
 })
 
-test('a stay is priced per day, so four days is four days', () => {
+test('a stay is priced per day, so five days is five days', () => {
   // ₹700 a day, AC, three to a room.
-  assert.equal(priceStay('boys-3-ac', 4, '2026-10-12')?.feePaise, 280000)
   assert.equal(priceStay('boys-3-ac', 5, '2026-10-12')?.feePaise, 350000)
   // The per-day rate is snapshotted alongside the total, so a receipt can
   // show its working.
-  assert.equal(priceStay('boys-3-ac', 4, '2026-10-12')?.ratePaise, 70000)
+  assert.equal(priceStay('boys-3-ac', 5, '2026-10-12')?.ratePaise, 70000)
 })
 
 test('a room the rate card does not let cannot be priced', () => {
@@ -82,10 +81,13 @@ test('a room the rate card does not let cannot be priced', () => {
 })
 
 test('a stay length nobody sells cannot be priced', () => {
-  for (const days of [0, 1, 2, 3, 6, 50, -4, 4.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+  // Four included: a part-week stay was on sale once and is not any more, and
+  // a booking for one must not slip through on a stale client.
+  for (const days of [0, 1, 2, 3, 4, 6, 50, -4, 4.5, Number.NaN, Number.POSITIVE_INFINITY]) {
     assert.equal(priceStay('boys-3-ac', days, '2026-10-12'), null, `${days} days was priced`)
   }
-  // And the two that are sold, are.
+  // And the one that is sold, is.
+  assert.deepEqual([...ALLOWED_DAYS], [5])
   for (const days of ALLOWED_DAYS) {
     assert.ok(priceStay('boys-3-ac', days, '2026-10-12'))
   }
@@ -96,11 +98,9 @@ test('a five-day stay can only begin on the first day of the fest', () => {
   assert.equal(priceStay('boys-3-ac', 5, '2026-10-13'), null)
 })
 
-test('a four-day stay can begin on either of the first two days', () => {
-  assert.deepEqual(arrivalDatesFor(4), ['2026-10-12', '2026-10-13'])
-  assert.ok(priceStay('boys-3-ac', 4, '2026-10-13'))
-  // But not on a day that would run the stay past the end of the fest.
-  assert.equal(priceStay('boys-3-ac', 4, '2026-10-14'), null)
+test('a length that is not on sale has no arrival dates at all', () => {
+  assert.deepEqual(arrivalDatesFor(4), [])
+  assert.deepEqual(arrivalDatesFor(1), [])
 })
 
 test('an arrival date outside the fest is refused however plausible it looks', () => {
@@ -113,6 +113,8 @@ test('departure is the last night, not the day after it', () => {
   // Five days from the 12th is the 12th to the 16th inclusive, which is the
   // whole fest and the last day of it.
   assert.equal(departureDate('2026-10-12', 5), '2026-10-16')
+  // Lengths are not its business: it still reads a shorter stay off an older
+  // booking row correctly.
   assert.equal(departureDate('2026-10-12', 4), '2026-10-15')
   assert.equal(departureDate('2026-10-13', 4), '2026-10-16')
   assert.equal(departureDate('not-a-day', 5), null)

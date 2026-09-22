@@ -93,19 +93,21 @@ export const FEST_DAYS = [
 /**
  * How long somebody may book for.
  *
- * Four or five, which is what the accommodation team offers. The column
- * constraint allows one through five, so shortening this list is the only
- * change needed if they ever sell a weekend.
+ * The whole fest and nothing shorter: the accommodation team allocates a bed
+ * for the five days as one block. The column constraint allows one through
+ * five, so adding to this list is the only change needed if they ever sell a
+ * weekend.
  */
-export const ALLOWED_DAYS: readonly number[] = [4, 5]
+export const ALLOWED_DAYS: readonly number[] = [5]
 
 /**
  * The arrival dates a stay of this length can start on.
  *
- * A five-day stay can only begin on the first day. A four-day stay can begin
- * on either of the first two, which is the whole reason arrival is asked for
- * rather than assumed: "four days" alone does not tell the desk whether to
- * expect somebody on the 12th or the 13th.
+ * A five-day stay can only begin on the first day, so with one length on sale
+ * this returns a single date and the form has nothing to ask. Still a function
+ * of length rather than a constant: a shorter stay, if one is ever sold, could
+ * start on more than one day, and "four days" alone would not tell the desk
+ * whether to expect somebody on the 12th or the 13th.
  */
 export function arrivalDatesFor(days: number): string[] {
   if (!ALLOWED_DAYS.includes(days)) return []

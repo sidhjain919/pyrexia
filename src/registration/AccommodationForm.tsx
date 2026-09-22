@@ -47,7 +47,9 @@ import {
  * deposit back.
  *
  * The amount is never sent from here. The form sends a room-type id, a number
- * of days and an arrival date; the server prices those or refuses.
+ * of days and an arrival date; the server prices those or refuses. Only the
+ * full five days are on sale, so neither of those last two is a question the
+ * form asks any more, but both still travel and are still checked.
  */
 export default function AccommodationForm({
   onNeedRegistration,
@@ -131,14 +133,25 @@ export default function AccommodationForm({
   )
 
   /*
-   * A five-seater exists only in the boys' rooms, and four days can start on
-   * a day five days cannot. Switching either one can therefore strand a choice
-   * that was valid a moment ago, so the dependent choice is dropped rather
-   * than left sitting there about to be rejected by the server.
+   * A five-seater exists only in the boys' rooms, so switching to the girls'
+   * block strands a choice that was valid a moment ago. The dependent choice
+   * is dropped rather than left sitting there about to be rejected by the
+   * server.
    */
   useEffect(() => {
     if (sharing !== null && !options.some((r) => r.sharing === sharing)) setSharing(null)
   }, [options, sharing])
+
+  /*
+   * One length is sold, so there is nothing to ask: take it as soon as the
+   * rates land. An effect rather than an initial value because `info` arrives
+   * a fetch after the first render, and written against the length of the list
+   * so that a second length reappearing on the card goes back to being a
+   * question on its own.
+   */
+  useEffect(() => {
+    if (info && info.allowedDays.length === 1) setDays(info.allowedDays[0])
+  }, [info])
 
   useEffect(() => {
     if (arrivalDate && !arrivalChoices.includes(arrivalDate)) setArrivalDate('')
@@ -429,18 +442,36 @@ export default function AccommodationForm({
       {picked && (
         <div>
           <Legend n="4" label="How long" />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {info.allowedDays.map((d) => (
-              <Choice key={d} on={days === d} onClick={() => setDays(d)}>
-                <span className="flex w-full items-baseline justify-between gap-3">
-                  <span>{d} days</span>
-                  <span className="font-mono text-[0.78rem] text-gold-bright">
-                    ₹{((picked.ratePaise * d) / 100).toLocaleString('en-IN')}
+          {info.allowedDays.length > 1 ? (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {info.allowedDays.map((d) => (
+                <Choice key={d} on={days === d} onClick={() => setDays(d)}>
+                  <span className="flex w-full items-baseline justify-between gap-3">
+                    <span>{d} days</span>
+                    <span className="font-mono text-[0.78rem] text-gold-bright">
+                      ₹{((picked.ratePaise * d) / 100).toLocaleString('en-IN')}
+                    </span>
                   </span>
+                </Choice>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Nothing to pick, so it is stated rather than offered: a lone
+                  button that is already pressed asks a question with one
+                  answer. The figure stays, because the length is only here so
+                  they can see what the stay comes to. */}
+              <div className="mt-2 flex items-baseline justify-between gap-3 rounded-lg border border-gold/25 bg-ocean/50 px-3.5 py-2.5 text-[0.92rem] text-offwhite">
+                <span>All {days} days of the fest</span>
+                <span className="font-mono text-[0.78rem] text-gold-bright">
+                  ₹{((picked.ratePaise * (days ?? 0)) / 100).toLocaleString('en-IN')}
                 </span>
-              </Choice>
-            ))}
-          </div>
+              </div>
+              <span className="mt-1 block text-[0.72rem] text-parchment/45">
+                Beds are allocated for the whole fest. Shorter stays are not let.
+              </span>
+            </>
+          )}
           {errors.days && <FieldError>{errors.days}</FieldError>}
         </div>
       )}
@@ -742,7 +773,7 @@ function RateCard({ deposit }: { deposit: number }) {
         What a bed costs
       </div>
       <p className="mt-1.5 text-[0.78rem] text-parchment/50">
-        Per person, per day. Book four days or all five.
+        Per person, per day, for all five days of the fest.
       </p>
 
       <div className="mt-4 grid gap-5 sm:grid-cols-2">

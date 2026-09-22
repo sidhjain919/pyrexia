@@ -50,8 +50,8 @@ export const STAY_STEPS = [
     body: 'Boys and girls separately, two to five sharing, with or without AC.',
   },
   {
-    title: 'Choose your days',
-    body: 'Four days or all five, arriving on the day your train actually gets in.',
+    title: 'Book the full fest',
+    body: 'All five days, from the 12th. Tell us roughly when your train gets in.',
   },
   {
     title: "Pay, and it's yours",
