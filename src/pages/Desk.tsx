@@ -19,9 +19,11 @@ import { Choice, Legend } from '../desk/ui'
  *  - The collector types what was actually taken, because the committee
  *    discounts at a counter. The server still holds the list price and
  *    refuses anything above it, and writes the gap down as a discount.
- *  - The payment reference is required. Without it a treasurer cannot match
- *    a pass against a cash box or a UPI statement afterwards, which is the
- *    whole point of writing it down at all.
+ *  - Every field on the desk can be skipped, the committee's call so a queue
+ *    keeps moving. Only the email is needed, because it is who the person is
+ *    and where their pass goes. Whatever is typed is still checked, and the
+ *    rules (one registration per person, no price above the list) all hold.
+ *    A blank amount means the list price was taken.
  *
  * No account is made. The delegate never signs in; they get an email with
  * their registration number and QR, and that is what the gate scans.
@@ -128,7 +130,7 @@ export default function Desk() {
       if (tier === 'upgrade') {
         const res = await api.deskUpgrade({
           email: lookupEmail.trim(),
-          amountRupees: Number(amount),
+          amountRupees: amount === '' ? undefined : Number(amount),
           paymentMethod: method,
           paymentReference: reference.trim(),
         })
@@ -145,7 +147,7 @@ export default function Desk() {
       const res = await api.deskRegister({
         ...form,
         products: tier === 'delegate' ? ['basic', 'delegate'] : ['basic'],
-        amountRupees: Number(amount),
+        amountRupees: amount === '' ? undefined : Number(amount),
         paymentMethod: method,
         paymentReference: reference.trim(),
       })
@@ -317,9 +319,8 @@ export default function Desk() {
           <div className="mt-3 max-w-xs">
             <Field
               label="Amount collected (₹)"
-              required
               error={errors.amountRupees}
-              hint={`List price is ₹${total}. Enter less if you gave a discount.`}
+              hint={`Leave blank if they paid the full ₹${total}. Enter less if you gave a discount.`}
             >
               <TextInput
                 value={amount}
@@ -355,9 +356,8 @@ export default function Desk() {
               <div className="mt-3">
                 <Field
                   label={method === 'upi' ? 'UPI reference' : 'Receipt number'}
-                  required
                   error={errors.paymentReference}
-                  hint="This is what lets the treasurer match the pass to the money later."
+                  hint="Optional, but it is what lets the treasurer match the pass to the money later."
                 >
                   <TextInput
                     value={reference}
@@ -379,7 +379,6 @@ export default function Desk() {
             <div className="mt-3 max-w-md">
               <Field
                 label="Their email"
-                required
                 error={errors.email}
                 hint="The address they registered with. Look them up before taking the money."
               >
@@ -452,37 +451,37 @@ export default function Desk() {
         <div className="mt-8">
           <Legend n="3" label="Who they are" />
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <Field label="Full name" required error={errors.name}>
+            <Field label="Full name" error={errors.name}>
               <TextInput value={form.name} onChange={set('name')} invalid={!!errors.name} maxLength={120} />
             </Field>
-            <Field label="Mobile" required error={errors.phone}>
+            <Field label="Mobile" error={errors.phone}>
               <TextInput value={form.phone} onChange={set('phone')} invalid={!!errors.phone} inputMode="numeric" maxLength={15} />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="Email" required error={errors.email} hint="Their pass and QR go here. Check it twice.">
+              <Field label="Email" error={errors.email} hint="Their pass and QR go here. Check it twice.">
                 <TextInput value={form.email} onChange={set('email')} invalid={!!errors.email} type="email" maxLength={200} />
               </Field>
             </div>
-            <Field label="College" required error={errors.college}>
+            <Field label="College" error={errors.college}>
               <TextInput value={form.college} onChange={set('college')} invalid={!!errors.college} maxLength={160} />
             </Field>
-            <Field label="City" required error={errors.city}>
+            <Field label="City" error={errors.city}>
               <TextInput value={form.city} onChange={set('city')} invalid={!!errors.city} maxLength={120} />
             </Field>
-            <Field label="Course" required error={errors.course}>
+            <Field label="Course" error={errors.course}>
               <TextInput value={form.course} onChange={set('course')} invalid={!!errors.course} placeholder="e.g. MBBS" maxLength={160} />
             </Field>
-            <Field label="Year" required error={errors.year}>
+            <Field label="Year" error={errors.year}>
               <Select value={form.year} onChange={set('year')} options={YEARS} invalid={!!errors.year} />
             </Field>
             <Field label="Gender" error={errors.gender}>
               <Select value={form.gender} onChange={set('gender')} options={GENDERS} invalid={!!errors.gender} />
             </Field>
             <div />
-            <Field label="Emergency contact" required error={errors.emergencyName}>
+            <Field label="Emergency contact" error={errors.emergencyName}>
               <TextInput value={form.emergencyName} onChange={set('emergencyName')} invalid={!!errors.emergencyName} maxLength={120} />
             </Field>
-            <Field label="Emergency number" required error={errors.emergencyPhone}>
+            <Field label="Emergency number" error={errors.emergencyPhone}>
               <TextInput value={form.emergencyPhone} onChange={set('emergencyPhone')} invalid={!!errors.emergencyPhone} inputMode="numeric" maxLength={15} />
             </Field>
           </div>

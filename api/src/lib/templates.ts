@@ -130,7 +130,8 @@ export function registrationConfirmed(args: {
   amountPaise: number
   passUrl: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
 
   const html = shell(
@@ -174,7 +175,8 @@ PYREXIA 2026 · Pirates of the Lost Island
  * ------------------------------------------------------------------ */
 
 export function signInLink(args: { name: string; url: string; minutes: number }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
 
   const html = shell(
     h1('Sign in to your voyage') +
@@ -211,7 +213,8 @@ export function paymentFailed(args: {
   retryUrl: string
   reason?: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
 
   const html = shell(
@@ -258,7 +261,8 @@ export function upgradeConfirmed(args: {
   amountPaise: number
   passUrl: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
 
   const html = shell(
@@ -404,7 +408,8 @@ export function accommodationConfirmed(args: {
   depositRupees: number
   passUrl: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
   const roomCharge = `₹${(args.roomPaise / 100).toLocaleString('en-IN')}`
   const deposit = `₹${args.depositRupees.toLocaleString('en-IN')}`
@@ -506,7 +511,8 @@ export function eventEntered(args: {
   amountPaise: number
   passUrl: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
   const amount = `₹${(args.amountPaise / 100).toLocaleString('en-IN')}`
   const title = args.band ? `${args.eventName} · ${args.band}` : args.eventName
   // Most events on the island charge nothing beyond Basic Registration. Such
@@ -592,7 +598,8 @@ export function passTypeCorrection(args: {
   publicCode: string
   passUrl: string
 }) {
-  const first = args.name.split(' ')[0] || args.name
+  // The desk may register somebody without a name; "You're in, ." reads broken.
+  const first = args.name.trim().split(' ')[0] || 'sailor'
 
   const html = shell(
     h1('A correction about your pass') +

@@ -109,9 +109,10 @@ desk.use('/admin/desk/*', async (c, next) => {
 /**
  * How the money arrived and what proves it.
  *
- * Both counters ask for the same two things, and the reference is the one
- * that makes a row reconcilable later: a UPI transaction id, or whatever is
- * written on the cash receipt, but never nothing.
+ * The method is required: cash and UPI reconcile against different things.
+ * The reference is asked for on every counter but may be skipped, because the
+ * committee wants a queue to keep moving; a skipped one is stored empty, and
+ * the collector's address on the row is still there to ask.
  */
 function paymentDetails(body: Record<string, unknown>) {
   const method = String(body.paymentMethod ?? '').trim().toLowerCase()
@@ -119,7 +120,7 @@ function paymentDetails(body: Record<string, unknown>) {
 
   const errors: Record<string, string> = {}
   if (!METHODS.has(method)) errors.paymentMethod = 'Cash or UPI.'
-  if (reference.length < 3) errors.paymentReference = 'A UPI reference or receipt number.'
+  if (reference && reference.length < 3) errors.paymentReference = 'A UPI reference or receipt number.'
 
   return { method, reference, errors }
 }
@@ -133,6 +134,9 @@ function paymentDetails(body: Record<string, unknown>) {
  * invent a price above the published one is a counter nobody can audit.
  */
 function amountCollected(body: Record<string, unknown>, listPaise: number): number {
+  // Left blank at the counter means the list price was taken, no discount.
+  if (body.amountRupees == null || body.amountRupees === '') return listPaise
+
   const raw = Number(body.amountRupees)
   if (!Number.isFinite(raw) || !Number.isInteger(raw) || raw < 0) {
     throw new ApiError('validation_failed', 'Some details need another look.', {
@@ -210,7 +214,7 @@ desk.post('/admin/desk/registrations', async (c) => {
   const agent = c.get('agent')
   const body = (await readJson(c)) as Record<string, unknown>
 
-  const { ok, errors, value } = validateRegistration(body)
+  const { ok, errors, value } = validateRegistration(body, { optional: true })
 
   const { method, reference, errors: paymentErrors } = paymentDetails(body)
   const fieldErrors: Record<string, string> = { ...errors, ...paymentErrors }
@@ -246,7 +250,7 @@ desk.post('/admin/desk/registrations', async (c) => {
   }
 
   // A mobile number belongs to one human, the same rule the online form keeps.
-  const phoneClash = await c.env.DB.prepare(
+  const phoneClash = value.phone && await c.env.DB.prepare(
     `SELECT public_code FROM registrations
       WHERE status = 'confirmed' AND phone = ? AND id != ? LIMIT 1`,
   )
@@ -287,8 +291,12 @@ desk.post('/admin/desk/registrations', async (c) => {
     statements.push(
       c.env.DB.prepare(
         `UPDATE registrations
-            SET name = ?, phone = ?, gender = ?, college = ?, city = ?, course = ?, year = ?,
-                emergency_name = ?, emergency_phone = ?, status = 'confirmed',
+            SET name = COALESCE(NULLIF(?, ''), name), phone = COALESCE(NULLIF(?, ''), phone),
+                gender = COALESCE(?, gender), college = COALESCE(NULLIF(?, ''), college),
+                city = COALESCE(NULLIF(?, ''), city), course = COALESCE(NULLIF(?, ''), course),
+                year = COALESCE(NULLIF(?, ''), year),
+                emergency_name = COALESCE(NULLIF(?, ''), emergency_name),
+                emergency_phone = COALESCE(NULLIF(?, ''), emergency_phone), status = 'confirmed',
                 updated_at = datetime('now')
           WHERE id = ?`,
       ).bind(
@@ -595,7 +603,7 @@ desk.post('/admin/desk/events', async (c) => {
     )
   }
 
-  const entry = parseEntry(resolved, body)
+  const entry = parseEntry(resolved, body, { optional: true })
   /** Worth naming the band only when the event runs more than one. */
   const band = entry.priced && (feeFor(resolved.name)?.variants.length ?? 0) > 1 ? entry.priced.label : null
   const fieldErrors: Record<string, string> = { ...entry.fieldErrors }
@@ -626,7 +634,7 @@ desk.post('/admin/desk/events', async (c) => {
   }
 
   // Without Basic, the entry is the only place their details are asked for.
-  const entrant = email && !hasBasic ? parseEntrant(body.entrant) : null
+  const entrant = email && !hasBasic ? parseEntrant(body.entrant, { optional: true }) : null
   if (entrant) Object.assign(fieldErrors, entrant.errors)
 
   if (Object.keys(fieldErrors).length) {
@@ -686,7 +694,9 @@ desk.post('/admin/desk/events', async (c) => {
   } else if (existing && entrant) {
     statements.push(
       c.env.DB.prepare(
-        `UPDATE registrations SET name = ?, phone = ?, college = ?, updated_at = datetime('now')
+        `UPDATE registrations
+            SET name = COALESCE(NULLIF(?, ''), name), phone = COALESCE(NULLIF(?, ''), phone),
+                college = COALESCE(NULLIF(?, ''), college), updated_at = datetime('now')
           WHERE id = ? AND status != 'confirmed'`,
       ).bind(entrant.value.name, entrant.value.phone, entrant.value.college, registrationId),
     )
@@ -813,7 +823,7 @@ desk.post('/admin/desk/accommodation', async (c) => {
   }
 
   const lookupEmail = String(body.lookupEmail ?? '').trim().toLowerCase()
-  const { errors, value } = validateAccommodation(body)
+  const { errors, value } = validateAccommodation(body, { optional: true })
   const { method, reference, errors: paymentErrors } = paymentDetails(body)
   const fieldErrors: Record<string, string> = { ...errors, ...paymentErrors }
   if (!lookupEmail) fieldErrors.lookupEmail = 'Their registered email address.'
@@ -902,7 +912,7 @@ desk.post('/admin/desk/accommodation', async (c) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'confirmed')`,
     ).bind(
       bookingId, code, existing.id, stay.room.gender, stay.room.sharing, stay.room.ac ? 1 : 0,
-      stay.days, arrivalDate, value.arrivalTime || null, value.name, value.email, value.phone,
+      stay.days, arrivalDate, value.arrivalTime || null, value.name, value.email || lookupEmail, value.phone,
       value.college, value.course, stay.ratePaise, amountPaise,
     ),
     // `kind = 'desk'` keeps it on the counter's tabs and out of the Razorpay

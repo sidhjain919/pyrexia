@@ -808,7 +808,7 @@ export const api = {
     emergencyPhone: string
     products: string[]
     /** What was actually taken. May be under the list price; never over it. */
-    amountRupees: number
+    amountRupees?: number
     paymentMethod: 'cash' | 'upi'
     paymentReference: string
   }) =>
@@ -855,7 +855,7 @@ export const api = {
   deskUpgrade: (payload: {
     email: string
     /** What was actually taken. May be under the list price; never over it. */
-    amountRupees: number
+    amountRupees?: number
     paymentMethod: 'cash' | 'upi'
     paymentReference: string
   }) =>
@@ -920,7 +920,7 @@ export const api = {
     college: string
     course: string
     rulesAccepted: boolean
-    amountRupees: number
+    amountRupees?: number
     paymentMethod: 'cash' | 'upi'
     paymentReference: string
   }) =>

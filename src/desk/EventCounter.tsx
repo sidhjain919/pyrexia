@@ -130,7 +130,9 @@ export default function EventCounter() {
     }
   }
 
-  const headCount = asTeam ? members.filter((m) => m.name.trim().length > 1).length + 1 : 1
+  // Every row counts at the desk, named or not: names may be skipped, the
+  // team size may not.
+  const headCount = asTeam ? members.length + 1 : 1
   const fee = info?.fee ?? null
   const picked = useMemo(() => fee?.variants.find((v) => v.id === variant) ?? null, [fee, variant])
   const listPaise = picked ? (picked.perHead ? picked.amountPaise * headCount : picked.amountPaise) : 0
@@ -161,17 +163,24 @@ export default function EventCounter() {
         participation: asTeam ? 'team' : 'solo',
         teamName: asTeam ? teamName.trim() : undefined,
         feeVariant: variant ?? undefined,
+        // An unnamed row is sent as "Team-mate 2" and so on, so it still counts
+        // towards the team size and the sheet shows a place to fill in later.
         members: asTeam
-          ? members
-              .map((m) => ({ name: m.name.trim(), phone: m.phone.trim() }))
-              .filter((m) => m.name.length > 1)
+          ? members.map((m, i) => ({
+              name: m.name.trim().length > 1 ? m.name.trim() : `Team-mate ${i + 2}`,
+              phone: m.phone.trim(),
+            }))
           : undefined,
         answers,
         entrant: needsEntrant
           ? { name: entrant.name.trim(), phone: entrant.phone.trim(), college: entrant.college.trim() }
           : undefined,
         ...(fee
-          ? { amountRupees: Number(amount), paymentMethod: method, paymentReference: reference.trim() }
+          ? {
+              amountRupees: amount === '' ? undefined : Number(amount),
+              paymentMethod: method,
+              paymentReference: reference.trim(),
+            }
           : {}),
       })
       // The confirmation replaces a long form; on a phone the agent is
@@ -303,7 +312,6 @@ export default function EventCounter() {
             <div className="mt-3 max-w-md">
               <Field
                 label="Their email"
-                required
                 error={errors.email}
                 hint="Look them up before taking the money. The confirmation goes here."
               >
@@ -365,7 +373,7 @@ export default function EventCounter() {
                       : 'New to us. This event doesn\'t need Basic Registration, so a record is made from these.'}
                   </p>
                   <div className="sm:col-span-2">
-                    <Field label="Full name" required error={errors.entrantName}>
+                    <Field label="Full name" error={errors.entrantName}>
                       <TextInput
                         value={entrant.name}
                         onChange={(v) => setEntrant((e) => ({ ...e, name: v }))}
@@ -374,7 +382,7 @@ export default function EventCounter() {
                       />
                     </Field>
                   </div>
-                  <Field label="Mobile" required error={errors.entrantPhone}>
+                  <Field label="Mobile" error={errors.entrantPhone}>
                     <TextInput
                       value={entrant.phone}
                       onChange={(v) => setEntrant((e) => ({ ...e, phone: v }))}
@@ -383,7 +391,7 @@ export default function EventCounter() {
                       maxLength={15}
                     />
                   </Field>
-                  <Field label="College" required error={errors.entrantCollege}>
+                  <Field label="College" error={errors.entrantCollege}>
                     <TextInput
                       value={entrant.college}
                       onChange={(v) => setEntrant((e) => ({ ...e, college: v }))}
@@ -401,7 +409,7 @@ export default function EventCounter() {
             <Legend n="4" label="The entry" />
             <div className="mt-3 max-w-xl space-y-5">
               {fee && fee.variants.length > 1 && (
-                <Field label="Category" required error={errors.feeVariant}>
+                <Field label="Category" error={errors.feeVariant}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {fee.variants.map((v) => (
                       <Choice key={v.id} on={variant === v.id} onClick={() => setVariant(v.id)}>
@@ -419,7 +427,7 @@ export default function EventCounter() {
               )}
 
               {info.form.allowsTeam && !info.form.requiresTeam && (
-                <Field label="Entering as" required>
+                <Field label="Entering as">
                   <div className="grid grid-cols-2 gap-2">
                     <Choice on={!asTeam} onClick={() => setAsTeam(false)}>Solo</Choice>
                     <Choice
@@ -437,12 +445,11 @@ export default function EventCounter() {
 
               {asTeam && (
                 <>
-                  <Field label="Team name" required error={errors.teamName}>
+                  <Field label="Team name" error={errors.teamName}>
                     <TextInput value={teamName} onChange={setTeamName} invalid={!!errors.teamName} maxLength={120} />
                   </Field>
                   <Field
                     label="The rest of the team"
-                    required
                     error={errors.members}
                     hint={`The person paying is counted already. ${min}–${max} people in total.`}
                   >
@@ -497,7 +504,7 @@ export default function EventCounter() {
               )}
 
               {info.form.fields.map((f) => (
-                <Field key={f.id} label={f.label} required={f.required} error={errors[f.id]} hint={f.help}>
+                <Field key={f.id} label={f.label} error={errors[f.id]} hint={f.help}>
                   {f.type === 'textarea' ? (
                     <TextArea
                       value={answers[f.id] ?? ''}
@@ -535,11 +542,10 @@ export default function EventCounter() {
               <div className="mt-3 max-w-md space-y-3">
                 <Field
                   label="Amount collected (₹)"
-                  required
                   error={errors.amountRupees}
                   hint={
                     picked
-                      ? `List price is ${rupees(listPaise)}${picked.perHead ? ` (${rupees(picked.amountPaise)} × ${headCount})` : ''}. Enter less if you gave a discount.`
+                      ? `Leave blank if they paid the full ${rupees(listPaise)}${picked.perHead ? ` (${rupees(picked.amountPaise)} × ${headCount})` : ''}. Enter less if you gave a discount.`
                       : 'Pick the category first.'
                   }
                 >
@@ -564,9 +570,8 @@ export default function EventCounter() {
                 </div>
                 <Field
                   label={method === 'upi' ? 'UPI reference' : 'Receipt number'}
-                  required
                   error={errors.paymentReference}
-                  hint="This is what lets the treasurer match the entry to the money later."
+                  hint="Optional, but it is what lets the treasurer match the entry to the money later."
                 >
                   <TextInput
                     value={reference}

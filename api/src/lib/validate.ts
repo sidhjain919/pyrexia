@@ -85,13 +85,28 @@ export function suggestEmailFix(email: string): string | null {
   return fixed ? `${email.slice(0, at)}@${fixed}` : null
 }
 
-export function validateRegistration(body: unknown): {
+/**
+ * How strictly to read a form.
+ *
+ * `optional` is the desk's mode: every detail may be left blank, because a
+ * queue at a counter moves faster than a form, but anything that *is* typed is
+ * still held to the same format. The email is never optional: it is who the
+ * person is in this schema, and where their pass and receipts go.
+ */
+export type Strictness = { optional?: boolean }
+
+export function validateRegistration(
+  body: unknown,
+  { optional = false }: Strictness = {},
+): {
   ok: boolean
   errors: FieldErrors
   value: RegistrationInput
 } {
   const b = (body ?? {}) as Record<string, unknown>
   const errors: FieldErrors = {}
+  /** Whether to check this value: always online, only when given at the desk. */
+  const check = (v: string) => !optional || v !== ''
 
   const value: RegistrationInput = {
     name: str(b.name),
@@ -106,28 +121,32 @@ export function validateRegistration(body: unknown): {
     emergencyPhone: normalisePhone(str(b.emergencyPhone)),
   }
 
-  if (value.name.length < 2) errors.name = 'Tell us your name.'
+  if (check(value.name) && value.name.length < 2) errors.name = 'Tell us your name.'
   if (value.name.length > 120) errors.name = 'That name is too long.'
 
   if (!EMAIL_RE.test(value.email)) errors.email = 'A valid email keeps you on the manifest.'
   if (value.email.length > 200) errors.email = 'That email is too long.'
 
-  if (!PHONE_RE.test(value.phone)) errors.phone = 'A 10-digit Indian mobile number.'
+  if (check(value.phone) && !PHONE_RE.test(value.phone)) errors.phone = 'A 10-digit Indian mobile number.'
 
   if (value.gender && !GENDERS.includes(value.gender as (typeof GENDERS)[number])) {
     errors.gender = 'Pick one of the listed options.'
   }
 
-  if (value.college.length < 2) errors.college = 'Which port do you sail from?'
-  if (value.city.length < 2) errors.city = 'Your city.'
-  if (value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
+  if (check(value.college) && value.college.length < 2) errors.college = 'Which port do you sail from?'
+  if (check(value.city) && value.city.length < 2) errors.city = 'Your city.'
+  if (check(value.course) && value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
 
-  if (!YEARS.includes(value.year as (typeof YEARS)[number])) {
+  if (check(value.year) && !YEARS.includes(value.year as (typeof YEARS)[number])) {
     errors.year = 'Pick your year of study.'
   }
 
-  if (value.emergencyName.length < 2) errors.emergencyName = 'An emergency contact name.'
-  if (!PHONE_RE.test(value.emergencyPhone)) errors.emergencyPhone = 'A 10-digit number.'
+  if (check(value.emergencyName) && value.emergencyName.length < 2) {
+    errors.emergencyName = 'An emergency contact name.'
+  }
+  if (check(value.emergencyPhone) && !PHONE_RE.test(value.emergencyPhone)) {
+    errors.emergencyPhone = 'A 10-digit number.'
+  }
 
   // An emergency contact who is also you is not an emergency contact.
   if (value.emergencyPhone && value.emergencyPhone === value.phone) {
@@ -168,13 +187,17 @@ export type AccommodationContact = {
  * is the point: the number somebody carries at a fest is frequently not the
  * one they signed up with, and the desk needs the one that will be answered.
  */
-export function validateAccommodation(body: unknown): {
+export function validateAccommodation(
+  body: unknown,
+  { optional = false }: Strictness = {},
+): {
   ok: boolean
   errors: FieldErrors
   value: AccommodationContact
 } {
   const b = (body ?? {}) as Record<string, unknown>
   const errors: FieldErrors = {}
+  const check = (v: string) => !optional || v !== ''
 
   const value: AccommodationContact = {
     name: str(b.name),
@@ -186,17 +209,17 @@ export function validateAccommodation(body: unknown): {
     rulesAccepted: b.rulesAccepted === true,
   }
 
-  if (value.name.length < 2) errors.name = 'Tell us your name.'
+  if (check(value.name) && value.name.length < 2) errors.name = 'Tell us your name.'
   if (value.name.length > 120) errors.name = 'That name is too long.'
 
-  if (!EMAIL_RE.test(value.email)) errors.email = 'The receipt has to reach you somewhere.'
+  if (check(value.email) && !EMAIL_RE.test(value.email)) errors.email = 'The receipt has to reach you somewhere.'
   if (value.email.length > 200) errors.email = 'That email is too long.'
 
   // The number the desk rings when somebody has not turned up by midnight.
-  if (!PHONE_RE.test(value.phone)) errors.phone = 'A 10-digit Indian mobile number.'
+  if (check(value.phone) && !PHONE_RE.test(value.phone)) errors.phone = 'A 10-digit Indian mobile number.'
 
-  if (value.college.length < 2) errors.college = 'Which port do you sail from?'
-  if (value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
+  if (check(value.college) && value.college.length < 2) errors.college = 'Which port do you sail from?'
+  if (check(value.course) && value.course.length < 2) errors.course = 'e.g. MBBS, BSc Nursing.'
 
   // Refused rather than defaulted. The terms behind it have teeth: a
   // cancellation is not refunded, and damage is charged against the deposit.

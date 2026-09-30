@@ -56,7 +56,16 @@ export type ParsedEntry = {
   fieldErrors: Record<string, string>
 }
 
-export function parseEntry(resolved: ResolvedEvent, body: Record<string, unknown>): ParsedEntry {
+/**
+ * `optional` is the desk's mode: the event's own questions and the team name
+ * may be left blank. The rules that decide whether the entry is allowed at
+ * all (team size, a team event entered as a team, a price band) still apply.
+ */
+export function parseEntry(
+  resolved: ResolvedEvent,
+  body: Record<string, unknown>,
+  { optional = false }: { optional?: boolean } = {},
+): ParsedEntry {
   const asTeam = body.participation === 'team'
   const teamName = String(body.teamName ?? '').trim().slice(0, 120)
   const answers = (body.answers ?? {}) as Record<string, unknown>
@@ -67,7 +76,7 @@ export function parseEntry(resolved: ResolvedEvent, body: Record<string, unknown
   const fieldErrors: Record<string, string> = {}
   for (const field of resolved.form.fields) {
     const value = String(answers[field.id] ?? '').trim()
-    if (field.required && !value) fieldErrors[field.id] = 'Required.'
+    if (field.required && !value && !optional) fieldErrors[field.id] = 'Required.'
     if (value.length > 1000) fieldErrors[field.id] = 'That answer is too long.'
   }
 
@@ -76,7 +85,7 @@ export function parseEntry(resolved: ResolvedEvent, body: Record<string, unknown
   }
 
   if (asTeam) {
-    if (teamName.length < 2) fieldErrors.teamName = 'Give your crew a name.'
+    if (teamName.length < 2 && !(optional && !teamName)) fieldErrors.teamName = 'Give your crew a name.'
 
     const size = resolved.form.teamSize
     if (size) {
@@ -118,7 +127,10 @@ export function parseEntry(resolved: ResolvedEvent, body: Record<string, unknown
  */
 export type Entrant = { name: string; phone: string; college: string }
 
-export function parseEntrant(raw: unknown): { value: Entrant; errors: Record<string, string> } {
+export function parseEntrant(
+  raw: unknown,
+  { optional = false }: { optional?: boolean } = {},
+): { value: Entrant; errors: Record<string, string> } {
   const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const value: Entrant = {
     name: String(p.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 120),
@@ -127,9 +139,11 @@ export function parseEntrant(raw: unknown): { value: Entrant; errors: Record<str
   }
 
   const errors: Record<string, string> = {}
-  if (value.name.length < 2) errors.entrantName = 'Your full name.'
-  if (!/^[6-9]\d{9}$/.test(value.phone)) errors.entrantPhone = 'A 10-digit mobile number.'
-  if (value.college.length < 2) errors.entrantCollege = 'Your college or institution.'
+  // At the desk each may be skipped; whatever is typed is still checked.
+  const check = (v: string) => !optional || v !== ''
+  if (check(value.name) && value.name.length < 2) errors.entrantName = 'Your full name.'
+  if (check(value.phone) && !/^[6-9]\d{9}$/.test(value.phone)) errors.entrantPhone = 'A 10-digit mobile number.'
+  if (check(value.college) && value.college.length < 2) errors.entrantCollege = 'Your college or institution.'
 
   return { value, errors }
 }

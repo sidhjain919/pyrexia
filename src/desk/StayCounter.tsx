@@ -119,7 +119,7 @@ export default function StayCounter() {
   const canBook = !!found && found.found && found.hasBasic
 
   const ready =
-    !!card?.open && canBook && !!room && !!days && !!arrivalDate && rulesRead && amount !== ''
+    !!card?.open && canBook && !!room && !!days && !!arrivalDate && rulesRead
 
   const submit = async () => {
     if (!room || !days) return
@@ -139,7 +139,7 @@ export default function StayCounter() {
         college: contact.college.trim(),
         course: contact.course.trim(),
         rulesAccepted: rulesRead,
-        amountRupees: Number(amount),
+        amountRupees: amount === '' ? undefined : Number(amount),
         paymentMethod: method,
         paymentReference: reference.trim(),
       })
@@ -250,7 +250,6 @@ export default function StayCounter() {
         <div className="mt-3 max-w-md">
           <Field
             label="Their email"
-            required
             error={errors.lookupEmail}
             hint="The address they registered with. A bed needs Basic Registration."
           >
@@ -318,7 +317,7 @@ export default function StayCounter() {
               </div>
 
               {gender && (
-                <Field label="Room" required error={errors.roomTypeId}>
+                <Field label="Room" error={errors.roomTypeId}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {rooms.map((r) => (
                       <Choice key={r.id} on={roomTypeId === r.id} onClick={() => setRoomTypeId(r.id)}>
@@ -333,7 +332,7 @@ export default function StayCounter() {
               )}
 
               {card.allowedDays.length > 1 && (
-                <Field label="How long" required error={errors.days}>
+                <Field label="How long" error={errors.days}>
                   <div className="flex flex-wrap gap-2">
                     {card.allowedDays.map((d) => (
                       <Choice key={d} on={days === d} onClick={() => setDays(d)}>
@@ -345,7 +344,7 @@ export default function StayCounter() {
               )}
 
               {arrivals.length > 1 && (
-                <Field label="Arriving" required error={errors.arrivalDate}>
+                <Field label="Arriving" error={errors.arrivalDate}>
                   <div className="flex flex-wrap gap-2">
                     {arrivals.map((d) => (
                       <Choice key={d} on={arrivalDate === d} onClick={() => setArrivalDate(d)}>
@@ -375,20 +374,20 @@ export default function StayCounter() {
             </p>
             <div className="mt-3 grid max-w-xl gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Field label="Full name" required error={errors.name}>
+                <Field label="Full name" error={errors.name}>
                   <TextInput value={contact.name} onChange={setC('name')} invalid={!!errors.name} maxLength={120} />
                 </Field>
               </div>
-              <Field label="Mobile" required error={errors.phone}>
+              <Field label="Mobile" error={errors.phone}>
                 <TextInput value={contact.phone} onChange={setC('phone')} invalid={!!errors.phone} inputMode="numeric" maxLength={15} />
               </Field>
-              <Field label="Email" required error={errors.email}>
+              <Field label="Email" error={errors.email}>
                 <TextInput value={contact.email} onChange={setC('email')} invalid={!!errors.email} type="email" maxLength={200} />
               </Field>
-              <Field label="College" required error={errors.college}>
+              <Field label="College" error={errors.college}>
                 <TextInput value={contact.college} onChange={setC('college')} invalid={!!errors.college} maxLength={160} />
               </Field>
-              <Field label="Course" required error={errors.course}>
+              <Field label="Course" error={errors.course}>
                 <TextInput value={contact.course} onChange={setC('course')} invalid={!!errors.course} maxLength={160} />
               </Field>
               <div className="sm:col-span-2">
@@ -427,11 +426,10 @@ export default function StayCounter() {
             <div className="mt-3 max-w-md space-y-3">
               <Field
                 label="Amount collected (₹)"
-                required
                 error={errors.amountRupees}
                 hint={
                   room
-                    ? `List price is ${rupees(listPaise)}. Enter less if you gave a discount. The ₹${card.depositRupees} deposit is separate, at check-in.`
+                    ? `Leave blank if they paid the full ${rupees(listPaise)}. Enter less if you gave a discount. The ₹${card.depositRupees} deposit is separate, at check-in.`
                     : 'Pick the room first.'
                 }
               >
@@ -455,9 +453,8 @@ export default function StayCounter() {
               </div>
               <Field
                 label={method === 'upi' ? 'UPI reference' : 'Receipt number'}
-                required
                 error={errors.paymentReference}
-                hint="This is what lets the treasurer match the booking to the money later."
+                hint="Optional, but it is what lets the treasurer match the booking to the money later."
               >
                 <TextInput
                   value={reference}
