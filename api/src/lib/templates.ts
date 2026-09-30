@@ -82,6 +82,16 @@ const button = (href: string, label: string) =>
  */
 const CHANNEL_URL = 'https://whatsapp.com/channel/0029VbCwmsD7Noa8sdKrYm32'
 
+/**
+ * Where a delegate writes back.
+ *
+ * Mail leaves as `no-reply@pyrexiaaiims.com` with this set as Reply-To, so a
+ * reply does reach a human. Nobody believes that when the sender says
+ * no-reply, though, so anything inviting an answer names the address outright
+ * rather than saying "reply to this email".
+ */
+const CREW_EMAIL = 'pyrexia@aiimsrishikesh.edu.in'
+
 const channelBlock = () =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;">
      <tr><td style="border:1px solid ${BRAND.brass}55;border-radius:10px;padding:16px 18px;">
@@ -558,4 +568,86 @@ PYREXIA 2026 · Pirates of the Lost Island
 12-16 October 2026 · AIIMS Rishikesh`
 
   return { subject: `You're entered: ${title}`, html, text }
+}
+
+/* ------------------------------------------------------------------ *
+ * Pass-type correction
+ * ------------------------------------------------------------------ */
+
+/**
+ * Telling somebody we got their pass type wrong.
+ *
+ * A one-off, for the delegates who paid for an event entry before the entry
+ * email existed and were sent "Festival Pass confirmed" instead. Nothing was
+ * actually granted, so the only thing to repair is what they believe.
+ *
+ * It leads with the reassurance because that is the first question a person
+ * has when a fest emails them about money, and it states the error plainly
+ * rather than burying it. It deliberately does not say Basic Registration
+ * "covers every event": it does not, each event charges its own entry, and
+ * one misleading sentence is what put us here.
+ */
+export function passTypeCorrection(args: {
+  name: string
+  publicCode: string
+  passUrl: string
+}) {
+  const first = args.name.split(' ')[0] || args.name
+
+  const html = shell(
+    h1('A correction about your pass') +
+      p(
+        `Hello ${esc(first)}. Because of a technical glitch on our side, you were sent an email ` +
+          `saying your Festival Pass was confirmed. That email was sent in error, and we are ` +
+          `sorry for the confusion.`,
+      ) +
+      p(
+        `<strong style="color:${BRAND.parchment};">Your event entry and your payment are ` +
+          `unaffected.</strong> Everything you have entered and paid for stands, exactly as it was.`,
+      ) +
+      p(
+        `What the email got wrong was your pass type. You hold ` +
+          `<strong style="color:${BRAND.parchment};">Basic Registration</strong>, the campus entry ` +
+          `every delegate needs. You do not hold the Festival Pass, which adds access to the full ` +
+          `programme across the island, the pro nights included.`,
+      ) +
+      codeBox('Your registration number, unchanged', args.publicCode) +
+      p(
+        'If you would like the Festival Pass, you can add it any time from your pass page. If you ' +
+          `believe you already paid for one, write to <a href="mailto:${CREW_EMAIL}" ` +
+          `style="color:${BRAND.brassBright};">${CREW_EMAIL}</a> and we will check it properly.`,
+      ) +
+      button(args.passUrl, 'View my pass') +
+      p('Nothing has been charged twice, and there is nothing you need to do.'),
+    `A correction about your pass · ${args.publicCode}`,
+  )
+
+  const text = `A correction about your pass
+
+Hello ${first}. Because of a technical glitch on our side, you were sent an email
+saying your Festival Pass was confirmed. That email was sent in error, and we are
+sorry for the confusion.
+
+YOUR EVENT ENTRY AND YOUR PAYMENT ARE UNAFFECTED. Everything you have entered
+and paid for stands, exactly as it was.
+
+What the email got wrong was your pass type. You hold Basic Registration, the
+campus entry every delegate needs. You do not hold the Festival Pass, which adds
+access to the full programme across the island, the pro nights included.
+
+Your registration number, unchanged: ${args.publicCode}
+
+If you would like the Festival Pass, you can add it any time from your pass
+page. If you believe you already paid for one, write to ${CREW_EMAIL} and we
+will check it properly.
+
+View your pass:
+${args.passUrl}
+
+Nothing has been charged twice, and there is nothing you need to do.
+
+PYREXIA 2026 · Pirates of the Lost Island
+12-16 October 2026 · AIIMS Rishikesh`
+
+  return { subject: `A correction about your pass: ${args.publicCode}`, html, text }
 }

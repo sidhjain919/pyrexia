@@ -67,6 +67,7 @@ export type Job =
   | { kind: 'email.payment_failed'; registrationId: string; orderId: string }
   | { kind: 'email.accommodation_confirmed'; registrationId: string; bookingId: string }
   | { kind: 'email.event_entered'; registrationId: string; entryId: string }
+  | { kind: 'email.pass_correction'; registrationId: string }
   | { kind: 'pass.render_pdf'; passId: string }
   | { kind: 'sheets.sync'; eventName: string }
 

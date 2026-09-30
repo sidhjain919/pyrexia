@@ -201,6 +201,26 @@ export async function handleJob(env: Env, job: Job): Promise<void> {
       return
     }
 
+    case 'email.pass_correction': {
+      const row = await env.DB.prepare(
+        'SELECT name, email, public_code FROM registrations WHERE id = ?',
+      )
+        .bind(job.registrationId)
+        .first<{ name: string; email: string; public_code: string }>()
+
+      if (!row) return
+
+      const passUrl = await deepLink(env, job.registrationId, '/pass')
+      const message = templates.passTypeCorrection({
+        name: row.name,
+        publicCode: row.public_code,
+        passUrl,
+      })
+
+      await deliver(env, send, row.email, row.name, message)
+      return
+    }
+
     case 'email.sign_in_link': {
       const row = await env.DB.prepare('SELECT name, email FROM registrations WHERE id = ?')
         .bind(job.registrationId)
