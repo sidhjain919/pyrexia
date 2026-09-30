@@ -98,7 +98,9 @@ const tierName = (tier: unknown) => (tier === 1 ? 'Festival Pass' : 'Basic')
 
 /** "basic,delegate" → "Basic + Festival Pass". */
 function bought(products: unknown, kind: unknown, eventName: unknown): string {
-  if (kind === 'event') return `Event entry: ${String(eventName ?? '')}`
+  // An event entry taken at the desk is a `desk` order that points at an
+  // entry, so the event name is what tells it apart from a registration.
+  if (kind === 'event' || (kind === 'desk' && eventName)) return `Event entry: ${String(eventName ?? '')}`
   // Without this an accommodation order printed a blank cell: it has no line
   // items, so there are no product ids below to name it by.
   if (kind === 'accommodation') return 'Accommodation'
@@ -157,7 +159,8 @@ exports_.get('/admin/export/registrations', async (c) => {
     `SELECT r.public_code, r.name, r.email, r.phone, r.college, r.city, r.course, r.year,
             t.tier, o.id AS order_id, o.amount_paise, o.discount_paise, o.method,
             o.collected_by, o.payment_reference, o.paid_at,
-            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items
+            (SELECT group_concat(product_id) FROM order_items i WHERE i.order_id = o.id) AS items,
+            (SELECT ev.event_name FROM event_entries ev WHERE ev.id = o.event_entry_id) AS event_name
        FROM orders o
        JOIN registrations r ON r.id = o.registration_id
        JOIN registration_tier t ON t.registration_id = r.id
@@ -200,7 +203,7 @@ exports_.get('/admin/export/registrations', async (c) => {
          'Method', 'Collected by', 'Payment reference', 'Taken at', 'Order'],
         desk.map((r) => [
           r.public_code, r.name, r.email, r.phone, r.college, r.city, r.course, r.year,
-          tierName(r.tier), bought(r.items, 'desk', null),
+          tierName(r.tier), bought(r.items, 'desk', r.event_name),
           rupees(r.amount_paise), rupees(r.discount_paise),
           r.method, r.collected_by ?? '', r.payment_reference ?? '', r.paid_at, r.order_id,
         ] as Cell[]),

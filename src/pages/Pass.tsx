@@ -195,8 +195,12 @@ export default function Pass() {
               You haven't registered for the fest yet
             </p>
             <p className="mx-auto mt-2 max-w-sm text-[0.88rem] leading-relaxed text-parchment/70">
-              Having an account isn't the same as being registered. Basic Registration is ₹500, it's
-              compulsory for everyone, and it covers every event.
+              {/* Badminton waives Basic, so somebody can hold an entry without
+                  it. Telling them it is compulsory would read as if that entry
+                  didn't count. */}
+              {me.entries.length > 0
+                ? "Your entries are listed below and they stand. Every other event needs Basic Registration: it's ₹500 and covers all of them."
+                : "Having an account isn't the same as being registered. Basic Registration is ₹500, it's compulsory for everyone, and it covers every event."}
             </p>
             <button
               onClick={() => openRegister()}

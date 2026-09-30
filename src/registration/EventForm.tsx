@@ -15,7 +15,14 @@ import {
   Users,
 } from 'lucide-react'
 
-import { ApiError, api, waitForConfirmation, type EventInfo, type TeamMemberInput } from '../api/client'
+import {
+  ApiError,
+  api,
+  waitForConfirmation,
+  type EntrantInput,
+  type EventInfo,
+  type TeamMemberInput,
+} from '../api/client'
 import { openCheckout, PaymentCancelled } from './razorpay'
 import { Field, Select, TextArea, TextInput } from './fields'
 import { CONVENIENCE_NOTE } from '../data/registration'
@@ -32,6 +39,8 @@ import { asset } from '../lib/asset'
  *   not signed in     → what the event asks for, and a way in. Never a form
  *                       they would fill and then lose.
  *   signed in, unpaid → told Basic Registration comes first, with the button.
+ *                       Except Badminton, which waives it: they get the form,
+ *                       with their name, mobile and college asked at the top.
  *   signed in, paid   → the actual form.
  *
  * Showing the form to someone who can't submit it is the mistake worth avoiding
@@ -66,6 +75,8 @@ export default function EventForm({
   /** Which price band applies, for events that charge different people differently. */
   const [variant, setVariant] = useState<string | null>(null)
   const [paying, setPaying] = useState<string | null>(null)
+  /** Who is playing, when there is no Basic Registration to say so. */
+  const [entrant, setEntrant] = useState<EntrantInput>({ name: '', phone: '', college: '' })
 
   const detail = detailFor(eventName)
 
@@ -76,6 +87,7 @@ export default function EventForm({
       .then((e) => {
         if (!alive) return
         setInfo(e)
+        if (e.entrant) setEntrant(e.entrant)
         setAsTeam(e.form.requiresTeam)
         // One band means there is nothing to choose; don't make them choose it.
         if (e.fee?.variants.length === 1) setVariant(e.fee.variants[0].id)
@@ -135,6 +147,9 @@ export default function EventForm({
           : undefined,
         feeVariant: variant ?? undefined,
         answers,
+        entrant: info.entrant
+          ? { name: entrant.name.trim(), phone: entrant.phone.trim(), college: entrant.college.trim() }
+          : undefined,
       })
 
       if (!res.checkout) {
@@ -290,9 +305,11 @@ export default function EventForm({
             <div>
               <div className="font-display text-[0.95rem] text-offwhite">Sign in to enter</div>
               <p className="mt-1 text-[0.84rem] leading-relaxed text-parchment/70">
-                {fee
-                  ? 'Your Basic Registration covers being on the island; this event charges its own entry fee on top, paid here.'
-                  : 'Entering an event costs nothing extra: your Basic Registration already covers it.'}{' '}
+                {!info.requiresBasic
+                  ? `${info.name} doesn't need Basic Registration: an account and the entry fee are all it takes.`
+                  : fee
+                    ? 'Your Basic Registration covers being on the island; this event charges its own entry fee on top, paid here.'
+                    : 'Entering an event costs nothing extra: your Basic Registration already covers it.'}{' '}
                 We just need to know who you are.
               </p>
             </div>
@@ -303,15 +320,26 @@ export default function EventForm({
               href={`${import.meta.env.BASE_URL}sign-in`}
               className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-abyss"
             >
-              <LogIn size={14} /> I've registered, sign me in
+              <LogIn size={14} /> {info.requiresBasic ? "I've registered, sign me in" : 'I have an account, sign me in'}
             </a>
-            <button
-              type="button"
-              onClick={onNeedRegistration}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
-            >
-              <Ticket size={14} /> I'm new here
-            </button>
+            {info.requiresBasic ? (
+              <button
+                type="button"
+                onClick={onNeedRegistration}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
+              >
+                <Ticket size={14} /> I'm new here
+              </button>
+            ) : (
+              // No Basic Registration to send them to: an account is all this
+              // one needs, and signing up ends with a code, then a sign-in.
+              <a
+                href={`${import.meta.env.BASE_URL}sign-in?new=1`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 font-log text-[0.68rem] uppercase tracking-wide2 text-gold-bright ring-1 ring-inset ring-gold/55 transition-colors hover:bg-gold/10"
+              >
+                <Ticket size={14} /> Create an account
+              </a>
+            )}
           </div>
         </div>
         {rulesBlock}
@@ -382,6 +410,42 @@ export default function EventForm({
       )}
 
       <div className="space-y-5">
+        {info.entrant && (
+          <div className="grid gap-3 rounded-lg border border-gold/25 bg-ocean/40 p-4 sm:grid-cols-2">
+            <p className="text-[0.82rem] leading-relaxed text-parchment/70 sm:col-span-2">
+              {info.name} doesn't need Basic Registration, so tell us who's playing. This is what the
+              organisers see on their list.
+            </p>
+            <div className="sm:col-span-2">
+              <Field label="Your full name" required error={errors.entrantName}>
+                <TextInput
+                  value={entrant.name}
+                  onChange={(v) => setEntrant((e) => ({ ...e, name: v }))}
+                  invalid={!!errors.entrantName}
+                  maxLength={120}
+                />
+              </Field>
+            </div>
+            <Field label="Mobile" required error={errors.entrantPhone}>
+              <TextInput
+                value={entrant.phone}
+                onChange={(v) => setEntrant((e) => ({ ...e, phone: v }))}
+                invalid={!!errors.entrantPhone}
+                inputMode="numeric"
+                maxLength={15}
+              />
+            </Field>
+            <Field label="College" required error={errors.entrantCollege}>
+              <TextInput
+                value={entrant.college}
+                onChange={(v) => setEntrant((e) => ({ ...e, college: v }))}
+                invalid={!!errors.entrantCollege}
+                maxLength={160}
+              />
+            </Field>
+          </div>
+        )}
+
         {info.form.allowsTeam && !info.form.requiresTeam && (
           <Field label="Entering as" required>
             <div className="flex gap-2">
@@ -482,10 +546,12 @@ export default function EventForm({
               <Users size={17} className="mt-0.5 shrink-0 text-gold-bright" />
               <p className="text-[0.82rem] leading-relaxed text-parchment/75">
                 You are registering the whole crew: only one of you needs to do this, and there is
-                nothing for the others to accept.{' '}
-                <span className="text-parchment/50">
-                  Everyone still needs their own ₹500 Basic Registration to be on campus.
-                </span>
+                nothing for the others to accept.
+                {info.requiresBasic && (
+                  <span className="text-parchment/50">
+                    {' '}Everyone still needs their own ₹500 Basic Registration to be on campus.
+                  </span>
+                )}
               </p>
             </div>
           </>

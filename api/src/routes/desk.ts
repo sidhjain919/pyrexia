@@ -5,6 +5,8 @@
  *   POST /api/admin/desk/registrations   take a registration, paid in person
  *   POST /api/admin/desk/upgrades        sell the Festival Pass to somebody
  *                                        who already holds Basic
+ *   POST /api/admin/desk/events          enter somebody for an event and take
+ *                                        its fee
  *
  * This is the only path in the system that turns a person into a paid
  * delegate without money passing through Razorpay, which makes it the highest
@@ -36,11 +38,16 @@ import { Hono } from 'hono'
 
 import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
-import { newId, newOrderId, newPublicCode } from '../lib/ids.ts'
+import { newEntryId, newId, newOrderId, newPublicCode } from '../lib/ids.ts'
 import { loadProducts, ownedProducts, quote } from '../lib/pricing.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import { validateRegistration } from '../lib/validate.ts'
 import { issuePassIfNeeded } from '../lib/grant.ts'
+import { parseEntrant, parseEntry } from '../lib/entry.ts'
+import { resolveEvent } from '../data/events.ts'
+import { feeFor } from '../data/fees.ts'
+import { isEventOpen } from '../data/openings.ts'
+import { requestSheetSync } from '../jobs/sheets.ts'
 import * as audit from '../lib/audit.ts'
 
 export const desk = new Hono<{ Bindings: Env; Variables: { agent: Agent } }>()
@@ -522,6 +529,235 @@ desk.post('/admin/desk/upgrades', async (c) => {
       amountPaise,
       discountPaise,
       products: priced.quote.lines.map((l) => ({ id: l.productId, name: l.name })),
+    },
+    201,
+  )
+})
+
+/* ------------------------------------------------------------------ *
+ * An event entry, taken in person
+ * ------------------------------------------------------------------ */
+
+/**
+ * Enter somebody for an event and take its fee at the counter.
+ *
+ * The same entry the event card makes online, held to the same rules by the
+ * same parser: required answers, team-size bounds, one place per band, and the
+ * event's own open switch. The only difference is how the fee arrives, and
+ * that is recorded exactly as the other two counters record it.
+ *
+ * The person is named by address. They must already be registered, with Basic
+ * Registration paid, unless the event waives it (Badminton). Somebody new to
+ * such an event is created here from a name, a mobile and a college, with no
+ * password, the same way the registration counter creates people.
+ *
+ * A free event takes no money and asks for no payment details: the entry is
+ * written and that is all. There is no desk order for a transaction that
+ * never happened.
+ */
+desk.post('/admin/desk/events', async (c) => {
+  const agent = c.get('agent')
+  const body = (await readJson(c)) as Record<string, unknown>
+
+  const email = String(body.email ?? '').trim().toLowerCase()
+  const eventName = String(body.eventName ?? '').trim()
+
+  const resolved = resolveEvent(eventName)
+  if (!resolved) throw new ApiError('not_found', "That event isn't on the chart.")
+
+  if (resolved.externalForm) {
+    throw new ApiError(
+      'forbidden',
+      `${resolved.name} takes its entries on its own form, so the desk cannot enter anyone for it.`,
+    )
+  }
+
+  // A shut event is usually a full one. The desk is not a way past that: open
+  // it on the switchboard first if the committee wants more entries.
+  if (!(await isEventOpen(c.env, resolved.name))) {
+    throw new ApiError(
+      'forbidden',
+      `Entries for ${resolved.name} are closed. Open it on the admin switchboard first if it should take more.`,
+    )
+  }
+
+  const entry = parseEntry(resolved, body)
+  /** Worth naming the band only when the event runs more than one. */
+  const band = entry.priced && (feeFor(resolved.name)?.variants.length ?? 0) > 1 ? entry.priced.label : null
+  const fieldErrors: Record<string, string> = { ...entry.fieldErrors }
+  if (!email) fieldErrors.email = 'Their email address.'
+
+  const payment = entry.priced ? paymentDetails(body) : null
+  if (payment) Object.assign(fieldErrors, payment.errors)
+
+  /* ---------- who this is ---------- */
+
+  const existing = email
+    ? await c.env.DB.prepare('SELECT id, public_code, name FROM registrations WHERE lower(email) = ?')
+        .bind(email)
+        .first<{ id: string; public_code: string; name: string }>()
+    : null
+
+  const owned = existing ? await ownedProducts(c.env, existing.id) : new Set<string>()
+  const hasBasic = owned.has('basic')
+
+  if (email && resolved.requiresBasic && !hasBasic) {
+    throw new ApiError(
+      'bad_request',
+      existing
+        ? `${existing.public_code} has not paid for Basic Registration, which ${resolved.name} needs. Take their Basic Registration first.`
+        : `Nobody is registered with ${email}, and ${resolved.name} needs Basic Registration. Take that first, or check the spelling.`,
+      { fields: { email: 'Needs Basic Registration first.' } },
+    )
+  }
+
+  // Without Basic, the entry is the only place their details are asked for.
+  const entrant = email && !hasBasic ? parseEntrant(body.entrant) : null
+  if (entrant) Object.assign(fieldErrors, entrant.errors)
+
+  if (Object.keys(fieldErrors).length) {
+    throw new ApiError('validation_failed', 'Some details need another look.', {
+      fields: fieldErrors,
+    })
+  }
+
+  if (existing) {
+    const already = await c.env.DB.prepare(
+      `SELECT 1 AS ok FROM event_entries
+        WHERE registration_id = ? AND event_name = ?
+          AND COALESCE(fee_variant, 'standard') = ? AND status = 'confirmed'`,
+    )
+      .bind(existing.id, resolved.name, entry.bandId)
+      .first<{ ok: number }>()
+    if (already) {
+      throw new ApiError(
+        'conflict',
+        band
+          ? `${existing.public_code} is already entered for ${resolved.name}, ${band}. Take no money.`
+          : `${existing.public_code} is already entered for ${resolved.name}. Take no money.`,
+      )
+    }
+  }
+
+  /* ---------- what it costs ---------- */
+
+  const listPaise = entry.priced?.amountPaise ?? 0
+  const amountPaise = entry.priced ? amountCollected(body, listPaise) : 0
+  const discountPaise = listPaise - amountPaise
+
+  /* ---------- write it ---------- */
+
+  const registrationId = existing?.id ?? newId()
+  const publicCode = existing?.public_code ?? newPublicCode()
+  const entryId = newEntryId()
+  const orderId = entry.priced ? newOrderId() : null
+
+  const statements: D1PreparedStatement[] = []
+
+  if (!existing && entrant) {
+    // Pending, not confirmed: they hold no registration, only this entry.
+    // Should they buy Basic later, online or here, that flow finds this row
+    // by email and completes it rather than making a second one.
+    statements.push(
+      c.env.DB.prepare(
+        `INSERT INTO registrations
+           (id, public_code, name, email, phone, college, city, course, year,
+            emergency_name, emergency_phone, status, email_verified)
+         VALUES (?, ?, ?, ?, ?, ?, '', '', '', '', '', 'pending', 0)`,
+      ).bind(
+        registrationId, publicCode, entrant.value.name, email, entrant.value.phone,
+        entrant.value.college,
+      ),
+    )
+  } else if (existing && entrant) {
+    statements.push(
+      c.env.DB.prepare(
+        `UPDATE registrations SET name = ?, phone = ?, college = ?, updated_at = datetime('now')
+          WHERE id = ? AND status != 'confirmed'`,
+      ).bind(entrant.value.name, entrant.value.phone, entrant.value.college, registrationId),
+    )
+  }
+
+  // Confirmed from the start: the money is already in the drawer. The fee on
+  // the entry is what was taken, so the confirmation email's "we received"
+  // matches the receipt the desk just wrote, discount and all.
+  statements.push(
+    c.env.DB.prepare(
+      `INSERT INTO event_entries
+         (id, registration_id, event_name, territory_code, participation, team_name, answers,
+          members, head_count, fee_paise, fee_variant, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
+    ).bind(
+      entryId, registrationId, resolved.name, resolved.territory.code,
+      entry.asTeam ? 'team' : 'solo', entry.asTeam ? entry.teamName : null,
+      entry.answersJson, entry.membersJson, entry.headCount, amountPaise,
+      entry.priced?.id ?? null,
+    ),
+  )
+
+  if (orderId && payment) {
+    // `kind = 'desk'` keeps it on the counter's tabs of both exports and out
+    // of the Razorpay reconciliation, which only looks at gateway orders.
+    statements.push(
+      c.env.DB.prepare(
+        `INSERT INTO orders (id, registration_id, amount_paise, convenience_paise, discount_paise,
+                             kind, event_entry_id, status, method, collected_by,
+                             payment_reference, paid_at)
+         VALUES (?, ?, ?, 0, ?, 'desk', ?, 'paid', ?, ?, ?, datetime('now'))`,
+      ).bind(
+        orderId, registrationId, amountPaise, discountPaise, entryId,
+        payment.method, agent.email, payment.reference,
+      ),
+    )
+  }
+
+  try {
+    await c.env.DB.batch(statements)
+  } catch (err) {
+    // The one-place-per-band index, or the email index, lost a race.
+    console.error('desk event entry failed', err)
+    throw new ApiError('conflict', 'That entry could not be recorded: it may have just been made elsewhere. Check before taking money again.')
+  }
+
+  await audit.record(c.env, {
+    actorId: agent.id,
+    actorEmail: agent.email,
+    action: 'desk.event',
+    entity: 'event_entry',
+    entityId: entryId,
+    after: {
+      registrationId,
+      publicCode,
+      email,
+      eventName: resolved.name,
+      variant: entry.priced?.id ?? null,
+      headCount: entry.headCount,
+      orderId,
+      listPaise,
+      amountPaise,
+      discountPaise,
+      method: payment?.method ?? null,
+      reference: payment?.reference ?? null,
+      createdPerson: !existing,
+    },
+    ip: clientIp(c),
+  })
+
+  await requestSheetSync(c.env, resolved.name)
+  await c.env.JOBS.send({ kind: 'email.event_entered', registrationId, entryId })
+
+  return c.json(
+    {
+      registrationId,
+      publicCode,
+      entryId,
+      orderId,
+      eventName: resolved.name,
+      band,
+      listPaise,
+      amountPaise,
+      discountPaise,
+      createdPerson: !existing,
     },
     201,
   )

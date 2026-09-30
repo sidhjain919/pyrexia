@@ -401,10 +401,23 @@ const eventOverrides: Record<string, Partial<EventForm>> = {
   'Swift Mingle': { participation: 'solo', teamSize: undefined },
 }
 
+/**
+ * Events somebody may enter without Basic Registration.
+ *
+ * Badminton draws players who come for the tournament and nothing else, and
+ * the committee dropped the ₹500 prerequisite for it. Its own entry fee still
+ * applies. Somebody entering it without Basic has no registration details on
+ * file, so the form asks for a name, a mobile and a college instead: the
+ * sheet the organisers work from would otherwise list them as a blank row.
+ */
+const OPEN_WITHOUT_BASIC: ReadonlySet<string> = new Set(['Badminton'])
+
 export type ResolvedEvent = {
   name: string
   tag: string
   territory: Territory
+  /** False for the few events that do not need Basic Registration first. */
+  requiresBasic: boolean
   form: EventForm
   /** Set when entry is taken on an external form (every Thunderbolt bracket, the Battle of Bands screening). */
   externalForm?: string
@@ -435,6 +448,7 @@ export function resolveEvent(name: string): ResolvedEvent | null {
     name,
     tag: hit.e.tag,
     territory: hit.t,
+    requiresBasic: !OPEN_WITHOUT_BASIC.has(name),
     externalForm: hit.e.form,
     formTitle: hit.e.formTitle,
     formNote: hit.e.formNote,

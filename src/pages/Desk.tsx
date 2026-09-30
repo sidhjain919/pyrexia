@@ -5,6 +5,8 @@ import { AlertCircle, Check, Loader2, ShieldAlert, UserPlus } from 'lucide-react
 import { ApiError, api } from '../api/client'
 import { Field, Select, TextInput } from '../registration/fields'
 import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
+import EventCounter from '../desk/EventCounter'
+import { Choice, Legend } from '../desk/ui'
 
 /**
  * The registration desk.
@@ -44,8 +46,11 @@ type Found = Awaited<ReturnType<typeof api.deskLookup>>
  * `upgrade` is the Festival Pass on its own. It is a different transaction
  * from the other two rather than a variation of one: the person already
  * exists, so nothing is typed about them and nothing about them is changed.
+ *
+ * `event` is an entry for one event, with its own fee. Different enough again
+ * (a form per event, bands, teams) that it lives in its own component.
  */
-type Tier = 'basic' | 'delegate' | 'upgrade'
+type Tier = 'basic' | 'delegate' | 'upgrade' | 'event'
 
 export default function Desk() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
@@ -264,7 +269,7 @@ export default function Desk() {
         {/* What they are buying */}
         <div className="mt-8">
           <Legend n="1" label="What they are paying for" />
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Choice on={tier === 'basic'} onClick={() => setTier('basic')}>
               Basic Registration
             </Choice>
@@ -279,8 +284,22 @@ export default function Desk() {
                 </span>
               </span>
             </Choice>
+            <Choice on={tier === 'event'} onClick={() => setTier('event')}>
+              <span>
+                Event entry
+                <span className="mt-0.5 block text-[0.72rem] text-parchment/50">
+                  Any event, with its fee
+                </span>
+              </span>
+            </Choice>
           </div>
+        </div>
 
+        {tier === 'event' ? (
+          <EventCounter />
+        ) : (
+        <>
+        <div>
           <div className="mt-3 max-w-xs">
             <Field
               label="Amount collected (₹)"
@@ -478,6 +497,8 @@ export default function Desk() {
               : 'Confirm and register'
             : `Confirm ₹${Number(amount)} collected`}
         </button>
+        </>
+        )}
       </div>
     </Shell>
   )
@@ -488,43 +509,5 @@ function Shell({ children }: { children: React.ReactNode }) {
     <section className="mx-auto min-h-[80svh] max-w-5xl px-5 pb-24 pt-[calc(var(--header-h,7rem)+2rem)] sm:px-8">
       {children}
     </section>
-  )
-}
-
-function Legend({ n, label }: { n: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gold/40 font-mono text-[0.62rem] text-gold-bright">
-        {n}
-      </span>
-      <span className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/70">
-        {label}
-      </span>
-    </div>
-  )
-}
-
-function Choice({
-  on,
-  onClick,
-  children,
-}: {
-  on: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      className={`flex min-h-11 items-center rounded-lg px-4 py-2.5 text-left text-[0.88rem] transition-colors ${
-        on
-          ? 'bg-gold/15 text-gold-bright ring-1 ring-inset ring-gold/70'
-          : 'text-parchment/75 ring-1 ring-inset ring-gold/25 hover:text-gold-bright hover:ring-gold/60'
-      }`}
-    >
-      {children}
-    </button>
   )
 }

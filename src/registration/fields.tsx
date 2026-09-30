@@ -35,7 +35,7 @@ export function Field({
   )
 }
 
-const inputBase =
+export const inputBase =
   'w-full rounded-lg border bg-ocean/50 px-3.5 py-2.5 text-[0.92rem] text-offwhite outline-none transition-colors placeholder:text-parchment/30 focus:border-gold/70'
 
 export function TextInput({

@@ -29,6 +29,7 @@ import type { Env } from '../types.ts'
 import { ApiError, readJson } from '../lib/http.ts'
 import { newEntryId, newOrderId } from '../lib/ids.ts'
 import { allowsTeam, requiresTeam, resolveEvent } from '../data/events.ts'
+import { parseEntrant, parseEntry } from '../lib/entry.ts'
 import {
   closedEventNames,
   everOpenedTerritoryIds,
@@ -36,7 +37,7 @@ import {
   listOpenings,
   openTerritoryIds,
 } from '../data/openings.ts'
-import { feeFor, priceEntry } from '../data/fees.ts'
+import { feeFor } from '../data/fees.ts'
 import { conveniencePaise } from '../lib/pricing.ts'
 import { createOrder, razorpayConfig } from '../lib/razorpay.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
@@ -44,33 +45,6 @@ import * as audit from '../lib/audit.ts'
 import { requestSheetSync } from '../jobs/sheets.ts'
 
 export const events = new Hono<{ Bindings: Env }>()
-
-/** A team-mate as the captain listed them. Not an account, just a name to check. */
-type Member = { name: string; phone: string }
-
-/** At most this many people on one entry, whatever the form says. A guard, not a rule. */
-const MAX_MEMBERS = 40
-
-/**
- * Read the squad off the request body.
- *
- * Anything that isn't a usable name is dropped rather than rejected: a captain
- * who left the last two rows of a fifteen-row squad blank meant to, and losing
- * their whole submission over it would be absurd.
- */
-function readMembers(raw: unknown): Member[] {
-  if (!Array.isArray(raw)) return []
-  const out: Member[] = []
-  for (const item of raw.slice(0, MAX_MEMBERS)) {
-    if (!item || typeof item !== 'object') continue
-    const m = item as Record<string, unknown>
-    const name = String(m.name ?? '').trim().slice(0, 120)
-    const phone = String(m.phone ?? '').trim().slice(0, 20)
-    if (name.length < 2) continue
-    out.push({ name, phone })
-  }
-  return out
-}
 
 /**
  * Which territories are taking entries.
@@ -117,6 +91,12 @@ events.get('/events/:name', async (c) => {
   let eligible = false
   /** Bands this person already holds a confirmed place in. */
   let enteredVariants: string[] = []
+  /**
+   * Set when this person is entering an event that waives Basic Registration
+   * without holding it: the form must ask who they are, prefilled with
+   * whatever an earlier entry left on file.
+   */
+  let entrant: { name: string; phone: string; college: string } | null = null
 
   if (session) {
     const entitlement = await c.env.DB.prepare(
@@ -125,7 +105,16 @@ events.get('/events/:name', async (c) => {
     )
       .bind(session.registrationId)
       .first<{ ok: number }>()
-    eligible = !!entitlement
+    eligible = !!entitlement || !resolved.requiresBasic
+
+    if (!entitlement && !resolved.requiresBasic) {
+      const row = await c.env.DB.prepare(
+        'SELECT name, phone, college FROM registrations WHERE id = ?',
+      )
+        .bind(session.registrationId)
+        .first<{ name: string; phone: string; college: string }>()
+      entrant = { name: row?.name ?? '', phone: row?.phone ?? '', college: row?.college ?? '' }
+    }
 
     const { results } = await c.env.DB.prepare(
       `SELECT COALESCE(fee_variant, 'standard') AS variant FROM event_entries
@@ -171,8 +160,11 @@ events.get('/events/:name', async (c) => {
       allowsTeam: allowsTeam(resolved.form),
       requiresTeam: requiresTeam(resolved.form),
     },
+    /** False for an event anyone can enter without Basic Registration. */
+    requiresBasic: resolved.requiresBasic,
     signedIn: !!session,
     eligible,
+    entrant,
     entered,
     enteredVariants,
   })
@@ -208,8 +200,8 @@ events.post('/me/events', async (c) => {
     throw new ApiError('forbidden', `Entries for ${resolved.name} are not open right now.`)
   }
 
-  // Basic Registration is the only thing standing between a person and an
-  // event. Checked here rather than trusted from the client.
+  // Basic Registration stands between a person and every event except the
+  // few that waive it. Checked here rather than trusted from the client.
   const entitlement = await c.env.DB.prepare(
     `SELECT 1 AS ok FROM entitlements
       WHERE registration_id = ? AND product_id = 'basic' AND revoked_at IS NULL`,
@@ -217,50 +209,21 @@ events.post('/me/events', async (c) => {
     .bind(session.registrationId)
     .first<{ ok: number }>()
 
-  if (!entitlement) {
+  if (!entitlement && resolved.requiresBasic) {
     throw new ApiError(
       'payment_required',
       'Complete your Basic Registration before entering an event.',
     )
   }
 
-  const asTeam = body.participation === 'team'
-  const teamName = String(body.teamName ?? '').trim()
-  const answers = (body.answers ?? {}) as Record<string, unknown>
-  const variantId = body.feeVariant == null ? null : String(body.feeVariant)
-  const members = asTeam ? readMembers(body.members) : []
-  /** The captain counts. A solo entry covers one person. */
-  const headCount = asTeam ? members.length + 1 : 1
-
-  const fieldErrors: Record<string, string> = {}
-  for (const field of resolved.form.fields) {
-    const value = String(answers[field.id] ?? '').trim()
-    if (field.required && !value) fieldErrors[field.id] = 'Required.'
-    if (value.length > 1000) fieldErrors[field.id] = 'That answer is too long.'
-  }
-
-  if (requiresTeam(resolved.form) && !asTeam) {
-    fieldErrors.participation = 'This event is entered as a team.'
-  }
-
-  if (asTeam) {
-    if (teamName.length < 2) fieldErrors.teamName = 'Give your crew a name.'
-
-    const size = resolved.form.teamSize
-    if (size) {
-      if (headCount < size.min) {
-        fieldErrors.members = `This event needs ${size.min}–${size.max} people, you included. Add ${size.min - headCount} more.`
-      } else if (headCount > size.max) {
-        fieldErrors.members = `This event allows at most ${size.max} people, you included.`
-      }
-    }
-  }
-
+  const { asTeam, teamName, headCount, answersJson, membersJson, priced, bandId, fieldErrors } =
+    parseEntry(resolved, body)
   const fee = feeFor(name)
-  const priced = fee ? priceEntry(name, variantId, headCount) : null
-  if (fee && !priced) {
-    fieldErrors.feeVariant = 'Choose which entry applies to you.'
-  }
+
+  // Somebody playing without Basic has told us nothing but an email address.
+  // The entry is the first place they are asked who they are.
+  const entrant = entitlement ? null : parseEntrant(body.entrant)
+  if (entrant) Object.assign(fieldErrors, entrant.errors)
 
   if (Object.keys(fieldErrors).length) {
     throw new ApiError('validation_failed', 'Some answers need another look.', {
@@ -268,10 +231,23 @@ events.post('/me/events', async (c) => {
     })
   }
 
+  // Written onto the account itself, not the entry, so a second entry is
+  // prefilled and the sheet and the confirmation email both have a name. It
+  // cannot collide with anybody: the one-number-per-person index only covers
+  // confirmed registrations, and this one is not confirmed until Basic is paid,
+  // at which point the registration form overwrites all three anyway.
+  if (entrant) {
+    await c.env.DB.prepare(
+      `UPDATE registrations SET name = ?, phone = ?, college = ?, updated_at = datetime('now')
+        WHERE id = ? AND status != 'confirmed'`,
+    )
+      .bind(entrant.value.name, entrant.value.phone, entrant.value.college, session.registrationId)
+      .run()
+  }
+
   // One confirmed place per person per price band. Somebody playing badminton
   // singles *and* doubles is entering two different competitions, and used to
   // be told they were already registered.
-  const bandId = priced?.id ?? 'standard'
   const already = await c.env.DB.prepare(
     `SELECT 1 AS ok FROM event_entries
       WHERE registration_id = ? AND event_name = ?
@@ -289,10 +265,6 @@ events.post('/me/events', async (c) => {
   }
 
   const entryId = newEntryId()
-  const answersJson = JSON.stringify(
-    Object.fromEntries(resolved.form.fields.map((f) => [f.id, String(answers[f.id] ?? '').trim()])),
-  )
-  const membersJson = JSON.stringify(members)
 
   /* ---------- free: settled here and now ---------- */
 
@@ -439,7 +411,7 @@ events.post('/me/events', async (c) => {
         razorpayOrderId: rzpOrder.id,
         amountPaise: totalPaise,
         currency: 'INR',
-        name: session.name,
+        name: entrant?.value.name ?? session.name,
         email: session.email,
         phone: contact?.phone ?? '',
       },

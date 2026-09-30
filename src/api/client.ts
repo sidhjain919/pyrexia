@@ -514,6 +514,9 @@ export type FeeVariant = {
 /** A team-mate as the person entering listed them. Not an account. */
 export type TeamMemberInput = { name: string; phone: string }
 
+/** Who is playing, for an entry made without Basic Registration. */
+export type EntrantInput = { name: string; phone: string; college: string }
+
 export type AccommodationAdmin = {
   settings: { open: boolean; note: string | null; updatedAt: string | null; updatedBy: string | null }
   bookings: {
@@ -638,8 +641,15 @@ export type EventInfo = {
     allowsTeam: boolean
     requiresTeam: boolean
   }
+  /** False for the few events (Badminton) anyone can enter without Basic Registration. */
+  requiresBasic: boolean
   signedIn: boolean
   eligible: boolean
+  /**
+   * Set when you are entering an event that waives Basic Registration without
+   * holding it: the form asks who you are, prefilled from any earlier entry.
+   */
+  entrant: EntrantInput | null
   /** True only for a single-band event you already hold a place in. */
   entered: boolean
   /** Bands you already hold a confirmed place in, for events that run several. */
@@ -858,6 +868,38 @@ export const api = {
       products: { id: string; name: string }[]
     }>('/api/admin/desk/upgrades', { method: 'POST', body: payload, auth: true }),
 
+  /**
+   * Enter somebody for an event at the counter, taking its fee in cash or UPI.
+   *
+   * A free event takes no payment details. `entrant` is only read for somebody
+   * without Basic Registration, which only Badminton allows.
+   */
+  deskEnterEvent: (payload: {
+    email: string
+    eventName: string
+    participation: 'solo' | 'team'
+    teamName?: string
+    feeVariant?: string
+    members?: TeamMemberInput[]
+    answers: Record<string, string>
+    entrant?: EntrantInput
+    amountRupees?: number
+    paymentMethod?: 'cash' | 'upi'
+    paymentReference?: string
+  }) =>
+    request<{
+      registrationId: string
+      publicCode: string
+      entryId: string
+      orderId: string | null
+      eventName: string
+      band: string | null
+      listPaise: number
+      amountPaise: number
+      discountPaise: number
+      createdPerson: boolean
+    }>('/api/admin/desk/events', { method: 'POST', body: payload, auth: true }),
+
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
 
   /** Published, unexpired notices. No session needed, this is the public board. */
@@ -971,6 +1013,8 @@ export const api = {
     /** The crew, captain excluded. Empty for a solo entry. */
     members?: TeamMemberInput[]
     answers: Record<string, string>
+    /** Only for an event that waives Basic Registration, from somebody without it. */
+    entrant?: EntrantInput
   }) =>
     request<EventEntryCreated>('/api/me/events', {
       method: 'POST',
