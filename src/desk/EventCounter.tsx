@@ -174,6 +174,9 @@ export default function EventCounter() {
           ? { amountRupees: Number(amount), paymentMethod: method, paymentReference: reference.trim() }
           : {}),
       })
+      // The confirmation replaces a long form; on a phone the agent is
+      // otherwise left looking at the footer.
+      window.scrollTo({ top: 0 })
       setDone({
         publicCode: res.publicCode,
         eventName: res.eventName,

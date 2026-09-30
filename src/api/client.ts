@@ -838,6 +838,8 @@ export const api = {
           email: string
           phone: string
           college: string
+          course: string
+          gender: string | null
           hasBasic: boolean
           hasDelegate: boolean
         }
@@ -899,6 +901,43 @@ export const api = {
       discountPaise: number
       createdPerson: boolean
     }>('/api/admin/desk/events', { method: 'POST', body: payload, auth: true }),
+
+  /**
+   * Book a bed for somebody already registered, taking the room charge at the
+   * counter. Confirmed on the spot; the rooming list and receipt follow.
+   */
+  deskAccommodation: (payload: {
+    /** The registration the bed belongs to. */
+    lookupEmail: string
+    roomTypeId: string
+    days: number
+    arrivalDate: string
+    arrivalTime?: string
+    /** The booking's own contact copy, prefilled from the registration. */
+    name: string
+    email: string
+    phone: string
+    college: string
+    course: string
+    rulesAccepted: boolean
+    amountRupees: number
+    paymentMethod: 'cash' | 'upi'
+    paymentReference: string
+  }) =>
+    request<{
+      bookingId: string
+      code: string
+      publicCode: string
+      orderId: string
+      room: string
+      gender: 'boys' | 'girls'
+      days: number
+      arrivalDate: string
+      departureDate: string | null
+      listPaise: number
+      amountPaise: number
+      discountPaise: number
+    }>('/api/admin/desk/accommodation', { method: 'POST', body: payload, auth: true }),
 
   adminStats: () => request<AdminStats>('/api/admin/stats', { auth: true }),
 

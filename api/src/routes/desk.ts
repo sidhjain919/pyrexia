@@ -7,6 +7,8 @@
  *                                        who already holds Basic
  *   POST /api/admin/desk/events          enter somebody for an event and take
  *                                        its fee
+ *   POST /api/admin/desk/accommodation   book a bed for somebody already
+ *                                        registered
  *
  * This is the only path in the system that turns a person into a paid
  * delegate without money passing through Razorpay, which makes it the highest
@@ -38,16 +40,24 @@ import { Hono } from 'hono'
 
 import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
-import { newEntryId, newId, newOrderId, newPublicCode } from '../lib/ids.ts'
+import { newBookingId, newEntryId, newId, newOrderId, newPublicCode, newStayCode } from '../lib/ids.ts'
 import { loadProducts, ownedProducts, quote } from '../lib/pricing.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
-import { validateRegistration } from '../lib/validate.ts'
+import { validateAccommodation, validateRegistration } from '../lib/validate.ts'
 import { issuePassIfNeeded } from '../lib/grant.ts'
 import { parseEntrant, parseEntry } from '../lib/entry.ts'
 import { resolveEvent } from '../data/events.ts'
 import { feeFor } from '../data/fees.ts'
 import { isEventOpen } from '../data/openings.ts'
-import { requestSheetSync } from '../jobs/sheets.ts'
+import { requestAccommodationSheetSync, requestSheetSync } from '../jobs/sheets.ts'
+import {
+  accommodationSettings,
+  ALLOWED_DAYS,
+  arrivalDatesFor,
+  departureDate,
+  priceStay,
+  roomLabel,
+} from '../data/accommodation.ts'
 import * as audit from '../lib/audit.ts'
 
 export const desk = new Hono<{ Bindings: Env; Variables: { agent: Agent } }>()
@@ -159,7 +169,7 @@ desk.get('/admin/desk/lookup', async (c) => {
   if (!email) throw new ApiError('bad_request', 'An email address to look up.')
 
   const row = await c.env.DB.prepare(
-    `SELECT id, public_code, name, email, phone, college
+    `SELECT id, public_code, name, email, phone, college, course, gender
        FROM registrations WHERE lower(email) = ?`,
   )
     .bind(email)
@@ -170,6 +180,8 @@ desk.get('/admin/desk/lookup', async (c) => {
       email: string
       phone: string
       college: string
+      course: string
+      gender: string | null
     }>()
 
   if (!row) return c.json({ found: false })
@@ -183,6 +195,8 @@ desk.get('/admin/desk/lookup', async (c) => {
     email: row.email,
     phone: row.phone,
     college: row.college,
+    course: row.course,
+    gender: row.gender,
     hasBasic: owned.has('basic'),
     hasDelegate: owned.has('delegate'),
   })
@@ -758,6 +772,204 @@ desk.post('/admin/desk/events', async (c) => {
       amountPaise,
       discountPaise,
       createdPerson: !existing,
+    },
+    201,
+  )
+})
+
+/* ------------------------------------------------------------------ *
+ * A bed, booked in person
+ * ------------------------------------------------------------------ */
+
+/**
+ * Book accommodation for somebody and take the room charge at the counter.
+ *
+ * The online booking's rules, kept: Basic Registration first, one confirmed
+ * bed per person, the global open switch, and the price from the rate card
+ * rather than from the browser. What differs is that the money is already in
+ * the drawer, so the booking is written confirmed and the rooming list and the
+ * receipt email go out straight away, which online is the webhook's job.
+ *
+ * The contact details are the booking's own copy, prefilled by the counter
+ * from the registration and editable: the number somebody carries at a fest
+ * is often not the one they registered with. The agent ticks the house rules
+ * on the person's behalf, having read them out: the terms behind them (no
+ * refund on cancellation, damage against the deposit) are the same.
+ *
+ * The ₹500 security deposit is not part of this. It is cash at check-in, as
+ * it is for everybody.
+ */
+desk.post('/admin/desk/accommodation', async (c) => {
+  const agent = c.get('agent')
+  const body = (await readJson(c)) as Record<string, unknown>
+
+  // A shut form is usually a full one. The desk does not get past it either.
+  const settings = await accommodationSettings(c.env)
+  if (!settings.open) {
+    throw new ApiError(
+      'forbidden',
+      'Accommodation bookings are closed. Open them on the admin dashboard first if there are beds to give.',
+    )
+  }
+
+  const lookupEmail = String(body.lookupEmail ?? '').trim().toLowerCase()
+  const { errors, value } = validateAccommodation(body)
+  const { method, reference, errors: paymentErrors } = paymentDetails(body)
+  const fieldErrors: Record<string, string> = { ...errors, ...paymentErrors }
+  if (!lookupEmail) fieldErrors.lookupEmail = 'Their registered email address.'
+
+  const roomTypeId = String(body.roomTypeId ?? '')
+  const days = Number(body.days)
+  const arrivalDate = String(body.arrivalDate ?? '')
+  const stay = priceStay(roomTypeId, days, arrivalDate)
+  if (!stay) {
+    if (!roomTypeId) fieldErrors.roomTypeId = 'Pick a room.'
+    else if (!ALLOWED_DAYS.includes(days)) fieldErrors.days = 'Pick how long they are staying.'
+    else if (!arrivalDatesFor(days).includes(arrivalDate)) fieldErrors.arrivalDate = 'Pick an arrival day.'
+    else fieldErrors.roomTypeId = 'That room is not one we let.'
+  }
+
+  /* ---------- who this is ---------- */
+
+  const existing = lookupEmail
+    ? await c.env.DB.prepare('SELECT id, public_code, name FROM registrations WHERE lower(email) = ?')
+        .bind(lookupEmail)
+        .first<{ id: string; public_code: string; name: string }>()
+    : null
+
+  if (lookupEmail && !existing) {
+    throw new ApiError(
+      'not_found',
+      `Nobody is registered with ${lookupEmail}. A bed needs Basic Registration: take that first, or check the spelling.`,
+      { fields: { lookupEmail: 'No registration with this address.' } },
+    )
+  }
+
+  if (existing && !(await ownedProducts(c.env, existing.id)).has('basic')) {
+    throw new ApiError(
+      'bad_request',
+      `${existing.public_code} has not paid for Basic Registration, which a bed needs. Take their Basic Registration first.`,
+      { fields: { lookupEmail: 'Needs Basic Registration first.' } },
+    )
+  }
+
+  if (Object.keys(fieldErrors).length || !existing || !stay) {
+    throw new ApiError('validation_failed', 'Some details need another look.', {
+      fields: fieldErrors,
+    })
+  }
+
+  const held = await c.env.DB.prepare(
+    `SELECT public_code FROM accommodation_bookings
+      WHERE registration_id = ? AND status = 'confirmed'`,
+  )
+    .bind(existing.id)
+    .first<{ public_code: string }>()
+
+  if (held) {
+    throw new ApiError(
+      'conflict',
+      `${existing.public_code} already has a bed, reference ${held.public_code}. Take no money: the accommodation team changes bookings.`,
+    )
+  }
+
+  /* ---------- what it costs ---------- */
+
+  const listPaise = stay.feePaise
+  const amountPaise = amountCollected(body, listPaise)
+  const discountPaise = listPaise - amountPaise
+
+  /* ---------- write it ---------- */
+
+  const bookingId = newBookingId()
+  const code = newStayCode()
+  const orderId = newOrderId()
+
+  const statements: D1PreparedStatement[] = [
+    // An abandoned online attempt is stood down, as the online form does.
+    c.env.DB.prepare(
+      `UPDATE accommodation_bookings SET status = 'cancelled', updated_at = datetime('now')
+        WHERE registration_id = ? AND status = 'pending'`,
+    ).bind(existing.id),
+    // `fee_paise` is what was taken, so the rooming list's "paid for room" and
+    // the receipt both match the drawer, discount and all. The rate stays the
+    // list rate: that is what the room cost on the day.
+    c.env.DB.prepare(
+      `INSERT INTO accommodation_bookings
+         (id, public_code, registration_id, gender, sharing, ac, days,
+          arrival_date, arrival_time, name, email, phone, college, course,
+          rules_accepted, rate_paise, fee_paise, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'confirmed')`,
+    ).bind(
+      bookingId, code, existing.id, stay.room.gender, stay.room.sharing, stay.room.ac ? 1 : 0,
+      stay.days, arrivalDate, value.arrivalTime || null, value.name, value.email, value.phone,
+      value.college, value.course, stay.ratePaise, amountPaise,
+    ),
+    // `kind = 'desk'` keeps it on the counter's tabs and out of the Razorpay
+    // reconciliation; the booking id is what the receipt email reads it by.
+    c.env.DB.prepare(
+      `INSERT INTO orders (id, registration_id, amount_paise, convenience_paise, discount_paise,
+                           kind, accommodation_booking_id, status, method, collected_by,
+                           payment_reference, paid_at)
+       VALUES (?, ?, ?, 0, ?, 'desk', ?, 'paid', ?, ?, ?, datetime('now'))`,
+    ).bind(orderId, existing.id, amountPaise, discountPaise, bookingId, method, agent.email, reference),
+  ]
+
+  try {
+    await c.env.DB.batch(statements)
+  } catch (err) {
+    // The one-bed-per-person index lost a race with the online form.
+    console.error('desk accommodation failed', err)
+    throw new ApiError(
+      'conflict',
+      'That booking could not be recorded: they may have just booked online. Check before taking money again.',
+    )
+  }
+
+  await audit.record(c.env, {
+    actorId: agent.id,
+    actorEmail: agent.email,
+    action: 'desk.accommodation',
+    entity: 'accommodation_booking',
+    entityId: bookingId,
+    after: {
+      registrationId: existing.id,
+      publicCode: existing.public_code,
+      code,
+      room: stay.room.id,
+      days: stay.days,
+      arrivalDate,
+      orderId,
+      listPaise,
+      amountPaise,
+      discountPaise,
+      method,
+      reference,
+    },
+    ip: clientIp(c),
+  })
+
+  await requestAccommodationSheetSync(c.env)
+  await c.env.JOBS.send({
+    kind: 'email.accommodation_confirmed',
+    registrationId: existing.id,
+    bookingId,
+  })
+
+  return c.json(
+    {
+      bookingId,
+      code,
+      publicCode: existing.public_code,
+      orderId,
+      room: roomLabel(stay.room),
+      gender: stay.room.gender,
+      days: stay.days,
+      arrivalDate,
+      departureDate: departureDate(arrivalDate, stay.days),
+      listPaise,
+      amountPaise,
+      discountPaise,
     },
     201,
   )

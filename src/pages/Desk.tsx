@@ -6,6 +6,7 @@ import { ApiError, api } from '../api/client'
 import { Field, Select, TextInput } from '../registration/fields'
 import { BASIC_AMOUNT, DELEGATE_ADDON } from '../data/registration'
 import EventCounter from '../desk/EventCounter'
+import StayCounter from '../desk/StayCounter'
 import { Choice, Legend } from '../desk/ui'
 
 /**
@@ -47,10 +48,11 @@ type Found = Awaited<ReturnType<typeof api.deskLookup>>
  * from the other two rather than a variation of one: the person already
  * exists, so nothing is typed about them and nothing about them is changed.
  *
- * `event` is an entry for one event, with its own fee. Different enough again
- * (a form per event, bands, teams) that it lives in its own component.
+ * `event` is an entry for one event, with its own fee, and `stay` is a bed.
+ * Different enough again (a form per event; a rate card and house rules)
+ * that each lives in its own component.
  */
-type Tier = 'basic' | 'delegate' | 'upgrade' | 'event'
+type Tier = 'basic' | 'delegate' | 'upgrade' | 'event' | 'stay'
 
 export default function Desk() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
@@ -130,7 +132,8 @@ export default function Desk() {
           paymentMethod: method,
           paymentReference: reference.trim(),
         })
-        setDone({
+        window.scrollTo({ top: 0 })
+      setDone({
           publicCode: res.publicCode,
           amountPaise: res.amountPaise,
           completedExisting: false,
@@ -146,6 +149,7 @@ export default function Desk() {
         paymentMethod: method,
         paymentReference: reference.trim(),
       })
+      window.scrollTo({ top: 0 })
       setDone({
         publicCode: res.publicCode,
         amountPaise: res.amountPaise,
@@ -269,7 +273,7 @@ export default function Desk() {
         {/* What they are buying */}
         <div className="mt-8">
           <Legend n="1" label="What they are paying for" />
-          <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <Choice on={tier === 'basic'} onClick={() => setTier('basic')}>
               Basic Registration
             </Choice>
@@ -292,11 +296,21 @@ export default function Desk() {
                 </span>
               </span>
             </Choice>
+            <Choice on={tier === 'stay'} onClick={() => setTier('stay')}>
+              <span>
+                Accommodation
+                <span className="mt-0.5 block text-[0.72rem] text-parchment/50">
+                  A bed for the fest
+                </span>
+              </span>
+            </Choice>
           </div>
         </div>
 
         {tier === 'event' ? (
           <EventCounter />
+        ) : tier === 'stay' ? (
+          <StayCounter />
         ) : (
         <>
         <div>
