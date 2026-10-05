@@ -24,7 +24,7 @@ export type FAQ = { q: string; a: string }
 export const faqs: FAQ[] = [
   {
     q: 'When is PYREXIA 2026?',
-    a: "Five days on the island, 12 to 16 October 2026, at AIIMS Rishikesh. The hour-by-hour Captain's Log drops closer to the fest.",
+    a: "Five days on the island, 12 to 16 October 2026, at AIIMS Rishikesh. The full hour-by-hour schedule is in the Captain's Log on the home page.",
   },
   {
     q: 'How do I join the crew?',

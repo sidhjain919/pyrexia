@@ -34,7 +34,7 @@ export default function CaptainsLog() {
           index="04"
           eyebrow="The Schedule"
           title="Captain's Log"
-          kicker={`Five days on the island, ${SITE.dates}. The hour-by-hour log is still being charted; check back closer to the fest.`}
+          kicker={`Five days on the island, ${SITE.dates}. Every event, every venue, every Star Night, hour by hour.`}
         />
 
         {/* day tabs */}
@@ -101,7 +101,7 @@ export default function CaptainsLog() {
                           className="absolute -left-[6.5px] top-1.5 h-3 w-3 rounded-full border-2 border-ocean"
                           style={{ background: col }}
                         />
-                        <span className="w-14 shrink-0 pt-0.5 font-log text-sm text-gold-bright">{e.time}</span>
+                        <span className="w-[4.6rem] shrink-0 whitespace-nowrap pt-0.5 font-log text-sm text-gold-bright sm:w-20">{e.time}</span>
                         <div className="flex-1 border-b border-gold/8 pb-4 group-last:border-0">
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <h4 className="font-body text-[1.02rem] text-offwhite">{e.title}</h4>
