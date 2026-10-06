@@ -37,11 +37,26 @@ test('the night turns over at 06:00 IST, not at midnight', () => {
 test("a queued scan keeps the phone's time, within reason", () => {
   const now = new Date('2026-10-13T01:00:00Z') // 06:30 IST, the morning after
   const lateLastNight = '2026-10-12T19:00:00Z'
-  assert.equal(festNight(scanMoment(lateLastNight, now)), '2026-10-12')
-  assert.equal(scanMoment('2026-10-14T00:00:00Z', now), now) // the future
-  assert.equal(scanMoment('2026-10-10T00:00:00Z', now), now) // days ago
-  assert.equal(scanMoment('nonsense', now), now)
-  assert.equal(scanMoment(undefined, now), now)
+  assert.equal(festNight(scanMoment(lateLastNight, undefined, now)), '2026-10-12')
+  assert.equal(scanMoment('2026-10-14T00:00:00Z', undefined, now), now) // the future
+  assert.equal(scanMoment('2026-10-10T00:00:00Z', undefined, now), now) // days ago
+  assert.equal(scanMoment('nonsense', undefined, now), now)
+  assert.equal(scanMoment(undefined, undefined, now), now)
+})
+
+test('a queue that syncs the next evening is still booked to its own night', () => {
+  const now = new Date('2026-10-13T13:30:00Z') // 19:00 IST the next day
+  const at = scanMoment('2026-10-12T15:00:00Z', '2026-10-13T13:30:00Z', now) // 20:30 IST the night before
+  assert.equal(festNight(at), '2026-10-12')
+})
+
+test("a phone whose clock is wrong is corrected by what it thinks 'now' is", () => {
+  const now = new Date('2026-10-12T16:00:00Z') // 21:30 IST
+  // The phone is a day and two hours slow: it scanned at what it calls
+  // 11 Oct 13:50Z and sends the queue at what it calls 11 Oct 14:00Z.
+  const at = scanMoment('2026-10-11T13:50:00Z', '2026-10-11T14:00:00Z', now)
+  assert.equal(at.toISOString(), '2026-10-12T15:50:00.000Z')
+  assert.equal(festNight(at), '2026-10-12')
 })
 
 test('serials print as on the sticker', () => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { stickerApi, type StickerOverview } from '../api/client'
 import { ErrorLine } from './ActivateTab'
-import { nightLabel } from './code'
+import { istTime, nightLabel } from './code'
 import { Panel } from './ui'
 
 const REFUSED: Record<string, string> = {
@@ -77,6 +77,37 @@ export default function TonightTab() {
           </ul>
         )}
       </Panel>
+
+      {data.tonight.letInTwice.length > 0 && (
+        <Panel tone="bad">
+          <div className="font-semibold">
+            Let in twice while offline: {data.tonight.letInTwice.length}
+          </div>
+          <p className="mt-1 text-[0.85rem] opacity-90">
+            A gate phone without signal admitted these passes, and the server later found each had already been
+            used tonight. Both people are inside: the pass was almost certainly copied. Look the sticker up and
+            cancel it before the next night.
+          </p>
+          <ul className="mt-3 divide-y divide-white/10 text-[0.85rem]">
+            {data.tonight.letInTwice.map((t, i) => (
+              <li key={i} className="py-2">
+                <div className="flex justify-between gap-3">
+                  <span className="font-semibold">{t.name ?? 'Unknown holder'}</span>
+                  <span className="font-mono">{t.label}</span>
+                </div>
+                {/* Not "first" and "again": the phone without signal may well
+                    have let its person in before the other gate did. */}
+                <div className="opacity-85">
+                  In at {t.firstGate ?? '?'}, {t.firstAt ? istTime(t.firstAt) : '?'}
+                </div>
+                <div className="opacity-85">
+                  Also in at {t.gate ?? '?'}, {istTime(t.at)}, no signal{t.guard ? ` (${t.guard})` : ''}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       <Panel>
         <div className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">Stickers</div>

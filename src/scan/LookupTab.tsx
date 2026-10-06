@@ -100,7 +100,16 @@ export default function LookupTab({ supervisor }: { supervisor: boolean }) {
               <ul className="mt-2 divide-y divide-white/5 text-[0.88rem]">
                 {found.scans.map((x, i) => (
                   <li key={i} className="flex justify-between gap-3 py-2">
-                    <span className={x.result === 'ok' ? 'text-green-300' : 'text-red-300'}>{RESULT_LABEL[x.result] ?? x.result}</span>
+                    {x.admittedOffline && x.result !== 'ok' ? (
+                      // The phone had no signal and let them in; only later did
+                      // the server see the pass was already used. They are inside.
+                      <span className="text-amber-300">Let in offline: pass already used tonight</span>
+                    ) : (
+                      <span className={x.result === 'ok' ? 'text-green-300' : 'text-red-300'}>
+                        {RESULT_LABEL[x.result] ?? x.result}
+                        {x.admittedOffline ? ' (offline)' : ''}
+                      </span>
+                    )}
                     <span className="text-right text-parchment/60">
                       {nightLabel(x.night)}, {istTime(x.at)}
                       {x.gate ? ` · ${x.gate}` : ''}

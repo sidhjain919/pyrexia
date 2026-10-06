@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Keyboard, MoreVertical, TriangleAlert, Wifi, WifiOff, X } from 'lucide-react'
 
-import { ApiError, setDevice, stickerApi, type GateManifest, type GateResult, type PairedDevice } from '../api/client'
+import {
+  ApiError,
+  randomId,
+  setDevice,
+  stickerApi,
+  type GateManifest,
+  type GateResult,
+  type PairedDevice,
+} from '../api/client'
 import Camera from './Camera'
 import { festNight, isOnlinePass, istTime, stickerCode } from './code'
 import { signal, unlockAudio } from './feedback'
@@ -110,6 +118,38 @@ function present(r: GateResult): Display {
   }
 }
 
+function HoldToUnpair({ onUnpair }: { onUnpair: () => void }) {
+  const [holding, setHolding] = useState(false)
+  const timer = useRef<number | null>(null)
+  const start = () => {
+    setHolding(true)
+    timer.current = window.setTimeout(() => {
+      setHolding(false)
+      onUnpair()
+    }, 3000)
+  }
+  const stop = () => {
+    setHolding(false)
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = null
+  }
+  return (
+    <button
+      type="button"
+      onPointerDown={start}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`mt-6 select-none rounded-full px-4 py-2 text-[0.75rem] transition-colors ${
+        holding ? 'bg-red-900/70 text-red-100' : 'text-parchment/35'
+      }`}
+    >
+      {holding ? 'Keep holding to unpair…' : 'Wrong phone? Press and hold to unpair'}
+    </button>
+  )
+}
+
 export default function GateScreen({ device, onUnpaired }: { device: PairedDevice; onUnpaired: () => void }) {
   const [started, setStarted] = useState(false)
   const [display, setDisplay] = useState<Display | null>(null)
@@ -151,15 +191,26 @@ export default function GateScreen({ device, onUnpaired }: { device: PairedDevic
 
   /** Admitted by this phone tonight, for the offline duplicate check. */
   const rememberAdmitted = (code: string) => {
-    const night = festNight()
+    const night = tonight()
     const held = load<{ night: string; codes: string[] }>(ADMITTED_KEY, { night, codes: [] })
     const codes = held.night === night ? held.codes : []
     if (!codes.includes(code)) codes.push(code)
     save(ADMITTED_KEY, { night, codes })
   }
 
+  /**
+   * Which night it is, for the offline checks. The server said so in the last
+   * manifest; that is believed over the phone's own clock while it is recent,
+   * because a phone with the wrong date would otherwise ignore the whole
+   * entered-tonight list and wave a copied pass through.
+   */
+  const tonight = () => {
+    const fetched = manifest ? new Date(manifest.at).getTime() : NaN
+    return manifest && Number.isFinite(fetched) && Date.now() - fetched < 3 * 3_600_000 ? manifest.night : festNight()
+  }
+
   const enteredTonight = (code: string) => {
-    const night = festNight()
+    const night = tonight()
     const held = load<{ night: string; codes: string[] }>(ADMITTED_KEY, { night, codes: [] })
     return (
       (held.night === night && held.codes.includes(code)) ||
@@ -187,7 +238,7 @@ export default function GateScreen({ device, onUnpaired }: { device: PairedDevic
     try {
       for (const item of [...queueRef.current]) {
         try {
-          await stickerApi.scan(item, 8000)
+          await stickerApi.scan({ ...item, clientNow: new Date().toISOString() }, 8000)
           setQueueSaved(queueRef.current.filter((q) => q.scanId !== item.scanId))
           setOnline(true)
         } catch (err) {
@@ -306,7 +357,7 @@ export default function GateScreen({ device, onUnpaired }: { device: PairedDevic
     if (displayRef.current && !displayRef.current.autoMs) return
     busy.current = true
     setChecking(true)
-    const scanId = crypto.randomUUID()
+    const scanId = randomId()
     const at = new Date().toISOString()
     try {
       const r = await stickerApi.scan({ scan: text, scanId }, SCAN_TIMEOUT_MS)
@@ -357,6 +408,16 @@ export default function GateScreen({ device, onUnpaired }: { device: PairedDevic
         <p className="max-w-xs text-[0.85rem] text-parchment/50">
           Turn the volume up. A double beep means let them in; a long buzz means stop them.
         </p>
+        {/* The only way off a gate from the phone itself, and deliberately
+            awkward: a three-second hold and a confirmation. A guard will not do
+            that by accident; a supervisor who paired their own phone to test a
+            gate can get it back without finding a second supervisor. */}
+        <HoldToUnpair
+          onUnpair={() => {
+            if (queue.length && !confirm(`${queue.length} admissions have not been sent yet and will be lost. Unpair anyway?`)) return
+            if (confirm(`Unpair this phone from ${device.gate}? A supervisor will have to pair it again.`)) unpaired()
+          }}
+        />
       </div>
     )
   }
@@ -418,16 +479,12 @@ export default function GateScreen({ device, onUnpaired }: { device: PairedDevic
           >
             Sync now
           </button>
-          <button
-            type="button"
-            className="w-full rounded-lg px-3 py-2.5 text-left text-red-300 hover:bg-white/5"
-            onClick={() => {
-              if (queue.length && !confirm(`${queue.length} admissions have not been sent yet and will be lost. Unpair anyway?`)) return
-              if (confirm('Unpair this phone? A supervisor will have to pair it again.')) unpaired()
-            }}
-          >
-            Unpair this phone
-          </button>
+          {/* No unpair button here, on purpose: a guard who taps it by mistake
+              is off the gate until a supervisor finds them. Unpairing is the
+              supervisor's, from the Phones tab. */}
+          <div className="px-3 pb-1 pt-2 text-[0.75rem] text-parchment/45">
+            {device.name} · paired to {device.gate}
+          </div>
         </div>
       )}
 

@@ -342,7 +342,7 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: options.timeoutMs ? AbortSignal.timeout(options.timeoutMs) : undefined,
+      signal: options.timeoutMs ? timeoutSignal(options.timeoutMs) : undefined,
     })
   } catch {
     throw new ApiError(
@@ -379,9 +379,32 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   return payload as T
 }
 
+/**
+ * A signal that aborts after `ms`, or nothing on a browser too old to make one.
+ * Older Android Chrome lacks `AbortSignal.timeout`; throwing there would turn
+ * every gate scan into a "network error" and put the phone offline for good.
+ */
+function timeoutSignal(ms: number): AbortSignal | undefined {
+  try {
+    return typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(ms) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** A fresh key per checkout attempt. Reused if that attempt is retried. */
 export function newIdempotencyKey(): string {
-  return crypto.randomUUID()
+  return randomId()
+}
+
+/** A uuid, with a fallback for browsers without `crypto.randomUUID`. */
+export function randomId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const b = crypto.getRandomValues(new Uint8Array(16))
+  b[6] = (b[6] & 0x0f) | 0x40
+  b[8] = (b[8] & 0x3f) | 0x80
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
 
 /* ------------------------------------------------------------------ *
@@ -1109,6 +1132,9 @@ export const api = {
 
 const DEVICE_KEY = 'pyrexia.device'
 
+/** A desk request that takes longer than this is shown as a failure to retry, not a spinner. */
+const DESK_TIMEOUT_MS = 15_000
+
 export type PairedDevice = { token: string; kind: 'gate' | 'desk'; name: string; gate: string | null }
 
 export function getDevice(): PairedDevice | null {
@@ -1185,6 +1211,8 @@ export type StickerDevice = {
   kind: 'gate' | 'desk'
   gate: string | null
   paired: boolean
+  /** Not paired: its code is still usable, or has run out and needs a re-pair. */
+  pairing: 'waiting' | 'expired' | null
   createdAt: string
   lastSeenAt: string | null
   admittedTonight: number
@@ -1194,7 +1222,26 @@ export type StickerOverview = {
   night: string
   stickers: { stock: number; active: number; void: number }
   festivalPassWithoutSticker: number
-  tonight: { admitted: number; byGate: { gate: string; n: number }[]; refused: { result: string; n: number }[] }
+  tonight: {
+    /** Everybody let in, including by a phone without signal. */
+    admitted: number
+    byGate: { gate: string; n: number }[]
+    /** Turned away. Excludes the offline admissions below, who got in. */
+    refused: { result: string; n: number }[]
+    /** Let in by a phone without signal although the pass was already used: a copy, almost always. */
+    letInTwice: {
+      code: string | null
+      label: string | null
+      name: string | null
+      publicCode: string | null
+      result: string
+      at: string
+      gate: string | null
+      guard: string | null
+      firstAt: string | null
+      firstGate: string | null
+    }[]
+  }
   nights: { night: string; n: number }[]
 }
 
@@ -1212,7 +1259,7 @@ export type StickerLookup = {
     voidReason: string | null
   }
   holder: StickerPerson | null
-  scans: { night: string; result: string; at: string; gate: string | null }[]
+  scans: { night: string; result: string; admittedOffline: boolean; at: string; gate: string | null }[]
 }
 
 export const stickerApi = {
@@ -1230,6 +1277,7 @@ export const stickerApi = {
       method: 'POST',
       body: { query },
       ...staffAuth(),
+      timeoutMs: DESK_TIMEOUT_MS,
     }),
 
   activate: (registrationId: string, sticker: string, replace = false) =>
@@ -1237,10 +1285,14 @@ export const stickerApi = {
       method: 'POST',
       body: { registrationId, sticker, replace },
       ...staffAuth(),
+      timeoutMs: DESK_TIMEOUT_MS,
     }),
 
   lookup: (scan: string) =>
-    request<StickerLookup>(`/api/stickers/lookup?scan=${encodeURIComponent(scan)}`, staffAuth()),
+    request<StickerLookup>(`/api/stickers/lookup?scan=${encodeURIComponent(scan)}`, {
+      ...staffAuth(),
+      timeoutMs: DESK_TIMEOUT_MS,
+    }),
 
   voidOne: (sticker: string, reason: string) =>
     request<{ voided: number }>('/api/stickers/void', { method: 'POST', body: { sticker, reason }, auth: true }),
@@ -1260,6 +1312,13 @@ export const stickerApi = {
       auth: true,
     }),
 
+  /** A fresh link for a phone that lost its pairing. Signs out whatever phone held it. */
+  repairDevice: (id: string) =>
+    request<{ id: string; code: string; url: string; expiresInMinutes: number }>(
+      `/api/stickers/devices/${encodeURIComponent(id)}/repair`,
+      { method: 'POST', auth: true },
+    ),
+
   revokeDevice: (id: string) =>
     request<{ ok: boolean }>(`/api/stickers/devices/${encodeURIComponent(id)}/revoke`, {
       method: 'POST',
@@ -1271,7 +1330,10 @@ export const stickerApi = {
 
   manifest: () => request<GateManifest>('/api/gate/manifest', { ...gateAuth(), timeoutMs: 20_000 }),
 
-  scan: (payload: { scan: string; scanId: string; offline?: boolean; clientScannedAt?: string }, timeoutMs: number) =>
+  scan: (
+    payload: { scan: string; scanId: string; offline?: boolean; clientScannedAt?: string; clientNow?: string },
+    timeoutMs: number,
+  ) =>
     request<GateResult>('/api/gate/scan', { method: 'POST', body: payload, ...gateAuth(), timeoutMs }),
 }
 

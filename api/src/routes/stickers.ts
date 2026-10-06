@@ -12,6 +12,7 @@
  *   GET  /api/stickers/overview            supervisor: tonight at the gates
  *   GET  /api/stickers/devices             supervisor: the paired phones
  *   POST /api/stickers/devices             supervisor: pair a new one
+ *   POST /api/stickers/devices/:id/repair  supervisor: a fresh link for a phone that lost its pairing
  *   POST /api/stickers/devices/:id/revoke  supervisor: unpair one
  *
  *   GET  /api/gate/me                      the guard's screen, on load
@@ -70,6 +71,18 @@ const DEVICE_PREFIX = 'dvc_'
 /** Pairing codes live this long and work once. */
 const PAIR_MINUTES = 15
 
+/** When a guard's pairing code stops working. Codes from before 0018 have no expiry column. */
+const PAIR_DEADLINE = `COALESCE(g.pair_expires_at, datetime(g.created_at, '+${PAIR_MINUTES} minutes'))`
+
+/**
+ * Somebody was let in: the server admitted them, or a phone without signal
+ * did and the server learnt of it afterwards. Every count of people through
+ * a gate uses this, never `result = 'ok'` alone, or an offline admission of a
+ * copied sticker drops out of the headcount and turns up as a refusal.
+ */
+const LET_IN = `(result = 'ok' OR admitted_offline = 1)`
+const LET_IN_SS = `(ss.result = 'ok' OR ss.admitted_offline = 1)`
+
 /* ------------------------------------------------------------------ *
  * Who is calling
  * ------------------------------------------------------------------ */
@@ -125,6 +138,10 @@ stickers.use('/gate/*', async (c, next) => {
   c.set('device', device)
   await next()
 })
+
+function pairUrl(env: Env, code: string): string {
+  return `${env.SITE_URL.replace(/\/$/, '')}/scan?pair=${code}`
+}
 
 function requireSupervisor(c: Context<{ Bindings: Env; Variables: Vars }>): Staff {
   const staff = c.get('staff')
@@ -265,9 +282,9 @@ stickers.post('/devices/pair', async (c) => {
 
   // One statement, so two phones racing for the same code cannot both win.
   const row = await c.env.DB.prepare(
-    `UPDATE guards SET device_token_hash = ?, active = 1, last_seen_at = datetime('now')
-      WHERE device_token_hash = ? AND active = 0
-        AND created_at > datetime('now', '-${PAIR_MINUTES} minutes')
+    `UPDATE guards AS g SET device_token_hash = ?, active = 1, last_seen_at = datetime('now'), pair_expires_at = NULL
+      WHERE g.device_token_hash = ? AND g.active = 0
+        AND ${PAIR_DEADLINE} > datetime('now')
       RETURNING id, name, gate_id`,
   )
     .bind(await sha256Hex(token), `pair:${await sha256Hex(code)}`)
@@ -427,10 +444,12 @@ stickers.get('/stickers/lookup', async (c) => {
       ? c.env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(sticker.registration_id).first<PersonRow>()
       : null,
     c.env.DB.prepare(
-      `SELECT ss.night, ss.result, ss.client_scanned_at, gt.name AS gate
+      `SELECT ss.night, ss.result, ss.admitted_offline, ss.client_scanned_at, gt.name AS gate
          FROM sticker_scans ss LEFT JOIN gates gt ON gt.id = ss.gate_id
         WHERE ss.sticker_code = ? ORDER BY ss.client_scanned_at DESC LIMIT 30`,
-    ).bind(sticker.code).all<{ night: string; result: string; client_scanned_at: string; gate: string | null }>(),
+    ).bind(sticker.code).all<{
+      night: string; result: string; admitted_offline: number; client_scanned_at: string; gate: string | null
+    }>(),
   ])
 
   return c.json({
@@ -447,7 +466,14 @@ stickers.get('/stickers/lookup', async (c) => {
       voidReason: sticker.void_reason,
     },
     holder: holder ? personView(holder) : null,
-    scans: scans.results.map((s) => ({ night: s.night, result: s.result, at: s.client_scanned_at, gate: s.gate })),
+    scans: scans.results.map((s) => ({
+      night: s.night,
+      result: s.result,
+      /** The phone let them in without signal; `result` is what the server made of it later. */
+      admittedOffline: s.admitted_offline === 1,
+      at: s.client_scanned_at,
+      gate: s.gate,
+    })),
   })
 })
 
@@ -512,19 +538,19 @@ stickers.get('/stickers/overview', async (c) => {
   requireSupervisor(c)
   const night = festNight()
 
-  const [counts, gates, refused, nights, holders] = await Promise.all([
+  const [counts, gates, refused, nights, holders, twice] = await Promise.all([
     c.env.DB.prepare('SELECT status, count(*) AS n FROM stickers GROUP BY status').all<{ status: string; n: number }>(),
     c.env.DB.prepare(
       `SELECT coalesce(gt.name, '?') AS gate, count(*) AS n
          FROM sticker_scans ss LEFT JOIN gates gt ON gt.id = ss.gate_id
-        WHERE ss.night = ? AND ss.result = 'ok' GROUP BY gt.name ORDER BY n DESC`,
+        WHERE ss.night = ? AND ${LET_IN_SS} GROUP BY gt.name ORDER BY n DESC`,
     ).bind(night).all<{ gate: string; n: number }>(),
     c.env.DB.prepare(
       `SELECT result, count(*) AS n FROM sticker_scans
-        WHERE night = ? AND result != 'ok' GROUP BY result`,
+        WHERE night = ? AND NOT ${LET_IN} GROUP BY result`,
     ).bind(night).all<{ result: string; n: number }>(),
     c.env.DB.prepare(
-      `SELECT night, count(*) AS n FROM sticker_scans WHERE result = 'ok'
+      `SELECT night, count(*) AS n FROM sticker_scans WHERE ${LET_IN}
         GROUP BY night ORDER BY night`,
     ).all<{ night: string; n: number }>(),
     c.env.DB.prepare(
@@ -532,6 +558,28 @@ stickers.get('/stickers/overview', async (c) => {
         WHERE t.tier = 1 AND NOT EXISTS (
           SELECT 1 FROM stickers s WHERE s.registration_id = t.registration_id AND s.status = 'active')`,
     ).first<{ n: number }>(),
+    // Let in by a phone without signal, though the server says no: almost
+    // always a copied sticker used at two gates during an outage. Shown with
+    // the first entry beside it, so the supervisor can see whose pass was
+    // copied and cancel it before the next night.
+    c.env.DB.prepare(
+      `SELECT ss.sticker_code AS code, ss.result, ss.client_scanned_at AS at, gt.name AS gate, g.name AS guard,
+              s.serial, r.name, r.public_code,
+              f.client_scanned_at AS first_at, fg.name AS first_gate
+         FROM sticker_scans ss
+         LEFT JOIN gates gt ON gt.id = ss.gate_id
+         LEFT JOIN guards g ON g.id = ss.guard_id
+         LEFT JOIN stickers s ON s.code = ss.sticker_code
+         LEFT JOIN registrations r ON r.id = s.registration_id
+         LEFT JOIN sticker_scans f ON f.sticker_code = ss.sticker_code AND f.night = ss.night AND f.result = 'ok'
+         LEFT JOIN gates fg ON fg.id = f.gate_id
+        WHERE ss.night = ? AND ss.admitted_offline = 1 AND ss.result != 'ok'
+        ORDER BY ss.client_scanned_at DESC LIMIT 100`,
+    ).bind(night).all<{
+      code: string | null; result: string; at: string; gate: string | null; guard: string | null
+      serial: number | null; name: string | null; public_code: string | null
+      first_at: string | null; first_gate: string | null
+    }>(),
   ])
 
   const byStatus = Object.fromEntries(counts.results.map((r) => [r.status, r.n]))
@@ -543,6 +591,19 @@ stickers.get('/stickers/overview', async (c) => {
       admitted: gates.results.reduce((sum, g) => sum + g.n, 0),
       byGate: gates.results,
       refused: refused.results,
+      letInTwice: twice.results.map((t) => ({
+        code: t.code,
+        label: t.serial ? serialLabel(t.serial) : null,
+        name: t.name,
+        publicCode: t.public_code,
+        /** Why the server would have refused it: usually `duplicate`. */
+        result: t.result,
+        at: t.at,
+        gate: t.gate,
+        guard: t.guard,
+        firstAt: t.first_at,
+        firstGate: t.first_gate,
+      })),
     },
     nights: nights.results,
   })
@@ -552,14 +613,19 @@ stickers.get('/stickers/devices', async (c) => {
   requireSupervisor(c)
   const rows = await c.env.DB.prepare(
     `SELECT g.id, g.name, gt.name AS gate, g.active, g.created_at, g.last_seen_at,
+            ${PAIR_DEADLINE} > datetime('now') AS code_live,
             (SELECT count(*) FROM sticker_scans ss
-              WHERE ss.guard_id = g.id AND ss.night = ? AND ss.result = 'ok') AS admitted_tonight
+              WHERE ss.guard_id = g.id AND ss.night = ? AND ${LET_IN_SS}) AS admitted_tonight
        FROM guards g LEFT JOIN gates gt ON gt.id = g.gate_id
       WHERE g.active = 1
-         OR (g.device_token_hash LIKE 'pair:%' AND g.created_at > datetime('now', '-${PAIR_MINUTES} minutes'))
+         -- Waiting for its code to be used. A phone that was paired before and
+         -- is waiting on a re-pair stays listed after the code runs out, so the
+         -- supervisor can send another; one that never paired drops off.
+         OR (g.device_token_hash LIKE 'pair:%'
+             AND (${PAIR_DEADLINE} > datetime('now') OR g.last_seen_at IS NOT NULL))
       ORDER BY gt.name IS NULL, gt.name, g.name`,
   ).bind(festNight()).all<{
-    id: string; name: string; gate: string | null; active: number
+    id: string; name: string; gate: string | null; active: number; code_live: number
     created_at: string; last_seen_at: string | null; admitted_tonight: number
   }>()
 
@@ -572,6 +638,8 @@ stickers.get('/stickers/devices', async (c) => {
       kind: d.gate ? 'gate' : 'desk',
       gate: d.gate,
       paired: d.active === 1,
+      /** For a phone that is not paired: is its code still usable, or does it need a new one? */
+      pairing: d.active === 1 ? null : d.code_live ? 'waiting' : 'expired',
       createdAt: d.created_at,
       lastSeenAt: d.last_seen_at,
       admittedTonight: d.admitted_tonight,
@@ -611,8 +679,8 @@ stickers.post('/stickers/devices', async (c) => {
   // revoked from the supervisor's screen. A PIN on a guard's phone at a
   // concert gate is a PIN written on the back of it.
   await c.env.DB.prepare(
-    `INSERT INTO guards (id, name, device_token_hash, pin_hash, gate_id, active)
-     VALUES (?, ?, ?, '', ?, 0)`,
+    `INSERT INTO guards (id, name, device_token_hash, pin_hash, gate_id, active, pair_expires_at)
+     VALUES (?, ?, ?, '', ?, 0, datetime('now', '+${PAIR_MINUTES} minutes'))`,
   ).bind(id, name, `pair:${await sha256Hex(code)}`, gateId).run()
 
   await audit.record(c.env, {
@@ -627,9 +695,45 @@ stickers.post('/stickers/devices', async (c) => {
   return c.json({
     id,
     code,
-    url: `${c.env.SITE_URL.replace(/\/$/, '')}/scan?pair=${code}`,
+    url: pairUrl(c.env, code),
     expiresInMinutes: PAIR_MINUTES,
   }, 201)
+})
+
+/**
+ * A fresh pairing link for a phone that is already set up.
+ *
+ * For a guard whose phone lost its pairing (browser data cleared, the scanner
+ * opened in another browser, a new phone): the supervisor sends the link over
+ * WhatsApp and the guard taps it where they stand. It stays the same guard on
+ * the same gate, so tonight's count carries on. Whatever phone held the old
+ * pairing is signed out the moment this is made, which is also what a
+ * supervisor wants when a phone has gone missing and its guard has another.
+ */
+stickers.post('/stickers/devices/:id/repair', async (c) => {
+  const staff = requireSupervisor(c)
+  const id = c.req.param('id')
+  const code = randomCode(8)
+
+  const row = await c.env.DB.prepare(
+    `UPDATE guards SET device_token_hash = ?, active = 0,
+            pair_expires_at = datetime('now', '+${PAIR_MINUTES} minutes')
+      WHERE id = ? AND device_token_hash NOT LIKE 'revoked:%'
+      RETURNING id, name`,
+  ).bind(`pair:${await sha256Hex(code)}`, id).first<{ id: string; name: string }>()
+
+  if (!row) throw new ApiError('not_found', 'That phone was unpaired for good. Pair a new one instead.')
+
+  await audit.record(c.env, {
+    ...actor(staff),
+    action: 'guard.issue_device',
+    entity: 'guard',
+    entityId: id,
+    after: { name: row.name, repair: true },
+    ip: clientIp(c),
+  })
+
+  return c.json({ id, code, url: pairUrl(c.env, code), expiresInMinutes: PAIR_MINUTES })
 })
 
 stickers.post('/stickers/devices/:id/revoke', async (c) => {
@@ -656,7 +760,7 @@ stickers.post('/stickers/devices/:id/revoke', async (c) => {
 
 async function admittedHere(env: Env, gateId: string, night: string): Promise<number> {
   const row = await env.DB.prepare(
-    `SELECT count(*) AS n FROM sticker_scans WHERE night = ? AND gate_id = ? AND result = 'ok'`,
+    `SELECT count(*) AS n FROM sticker_scans WHERE night = ? AND gate_id = ? AND ${LET_IN}`,
   ).bind(night, gateId).first<{ n: number }>()
   return row?.n ?? 0
 }
@@ -689,7 +793,7 @@ stickers.get('/gate/manifest', async (c) => {
         WHERE s.status = 'active' AND t.tier = 1`,
     ).all<{ code: string; serial: number; name: string; college: string | null; gender: string | null }>(),
     c.env.DB.prepare(
-      `SELECT sticker_code FROM sticker_scans WHERE night = ? AND result = 'ok'`,
+      `SELECT DISTINCT sticker_code FROM sticker_scans WHERE night = ? AND ${LET_IN}`,
     ).bind(night).all<{ sticker_code: string }>(),
   ])
   return c.json({
@@ -719,15 +823,24 @@ stickers.post('/gate/scan', async (c) => {
   const device = c.get('device')
   const body = (await readJson(c)) as Record<string, unknown>
   const offline = body.offline === true
-  const moment = offline ? scanMoment(body.clientScannedAt) : new Date()
+  const moment = offline ? scanMoment(body.clientScannedAt, body.clientNow) : new Date()
   const night = festNight(moment)
   const scanId = typeof body.scanId === 'string' && /^[0-9a-f-]{36}$/i.test(body.scanId)
     ? `scan_${body.scanId.toLowerCase()}`
     : newId()
 
-  const prior = await c.env.DB.prepare('SELECT result, sticker_code FROM sticker_scans WHERE id = ?')
+  const prior = await c.env.DB.prepare('SELECT result, sticker_code, admitted_offline FROM sticker_scans WHERE id = ?')
     .bind(scanId)
-    .first<{ result: Outcome; sticker_code: string | null }>()
+    .first<{ result: Outcome; sticker_code: string | null; admitted_offline: number }>()
+
+  // The phone gave up waiting on this very request, let the person in from
+  // its own list, and is now sending it from its queue. The request did land
+  // the first time, so the row exists; what it lacks is the fact that the
+  // phone admitted them regardless of what the row says. Without this, a
+  // copied pass admitted that way would be missing from "let in twice".
+  if (prior && offline && !prior.admitted_offline) {
+    await c.env.DB.prepare('UPDATE sticker_scans SET admitted_offline = 1 WHERE id = ?').bind(scanId).run()
+  }
 
   const parsed = readScan(String(body.scan ?? ''))
 
@@ -737,11 +850,14 @@ stickers.post('/gate/scan', async (c) => {
     return c.json({ outcome: 'online_pass' satisfies Outcome, night })
   }
 
+  // Only admissions are queued, so a queued scan is somebody the phone already
+  // let through. Whatever the server now decides, that person is inside.
   const record = (result: Outcome, code: string | null) =>
     c.env.DB.prepare(
-      `INSERT OR IGNORE INTO sticker_scans (id, sticker_code, night, result, gate_id, guard_id, client_scanned_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(scanId, code, night, result, device.gateId, device.id, moment.toISOString())
+      `INSERT OR IGNORE INTO sticker_scans
+         (id, sticker_code, night, result, gate_id, guard_id, client_scanned_at, admitted_offline)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(scanId, code, night, result, device.gateId, device.id, moment.toISOString(), offline ? 1 : 0)
 
   const finish = async (outcome: Outcome, extra: Record<string, unknown> = {}) =>
     c.json({ outcome, night, admittedHere: await admittedHere(c.env, device.gateId!, night), ...extra })
@@ -799,12 +915,7 @@ stickers.post('/gate/scan', async (c) => {
       WHERE ss.sticker_code = ? AND ss.night = ? AND ss.result = 'ok'`,
   ).bind(row.code, night).first<{ client_scanned_at: string; guard_id: string | null; gate: string | null }>()
 
-  if (!prior) {
-    await c.env.DB.prepare(
-      `INSERT OR IGNORE INTO sticker_scans (id, sticker_code, night, result, gate_id, guard_id, client_scanned_at)
-       VALUES (?, ?, ?, 'duplicate', ?, ?, ?)`,
-    ).bind(scanId, row.code, night, device.gateId, device.id, moment.toISOString()).run()
-  }
+  if (!prior) await record('duplicate', row.code).run()
 
   return finish('duplicate', {
     sticker,

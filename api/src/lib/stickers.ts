@@ -54,18 +54,29 @@ export function festNight(at: Date = new Date()): string {
  *
  * A phone that lost signal queues its scans and sends them later, possibly
  * after 06:00. The night must come from when the guard scanned, not from when
- * the request landed, or a late-night queue is booked to the next concert.
- * The phone's clock is believed only within reason: not in the future, and
- * not from before the night could have started.
+ * the request landed, or a late-night queue is booked to the next concert,
+ * and its holder is then refused at that concert as a duplicate.
+ *
+ * The phone's clock is not trusted as such. It also sends what it thinks the
+ * time is *now*, so the difference to our clock is the phone's error, and the
+ * scan time is corrected by it. After that the time is believed within a wide
+ * window: not in the future, and not older than a queue could plausibly be
+ * (a phone that synced the following evening, 24 hours on). Anything outside
+ * that is garbage and is booked to now, the least wrong guess left.
  */
-export function scanMoment(clientIso: unknown, now: Date = new Date()): Date {
+export function scanMoment(clientIso: unknown, clientNowIso: unknown, now: Date = new Date()): Date {
   if (typeof clientIso !== 'string') return now
-  const at = new Date(clientIso)
-  const t = at.getTime()
+  let t = new Date(clientIso).getTime()
   if (!Number.isFinite(t)) return now
+
+  if (typeof clientNowIso === 'string') {
+    const clientNow = new Date(clientNowIso).getTime()
+    if (Number.isFinite(clientNow)) t += now.getTime() - clientNow
+  }
+
   if (t > now.getTime() + 5 * 60_000) return now
-  if (t < now.getTime() - 18 * 3_600_000) return now
-  return at
+  if (t < now.getTime() - 36 * 3_600_000) return now
+  return new Date(t)
 }
 
 /** e.g. `No. 00412`, as printed under the code. */

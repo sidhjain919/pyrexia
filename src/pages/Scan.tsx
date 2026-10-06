@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
-import { ApiError, getDevice, setDevice, stickerApi, type PairedDevice } from '../api/client'
+import { ApiError, clearSession, getAccount, getDevice, getSession, setDevice, stickerApi, type PairedDevice } from '../api/client'
 import ActivateTab from '../scan/ActivateTab'
 import GateScreen from '../scan/GateScreen'
 import LookupTab from '../scan/LookupTab'
@@ -44,6 +44,10 @@ export default function Scan() {
       const d = await stickerApi.pair(code)
       setDevice(d)
       setDeviceState(d)
+      // Ask the browser not to clear this site's storage when space runs low:
+      // that storage is the pairing, and losing it sends a guard back to the
+      // supervisor mid-concert. Chrome grants it quietly for a site in use.
+      void navigator.storage?.persist?.().catch(() => {})
       setWho(null)
     } catch (err) {
       setPairError(err instanceof Error ? err.message : 'Could not pair this phone.')
@@ -109,15 +113,37 @@ export default function Scan() {
             <p className="mt-2 text-[0.88rem] text-parchment/65">
               Ask the supervisor for a pairing code, or scan the QR on their screen with this phone's camera.
             </p>
+            <p className="mt-2 text-[0.88rem] text-parchment/65">
+              Was this phone working and now shows this screen? Ask the supervisor to <em>re-pair</em> you: they
+              will send a link on WhatsApp. Tap it and you are back on your gate.
+            </p>
             <TextEntry className="mt-3" placeholder="8-character code" button="Pair" busy={pairing} onSubmit={pair} mono />
           </Panel>
           {pairError && <ErrorLine text={pairError} />}
-          <p className="text-center text-[0.88rem] text-parchment/55">
-            Supervisor?{' '}
-            <Link to="/sign-in?next=/scan" className="text-gold-bright underline">
-              Sign in
-            </Link>
-          </p>
+          {getSession() ? (
+            // Signed in, but not as a supervisor: say so, or "Sign in" just
+            // brings them straight back here with no explanation.
+            <p className="text-center text-[0.88rem] text-parchment/55">
+              Signed in as {getAccount()?.email ?? 'a student account'}, which is not a supervisor account.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  clearSession()
+                  navigate('/sign-in?next=/scan')
+                }}
+                className="text-gold-bright underline"
+              >
+                Sign in as a supervisor
+              </button>
+            </p>
+          ) : (
+            <p className="text-center text-[0.88rem] text-parchment/55">
+              Supervisor?{' '}
+              <Link to="/sign-in?next=/scan" className="text-gold-bright underline">
+                Sign in
+              </Link>
+            </p>
+          )}
         </div>
       </Shell>
     )
@@ -165,20 +191,6 @@ export default function Scan() {
         {tab === 'tonight' && <TonightTab />}
       </div>
 
-      {who.kind === 'desk' && (
-        <button
-          type="button"
-          onClick={() => {
-            if (!confirm('Unpair this device? A supervisor will have to pair it again.')) return
-            setDevice(null)
-            setDeviceState(null)
-            setWho('none')
-          }}
-          className="mt-10 w-full text-center text-[0.8rem] text-parchment/40 underline"
-        >
-          Unpair this device
-        </button>
-      )}
     </Shell>
   )
 }

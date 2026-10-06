@@ -21,7 +21,19 @@ import SignIn from './pages/SignIn'
 
 // The scanner pulls in a camera library nobody on the fest site needs, so it
 // is fetched only by the phones that open /scan.
-const Scan = lazy(() => import('./pages/Scan'))
+const Scan = lazy(() =>
+  import('./pages/Scan').catch((err: unknown) => {
+    // A deploy mid-fest renames this chunk; a phone holding yesterday's
+    // index.html then cannot fetch it. One reload picks up the new index.
+    // The flag stops a genuinely missing chunk from reloading forever.
+    const key = 'pyrexia.scan.reloaded'
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1')
+      location.reload()
+    }
+    throw err
+  }),
+)
 
 /**
  * The site is one long page plus three small account screens. Those three are
@@ -34,7 +46,9 @@ export default function App() {
 
   // The gate and desk scanner is a tool, not a page of the site: no header,
   // no footer, no custom cursor, nothing between a guard and the camera.
-  if (pathname === '/scan') {
+  // With or without a trailing slash: a guard typing the address gets the
+  // scanner either way, never the fest homepage.
+  if (pathname.replace(/\/+$/, '') === '/scan') {
     return (
       <Suspense fallback={<div className="min-h-[100dvh] bg-abyss" />}>
         <Scan />
