@@ -27,3 +27,4 @@ api/.wrangler
 api/.dev.vars
 api/*.py
 _*.mjs
+api/stickers-out/

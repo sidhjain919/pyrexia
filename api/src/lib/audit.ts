@@ -49,6 +49,10 @@ export type AuditAction =
   | 'desk.event'
   | 'desk.accommodation'
   | 'correction.pass_type'
+  | 'sticker.activate'
+  | 'sticker.void'
+  | 'gate.device_pair'
+  | 'gate.device_revoke'
 
 export type AuditEntry = {
   action: AuditAction

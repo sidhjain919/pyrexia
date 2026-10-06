@@ -39,6 +39,68 @@ async function deepLink(env: Env, registrationId: string, path: string): Promise
   return `${siteUrl(env)}/enter?token=${encodeURIComponent(token)}&next=${encodeURIComponent(path)}`
 }
 
+/**
+ * The mail account itself is refusing: out of credits, blocked, bad key.
+ *
+ * The queue consumer catches this and parks the job in `mail_held` instead of
+ * retrying it five times in a minute and losing it. The cron puts it back once
+ * the account works again. See `releaseHeldMail`.
+ */
+export class MailAccountError extends Error {
+  override readonly name = 'MailAccountError'
+}
+
+/**
+ * Jobs not worth holding: a code or link that has expired by the time the
+ * account is fixed only confuses whoever finally receives it.
+ */
+const EPHEMERAL: ReadonlySet<Job['kind']> = new Set([
+  'email.verify_code',
+  'email.sign_in_link',
+  'email.reset_password',
+])
+
+/** Park a job the mail account could not send. Ephemeral ones are dropped. */
+export async function holdMail(env: Env, job: Job, error: string): Promise<void> {
+  if (EPHEMERAL.has(job.kind)) {
+    console.error('mail dropped, account unavailable', job.kind, error)
+    return
+  }
+  const body = JSON.stringify(job)
+  // Keyed on the job itself, so the same confirmation held twice is one row.
+  const id = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)))]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  await env.DB.prepare(
+    `INSERT INTO mail_held (id, job, last_error) VALUES (?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET last_error = excluded.last_error,
+                                      attempts = attempts + 1`,
+  )
+    .bind(id, body, error.slice(0, 500))
+    .run()
+  console.error('mail held, account unavailable', job.kind, error)
+}
+
+/**
+ * Every cron tick: put held mail back on the queue.
+ *
+ * If the account still refuses, each job comes straight back to `mail_held`;
+ * the batch is capped so a long outage costs fifty failed calls a tick, not
+ * thousands.
+ */
+export async function releaseHeldMail(env: Env): Promise<void> {
+  const { results } = await env.DB.prepare(
+    'SELECT id, job FROM mail_held ORDER BY held_at LIMIT 50',
+  ).all<{ id: string; job: string }>()
+  if (!results.length) return
+
+  await env.JOBS.sendBatch(results.map((r) => ({ body: JSON.parse(r.job) as Job })))
+  await env.DB.batch(
+    results.map((r) => env.DB.prepare('DELETE FROM mail_held WHERE id = ?').bind(r.id)),
+  )
+  console.log('held mail released', results.length)
+}
+
 export async function handleJob(env: Env, job: Job): Promise<void> {
   const send = mailer(env)
 
@@ -364,6 +426,8 @@ async function deliver(
   if (result.ok) return
 
   console.error('mail failed', send.name, to, result.error)
+
+  if (result.account) throw new MailAccountError(result.error)
 
   // Throwing hands the message back to the queue for another attempt. A
   // permanent failure: a bad address, an unverified sender, is swallowed,

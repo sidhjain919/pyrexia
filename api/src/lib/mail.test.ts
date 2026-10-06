@@ -239,6 +239,26 @@ test('zeptomail: an unverified sender is not retried, throttling is', async () =
   assert.equal((throttled.result as { retryable: boolean }).retryable, true)
 })
 
+test('zeptomail: an account problem is flagged so the mail is held, not dropped', async () => {
+  // What Zoho returns once the credits run out, as on 2 Oct 2026.
+  for (const sub of ['LE_102', 'AE_101', 'SERR_157']) {
+    const { result } = await capture(
+      { ...base, MAIL_PROVIDER: 'zeptomail', ZEPTOMAIL_TOKEN: 'k' },
+      () =>
+        new Response(`{"error":{"code":"TM_5001","details":[{"code":"${sub}"}]}}`, {
+          status: 400,
+        }),
+    )
+    assert.equal(result.ok === false && result.account, true, sub)
+  }
+
+  const bad = await capture(
+    { ...base, MAIL_PROVIDER: 'zeptomail', ZEPTOMAIL_TOKEN: 'k' },
+    () => new Response('{"error":{"code":"TM_3201"}}', { status: 400 }),
+  )
+  assert.equal(bad.result.ok === false && bad.result.account, undefined)
+})
+
 test('mailgun: form-encoded, Basic auth, and the reply-to goes in a header', async () => {
   const original = globalThis.fetch
   let seen: { url: string; body: string; auth: string | null } | null = null

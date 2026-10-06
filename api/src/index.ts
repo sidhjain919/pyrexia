@@ -25,8 +25,9 @@ import { me } from './routes/me.ts'
 import { notices } from './routes/notices.ts'
 import { registrations } from './routes/registrations.ts'
 import { ses } from './routes/ses.ts'
+import { stickers } from './routes/stickers.ts'
 import { webhooks } from './routes/webhooks.ts'
-import { handleJob } from './jobs/mail.ts'
+import { handleJob, holdMail, MailAccountError, releaseHeldMail } from './jobs/mail.ts'
 import { purgeExpiredDocuments } from './jobs/purge.ts'
 import {
   reconcileOrders,
@@ -97,6 +98,8 @@ app.route('/api', desk)
 app.route('/api', exports_)
 app.route('/api', notices)
 app.route('/api', documents)
+// Star Night stickers: the activation desk and the concert gates.
+app.route('/api', stickers)
 
 // Razorpay posts here from its own servers, so this sits outside /api and
 // outside CORS entirely. It authenticates by signature, not by origin.
@@ -158,6 +161,8 @@ export default {
     // The privacy page promises identity documents are deleted within thirty
     // days of the fest. This is what makes that sentence true.
     ctx.waitUntil(purgeExpiredDocuments(env))
+    // Mail parked while the provider account was out of credits or blocked.
+    ctx.waitUntil(releaseHeldMail(env).catch((err) => console.error('held mail release failed', err)))
   },
 
   /**
@@ -170,6 +175,18 @@ export default {
         await handleJob(env, message.body)
         message.ack()
       } catch (err) {
+        // The mail account is down, not this message: park it until the cron
+        // finds the account working again, instead of losing it.
+        if (err instanceof MailAccountError) {
+          try {
+            await holdMail(env, message.body, err.message)
+            message.ack()
+          } catch (holdErr) {
+            console.error('could not hold mail', message.body?.kind, holdErr)
+            message.retry()
+          }
+          continue
+        }
         // Hand it back with backoff. After max_retries it lands in the
         // dead-letter queue rather than disappearing.
         console.error('job failed, will retry', message.body?.kind, err)

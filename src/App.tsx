@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Route, Routes, useLocation } from 'react-router-dom'
 
@@ -19,6 +19,10 @@ import Enter from './pages/Enter'
 import Pass from './pages/Pass'
 import SignIn from './pages/SignIn'
 
+// The scanner pulls in a camera library nobody on the fest site needs, so it
+// is fetched only by the phones that open /scan.
+const Scan = lazy(() => import('./pages/Scan'))
+
 /**
  * The site is one long page plus three small account screens. Those three are
  * real routes rather than modals because they are linked to from email, and a
@@ -27,6 +31,16 @@ import SignIn from './pages/SignIn'
 export default function App() {
   const [loaded, setLoaded] = useState(false)
   const { pathname } = useLocation()
+
+  // The gate and desk scanner is a tool, not a page of the site: no header,
+  // no footer, no custom cursor, nothing between a guard and the camera.
+  if (pathname === '/scan') {
+    return (
+      <Suspense fallback={<div className="min-h-[100dvh] bg-abyss" />}>
+        <Scan />
+      </Suspense>
+    )
+  }
 
   // The account screens are utilities, not part of the voyage, the branded
   // loading sequence would be noise in front of a sign-in link.

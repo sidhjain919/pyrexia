@@ -53,7 +53,20 @@ export type Message = {
   replyTo?: string
 }
 
-export type SendResult = { ok: true; id?: string } | { ok: false; error: string; retryable: boolean }
+export type SendResult =
+  | { ok: true; id?: string }
+  | {
+      ok: false
+      error: string
+      retryable: boolean
+      /**
+       * The account, not the message, is the problem: no credits left, the
+       * account blocked, the key revoked. Every email fails the same way until
+       * a human fixes it, and then every one of them would have gone through,
+       * so these are held for later rather than retried now or dropped.
+       */
+      account?: true
+    }
 
 export interface MailProvider {
   readonly name: string
@@ -395,9 +408,17 @@ class ZeptoProvider implements MailProvider {
     // 4xx is the message or the account: a bad address, an unverified sender,
     // a key without permission. Sending it again sends the same broken thing.
     const retryable = res.status >= 500 || res.status === 429
-    return { ok: false, error: `zeptomail ${res.status}: ${detail.slice(0, 300)}`, retryable }
+    const error = `zeptomail ${res.status}: ${detail.slice(0, 300)}`
+    // Zoho puts the reason in the body, not the status: LE_10x is credits
+    // exhausted or expired, AE_101 a blocked account, SERR_157 a bad key. On
+    // 2 Oct 2026 the credits ran out and two days of confirmations and passes
+    // were dropped as "permanent" failures.
+    if (ZEPTO_ACCOUNT_CODES.test(detail)) return { ok: false, error, retryable: false, account: true }
+    return { ok: false, error, retryable }
   }
 }
+
+const ZEPTO_ACCOUNT_CODES = /\b(LE_10\d|AE_101|SERR_157)\b/
 
 /* ------------------------------------------------------------------ *
  * Mailgun

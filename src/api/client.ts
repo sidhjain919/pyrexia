@@ -318,13 +318,19 @@ type Options = {
   body?: unknown
   /** Sends the session token. */
   auth?: boolean
+  /** Sends this token instead: a paired desk or gate device. */
+  bearer?: string
   idempotencyKey?: string
+  /** Give up after this long. A gate cannot hold a queue for a slow request. */
+  timeoutMs?: number
 }
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
 
-  if (options.auth) {
+  if (options.bearer) {
+    headers.Authorization = `Bearer ${options.bearer}`
+  } else if (options.auth) {
     const token = getSession()
     if (token) headers.Authorization = `Bearer ${token}`
   }
@@ -336,6 +342,7 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: options.timeoutMs ? AbortSignal.timeout(options.timeoutMs) : undefined,
     })
   } catch {
     throw new ApiError(
@@ -1088,6 +1095,184 @@ export const api = {
       body: payload,
       auth: true,
     }),
+}
+
+/* ------------------------------------------------------------------ *
+ * Star Night stickers
+ * ------------------------------------------------------------------ *
+ *
+ * Two kinds of screen call these. A supervisor signs in as themselves; a desk
+ * or gate phone was paired once by a supervisor and carries its own token,
+ * kept here rather than as a session so pairing a guard's phone never signs
+ * anybody out of their own account on it.
+ */
+
+const DEVICE_KEY = 'pyrexia.device'
+
+export type PairedDevice = { token: string; kind: 'gate' | 'desk'; name: string; gate: string | null }
+
+export function getDevice(): PairedDevice | null {
+  try {
+    const raw = localStorage.getItem(DEVICE_KEY)
+    return raw ? (JSON.parse(raw) as PairedDevice) : null
+  } catch {
+    return null
+  }
+}
+
+export function setDevice(device: PairedDevice | null): void {
+  try {
+    if (device) localStorage.setItem(DEVICE_KEY, JSON.stringify(device))
+    else localStorage.removeItem(DEVICE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** A paired desk device speaks for itself; otherwise it is the supervisor's session. */
+function staffAuth(): Options {
+  const device = getDevice()
+  return device?.kind === 'desk' ? { bearer: device.token } : { auth: true }
+}
+
+function gateAuth(): Options {
+  return { bearer: getDevice()?.token ?? '' }
+}
+
+export type StickerRef = { code: string; serial: number; label: string }
+
+export type StickerPerson = {
+  registrationId: string
+  publicCode: string
+  name: string
+  college: string | null
+  gender: string | null
+  email: string
+  phone: string | null
+  festivalPass: boolean
+  sticker: StickerRef | null
+}
+
+export type GateOutcome =
+  | 'ok'
+  | 'duplicate'
+  | 'not_active'
+  | 'void'
+  | 'no_festival_pass'
+  | 'unknown'
+  | 'online_pass'
+
+export type GateResult = {
+  outcome: GateOutcome
+  night: string
+  admittedHere?: number
+  sticker?: { serial: number; label: string }
+  person?: { name: string; college: string | null; gender: string | null; publicCode: string | null } | null
+  first?: { at: string; gate: string | null; byThisPhone: boolean } | null
+}
+
+export type GateManifest = {
+  night: string
+  at: string
+  /** [code, serial, name, college, gender] */
+  stickers: [string, number, string, string, string][]
+  entered: string[]
+}
+
+export type StickerDevice = {
+  id: string
+  name: string
+  kind: 'gate' | 'desk'
+  gate: string | null
+  paired: boolean
+  createdAt: string
+  lastSeenAt: string | null
+  admittedTonight: number
+}
+
+export type StickerOverview = {
+  night: string
+  stickers: { stock: number; active: number; void: number }
+  festivalPassWithoutSticker: number
+  tonight: { admitted: number; byGate: { gate: string; n: number }[]; refused: { result: string; n: number }[] }
+  nights: { night: string; n: number }[]
+}
+
+export type StickerLookup = {
+  sticker: {
+    code: string
+    serial: number
+    label: string
+    batch: string
+    status: 'stock' | 'active' | 'void'
+    activatedAt: string | null
+    activatedBy: string | null
+    voidedAt: string | null
+    voidedBy: string | null
+    voidReason: string | null
+  }
+  holder: StickerPerson | null
+  scans: { night: string; result: string; at: string; gate: string | null }[]
+}
+
+export const stickerApi = {
+  pair: (code: string) =>
+    request<PairedDevice>('/api/devices/pair', { method: 'POST', body: { code } }),
+
+  whoami: () =>
+    request<{ kind: 'supervisor' | 'desk'; label: string; supervisor: boolean; night: string }>(
+      '/api/stickers/whoami',
+      staffAuth(),
+    ),
+
+  identify: (query: string) =>
+    request<{ person: StickerPerson }>('/api/stickers/identify', {
+      method: 'POST',
+      body: { query },
+      ...staffAuth(),
+    }),
+
+  activate: (registrationId: string, sticker: string, replace = false) =>
+    request<{ person: StickerPerson; already: boolean; replaced?: string | null }>('/api/stickers/activate', {
+      method: 'POST',
+      body: { registrationId, sticker, replace },
+      ...staffAuth(),
+    }),
+
+  lookup: (scan: string) =>
+    request<StickerLookup>(`/api/stickers/lookup?scan=${encodeURIComponent(scan)}`, staffAuth()),
+
+  voidOne: (sticker: string, reason: string) =>
+    request<{ voided: number }>('/api/stickers/void', { method: 'POST', body: { sticker, reason }, auth: true }),
+
+  voidRange: (from: number, to: number, reason: string) =>
+    request<{ voided: number }>('/api/stickers/void', { method: 'POST', body: { from, to, reason }, auth: true }),
+
+  overview: () => request<StickerOverview>('/api/stickers/overview', { auth: true }),
+
+  devices: () =>
+    request<{ devices: StickerDevice[]; gates: string[] }>('/api/stickers/devices', { auth: true }),
+
+  addDevice: (name: string, gate: string | null) =>
+    request<{ id: string; code: string; url: string; expiresInMinutes: number }>('/api/stickers/devices', {
+      method: 'POST',
+      body: { name, gate },
+      auth: true,
+    }),
+
+  revokeDevice: (id: string) =>
+    request<{ ok: boolean }>(`/api/stickers/devices/${encodeURIComponent(id)}/revoke`, {
+      method: 'POST',
+      auth: true,
+    }),
+
+  gateMe: () =>
+    request<{ name: string; gate: string; night: string; admittedHere: number }>('/api/gate/me', gateAuth()),
+
+  manifest: () => request<GateManifest>('/api/gate/manifest', { ...gateAuth(), timeoutMs: 20_000 }),
+
+  scan: (payload: { scan: string; scanId: string; offline?: boolean; clientScannedAt?: string }, timeoutMs: number) =>
+    request<GateResult>('/api/gate/scan', { method: 'POST', body: payload, ...gateAuth(), timeoutMs }),
 }
 
 /** True when a session token is stored. Cheap enough to call on every render. */
