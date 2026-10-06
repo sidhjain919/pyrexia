@@ -32,6 +32,7 @@ import {
   arrivalDatesFor,
   departureDate,
   priceStay,
+  roomIsOpen,
   roomLabel,
   ROOM_TYPES,
   SECURITY_DEPOSIT_RUPEES,
@@ -180,6 +181,8 @@ accommodation.get('/accommodation', async (c) => {
       ac: r.ac,
       label: roomLabel(r),
       ratePaise: r.ratePaise,
+      /** False when the team has run out of this kind of room. */
+      open: roomIsOpen(settings, r.id),
     })),
     signedIn: !!session,
     eligible,
@@ -248,6 +251,14 @@ accommodation.post('/me/accommodation', async (c) => {
 
   // Past this point `priced` is non-null: the block above throws otherwise.
   const stay = priced!
+
+  // The form greys these out, but a page left open since before the team
+  // closed the room still has the button.
+  if (!roomIsOpen(settings, stay.room.id)) {
+    throw new ApiError('validation_failed', `${roomLabel(stay.room)} rooms are full. Pick another room.`, {
+      fields: { roomTypeId: 'This room is full now. Pick another.' },
+    })
+  }
 
   // One bed per person. The unique index enforces this too; catching it here
   // is what turns a constraint violation into a sentence somebody can read.

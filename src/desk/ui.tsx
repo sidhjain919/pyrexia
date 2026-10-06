@@ -16,10 +16,12 @@ export function Legend({ n, label }: { n: string; label: string }) {
 export function Choice({
   on,
   onClick,
+  disabled = false,
   children,
 }: {
   on: boolean
   onClick: () => void
+  disabled?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -27,8 +29,11 @@ export function Choice({
       type="button"
       onClick={onClick}
       aria-pressed={on}
+      disabled={disabled}
       className={`flex min-h-11 items-center rounded-lg px-4 py-2.5 text-left text-[0.88rem] transition-colors ${
-        on
+        disabled
+          ? 'cursor-not-allowed text-parchment/35 ring-1 ring-inset ring-gold/10'
+          : on
           ? 'bg-gold/15 text-gold-bright ring-1 ring-inset ring-gold/70'
           : 'text-parchment/75 ring-1 ring-inset ring-gold/25 hover:text-gold-bright hover:ring-gold/60'
       }`}

@@ -44,6 +44,8 @@ export type AuditAction =
   | 'export.download'
   | 'settings.event_openings'
   | 'settings.accommodation'
+  | 'settings.accommodation_rooms_open'
+  | 'settings.accommodation_rooms_close'
   | 'desk.register'
   | 'desk.upgrade'
   | 'desk.event'

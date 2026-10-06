@@ -548,7 +548,22 @@ export type TeamMemberInput = { name: string; phone: string }
 export type EntrantInput = { name: string; phone: string; college: string }
 
 export type AccommodationAdmin = {
-  settings: { open: boolean; note: string | null; updatedAt: string | null; updatedBy: string | null }
+  settings: {
+    open: boolean
+    note: string | null
+    updatedAt: string | null
+    updatedBy: string | null
+    closedRooms: string[]
+  }
+  /** Every room type on the rate card: on sale or not, and how many hold one. */
+  rooms: {
+    id: string
+    gender: 'boys' | 'girls'
+    sharing: number
+    ac: boolean
+    open: boolean
+    people: number
+  }[]
   bookings: {
     code: string
     gender: string
@@ -581,6 +596,8 @@ export type AccommodationRoom = {
   label: string
   /** Per person, per day. */
   ratePaise: number
+  /** False when the team has run out of this kind of room. */
+  open: boolean
 }
 
 export type AccommodationBooking = {
@@ -1072,6 +1089,13 @@ export const api = {
     request<{ ok: boolean; open: boolean; note: string | null }>(
       '/api/admin/accommodation/settings',
       { method: 'POST', body: { open, note }, auth: true },
+    ),
+
+  /** Take particular room types off sale, or put them back. */
+  adminSetAccommodationRooms: (roomTypeIds: string[], open: boolean) =>
+    request<{ ok: boolean; open: boolean; roomTypeIds: string[] }>(
+      '/api/admin/accommodation/rooms',
+      { method: 'POST', body: { roomTypeIds, open }, auth: true },
     ),
 
   enterEvent: (payload: {

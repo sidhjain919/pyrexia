@@ -21,7 +21,9 @@ import {
   departureDate,
   festDate,
   roomLabel,
+  ROOM_TYPES,
   setAccommodationOpen,
+  setRoomsOpen,
 } from '../data/accommodation.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import { DESK_AGENTS } from './desk.ts'
@@ -653,6 +655,18 @@ admin.get('/admin/accommodation', async (c) => {
 
   return c.json({
     settings,
+    /** Every room type on the rate card, with whether it is on sale and who holds one. */
+    rooms: ROOM_TYPES.map((r) => ({
+      id: r.id,
+      gender: r.gender,
+      sharing: r.sharing,
+      ac: r.ac,
+      open: !settings.closedRooms.includes(r.id),
+      people:
+        occupancy.results.find(
+          (o) => o.gender === r.gender && o.sharing === r.sharing && o.ac === (r.ac ? 1 : 0),
+        )?.people ?? 0,
+    })),
     bookings: bookings.results.map((b) => ({
       code: b.public_code,
       gender: b.gender,
@@ -718,6 +732,39 @@ admin.post('/admin/accommodation/settings', async (c) => {
   })
 
   return c.json({ ok: true, open, note })
+})
+
+/**
+ * Close or reopen particular room types while the rest stay on sale.
+ *
+ * For "2 seaters are full": the team runs out of rooms one size at a time.
+ * Takes a list so a whole size, or a whole column, is one request and one
+ * audit entry. Bookings already confirmed are untouched; this only stops new
+ * ones.
+ */
+admin.post('/admin/accommodation/rooms', async (c) => {
+  const me = c.get('admin')
+  if (!PRIVILEGED.has(me.role)) {
+    throw new ApiError('forbidden', 'Only the core team can open or close accommodation.')
+  }
+
+  const body = (await readJson(c)) as Record<string, unknown>
+  const open = body.open === true
+  const requested = Array.isArray(body.roomTypeIds) ? body.roomTypeIds.map(String) : []
+
+  const changed = await setRoomsOpen(c.env, requested, open, me.email)
+  if (!changed.length) throw new ApiError('bad_request', 'Pick at least one room type.')
+
+  await audit.record(c.env, {
+    actorEmail: me.email,
+    action: open ? 'settings.accommodation_rooms_open' : 'settings.accommodation_rooms_close',
+    entity: 'accommodation_settings',
+    entityId: 'rooms',
+    after: { open, roomTypeIds: changed },
+    ip: clientIp(c),
+  })
+
+  return c.json({ ok: true, open, roomTypeIds: changed })
 })
 
 /* ------------------------------------------------------------------ *

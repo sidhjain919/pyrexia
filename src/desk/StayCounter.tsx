@@ -320,10 +320,17 @@ export default function StayCounter() {
                 <Field label="Room" error={errors.roomTypeId}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {rooms.map((r) => (
-                      <Choice key={r.id} on={roomTypeId === r.id} onClick={() => setRoomTypeId(r.id)}>
+                      <Choice
+                        key={r.id}
+                        on={roomTypeId === r.id}
+                        onClick={() => setRoomTypeId(r.id)}
+                        disabled={!r.open}
+                      >
                         <span className="flex w-full items-center justify-between gap-3">
                           <span>{r.label}</span>
-                          <span className="text-parchment/60">{rupees(r.ratePaise)}/day</span>
+                          <span className={r.open ? 'text-parchment/60' : ''}>
+                            {r.open ? `${rupees(r.ratePaise)}/day` : 'Closed'}
+                          </span>
                         </span>
                       </Choice>
                     ))}

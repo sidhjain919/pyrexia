@@ -56,6 +56,7 @@ import {
   arrivalDatesFor,
   departureDate,
   priceStay,
+  roomIsOpen,
   roomLabel,
 } from '../data/accommodation.ts'
 import * as audit from '../lib/audit.ts'
@@ -861,6 +862,10 @@ desk.post('/admin/desk/accommodation', async (c) => {
       `${existing.public_code} has not paid for Basic Registration, which a bed needs. Take their Basic Registration first.`,
       { fields: { lookupEmail: 'Needs Basic Registration first.' } },
     )
+  }
+
+  if (stay && !roomIsOpen(settings, stay.room.id)) {
+    fieldErrors.roomTypeId = `${roomLabel(stay.room)} is closed on the admin dashboard. Pick another room.`
   }
 
   if (Object.keys(fieldErrors).length || !existing || !stay) {

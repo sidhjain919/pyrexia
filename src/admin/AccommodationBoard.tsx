@@ -6,9 +6,11 @@ import { ApiError, api, type AccommodationAdmin } from '../api/client'
 /**
  * The accommodation desk, as the committee sees it.
  *
- * Three things, in the order they are asked for:
+ * Four things, in the order they are asked for:
  *
  *   the switch    : are we taking bookings, and what do we say if not.
+ *   rooms on sale : which room types are still being let, for when the team
+ *                   runs out of one size ("2 seaters are full") but not all.
  *   occupancy     : how many people per room type, and the rooms that implies.
  *   the arrivals  : who lands on which day, for staffing check-in.
  *
@@ -26,6 +28,8 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const [saved, setSaved] = useState<string | null>(null)
+  /** Which room-switch request is in flight, so only its button spins. */
+  const [roomBusy, setRoomBusy] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +63,18 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
     }
   }
 
+  const setRooms = async (key: string, ids: string[], open: boolean) => {
+    setRoomBusy(key)
+    try {
+      await api.adminSetAccommodationRooms(ids, open)
+      await load()
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Could not change that.')
+    } finally {
+      setRoomBusy(null)
+    }
+  }
+
   if (!data) {
     return (
       <div className="mt-10">
@@ -68,8 +84,9 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
     )
   }
 
-  const { settings, occupancy, arrivals, totals } = data
+  const { settings, rooms, occupancy, arrivals, totals } = data
   const open = settings.open
+  const closedCount = rooms.filter((r) => !r.open).length
 
   return (
     <div className="mt-10">
@@ -140,6 +157,116 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
         )}
       </div>
 
+      {/* ---------- rooms on sale ---------- */}
+
+      <div className="card mt-4 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[0.92rem] font-medium">Rooms on sale</div>
+            <p className="ink-3 mt-1 text-[0.76rem]">
+              Close a room type when the team runs out of it. The others stay on sale; the site
+              and the desk show it as full. Beds already booked are not touched.
+              {!open && ' Bookings are closed above, so nothing is on sale right now.'}
+            </p>
+          </div>
+          {closedCount > 0 && (
+            <button
+              onClick={() =>
+                void setRooms(
+                  'all',
+                  rooms.filter((r) => !r.open).map((r) => r.id),
+                  true,
+                )
+              }
+              disabled={roomBusy !== null}
+              className="ghost inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              {roomBusy === 'all' ? <Loader2 size={13} className="animate-spin" /> : <LockOpen size={13} />}
+              Reopen all {closedCount}
+            </button>
+          )}
+        </div>
+
+        <div className="mt-3 overflow-x-auto">
+          <table className="data w-full min-w-[34rem]">
+            <thead>
+              <tr>
+                <th>Room</th>
+                {COLUMNS.map((c) => (
+                  <th key={c.key}>{c.label}</th>
+                ))}
+                <th className="n">Whole size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SIZES.map((sharing) => {
+                const row = rooms.filter((r) => r.sharing === sharing)
+                const rowOpen = row.filter((r) => r.open)
+                const rowKey = `size-${sharing}`
+                return (
+                  <tr key={sharing}>
+                    <td className="whitespace-nowrap" style={{ color: 'var(--cs-ink)' }}>
+                      {sharing} seater
+                    </td>
+                    {COLUMNS.map((c) => {
+                      const room = row.find((r) => r.gender === c.gender && r.ac === c.ac)
+                      if (!room) {
+                        return (
+                          <td key={c.key} className="ink-3 text-[0.74rem]">
+                            Not let
+                          </td>
+                        )
+                      }
+                      return (
+                        <td key={c.key}>
+                          <button
+                            onClick={() => void setRooms(room.id, [room.id], !room.open)}
+                            disabled={roomBusy !== null}
+                            aria-pressed={room.open}
+                            title={`${room.open ? 'Close' : 'Reopen'} ${c.gender} ${sharing} seater ${c.ac ? 'AC' : 'non-AC'}`}
+                            className="ghost inline-flex min-w-[6.5rem] items-center gap-1.5 !py-1 !text-[0.72rem] disabled:opacity-50"
+                            style={room.open ? undefined : { color: 'var(--cs-ink-3)' }}
+                          >
+                            {roomBusy === room.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : room.open ? (
+                              <LockOpen size={12} />
+                            ) : (
+                              <Lock size={12} />
+                            )}
+                            {room.open ? 'On sale' : 'Closed'}
+                            <span className="num ink-3 ml-auto pl-1">{room.people}</span>
+                          </button>
+                        </td>
+                      )
+                    })}
+                    <td className="n">
+                      <button
+                        onClick={() =>
+                          void setRooms(
+                            rowKey,
+                            (rowOpen.length ? rowOpen : row).map((r) => r.id),
+                            rowOpen.length === 0,
+                          )
+                        }
+                        disabled={roomBusy !== null}
+                        className="ghost inline-flex items-center gap-1.5 !py-1 !text-[0.72rem] disabled:opacity-50"
+                      >
+                        {roomBusy === rowKey && <Loader2 size={12} className="animate-spin" />}
+                        {rowOpen.length ? `Close all ${sharing} seaters` : `Reopen ${sharing} seaters`}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="ink-3 mt-2 text-[0.72rem]">
+          The figure in each cell is people already booked into that room type.
+        </p>
+      </div>
+
       {/* ---------- occupancy ---------- */}
 
       {occupancy.length > 0 && (
@@ -202,6 +329,15 @@ export default function AccommodationBoard({ onError }: { onError: (msg: string)
     </div>
   )
 }
+
+/** The rate card's grid: a row per room size, a column per block and AC. */
+const SIZES = [2, 3, 4, 5]
+const COLUMNS = [
+  { key: 'boys-ac', label: 'Boys · AC', gender: 'boys', ac: true },
+  { key: 'boys-nonac', label: 'Boys · Non-AC', gender: 'boys', ac: false },
+  { key: 'girls-ac', label: 'Girls · AC', gender: 'girls', ac: true },
+  { key: 'girls-nonac', label: 'Girls · Non-AC', gender: 'girls', ac: false },
+] as const
 
 /** Paise as whole rupees. Nothing here needs the paise. */
 function rupees(paise: number): string {

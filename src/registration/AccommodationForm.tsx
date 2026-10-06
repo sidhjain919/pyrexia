@@ -139,7 +139,7 @@ export default function AccommodationForm({
    * server.
    */
   useEffect(() => {
-    if (sharing !== null && !options.some((r) => r.sharing === sharing)) setSharing(null)
+    if (sharing !== null && !options.some((r) => r.sharing === sharing && r.open)) setSharing(null)
   }, [options, sharing])
 
   /*
@@ -298,7 +298,9 @@ export default function AccommodationForm({
       <div className="space-y-5">
         <div className="flex flex-col items-center gap-3 rounded-xl border border-gold/20 bg-ocean/40 px-6 py-10 text-center">
           <Hourglass size={22} className="text-gold/60" />
-          <p className="font-display text-2xl text-offwhite">Not open yet</p>
+          <p className="font-display text-2xl text-offwhite">
+            {info.note ? 'Bookings closed' : 'Not open yet'}
+          </p>
           <p className="max-w-sm text-[0.86rem] leading-relaxed text-parchment/65">
             {info.note ??
               'Bookings open closer to the fest. Slots are limited and go first come, first served, so it is worth checking back.'}
@@ -420,17 +422,32 @@ export default function AccommodationForm({
           <Legend n="3" label="Room sharing" />
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {options.map((r) => (
-              <Choice key={r.id} on={sharing === r.sharing} onClick={() => setSharing(r.sharing)}>
+              <Choice
+                key={r.id}
+                on={sharing === r.sharing}
+                onClick={() => setSharing(r.sharing)}
+                disabled={!r.open}
+              >
                 <span className="flex w-full items-baseline justify-between gap-3">
                   <span>{r.sharing} seater</span>
-                  <span className="font-mono text-[0.78rem] text-gold-bright">
-                    ₹{(r.ratePaise / 100).toLocaleString('en-IN')}
-                    <span className="text-parchment/45">/day</span>
-                  </span>
+                  {r.open ? (
+                    <span className="font-mono text-[0.78rem] text-gold-bright">
+                      ₹{(r.ratePaise / 100).toLocaleString('en-IN')}
+                      <span className="text-parchment/45">/day</span>
+                    </span>
+                  ) : (
+                    <span className="text-[0.74rem] uppercase tracking-wide">Full</span>
+                  )}
                 </span>
               </Choice>
             ))}
           </div>
+          {options.length > 0 && options.every((r) => !r.open) && (
+            <p className="mt-2 text-[0.78rem] text-coral">
+              Every {ac ? 'AC' : 'non-AC'} room in the {gender}' block is taken. Try{' '}
+              {ac ? 'non-AC' : 'AC'}, or ring a coordinator.
+            </p>
+          )}
           <p className="mt-2 text-[0.74rem] text-parchment/45">
             Per person, per day. Fewer to a room costs more.
           </p>
@@ -701,10 +718,12 @@ function Legend({ n, label }: { n: string; label: string }) {
 function Choice({
   on,
   onClick,
+  disabled = false,
   children,
 }: {
   on: boolean
   onClick: () => void
+  disabled?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -712,8 +731,11 @@ function Choice({
       type="button"
       onClick={onClick}
       aria-pressed={on}
+      disabled={disabled}
       className={`flex min-h-11 items-center rounded-lg px-4 py-2.5 text-left text-[0.86rem] transition-colors ${
-        on
+        disabled
+          ? 'cursor-not-allowed text-parchment/35 ring-1 ring-inset ring-gold/10'
+          : on
           ? 'bg-gold/15 text-gold-bright ring-1 ring-inset ring-gold/70'
           : 'text-parchment/75 ring-1 ring-inset ring-gold/25 hover:text-gold-bright hover:ring-gold/60'
       }`}

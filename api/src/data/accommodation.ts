@@ -198,9 +198,20 @@ export type AccommodationSettings = {
   note: string | null
   updatedAt: string | null
   updatedBy: string | null
+  /**
+   * Room types taken off sale while the rest stay open, by id. Only means
+   * anything while `open` is true: the global switch shuts everything.
+   */
+  closedRooms: string[]
 }
 
-const CLOSED: AccommodationSettings = { open: false, note: null, updatedAt: null, updatedBy: null }
+const CLOSED: AccommodationSettings = {
+  open: false,
+  note: null,
+  updatedAt: null,
+  updatedBy: null,
+  closedRooms: [],
+}
 
 /**
  * Whether bookings are being taken, and what to say if not.
@@ -211,9 +222,14 @@ const CLOSED: AccommodationSettings = { open: false, note: null, updatedAt: null
  * flips when they run out.
  */
 export async function accommodationSettings(env: Env): Promise<AccommodationSettings> {
-  const row = await env.DB.prepare(
-    'SELECT open, note, updated_at, updated_by FROM accommodation_settings WHERE id = 1',
-  ).first<{ open: number; note: string | null; updated_at: string; updated_by: string | null }>()
+  const [row, closures] = await Promise.all([
+    env.DB.prepare(
+      'SELECT open, note, updated_at, updated_by FROM accommodation_settings WHERE id = 1',
+    ).first<{ open: number; note: string | null; updated_at: string; updated_by: string | null }>(),
+    env.DB.prepare('SELECT room_type_id FROM accommodation_room_closures').all<{
+      room_type_id: string
+    }>(),
+  ])
 
   // A missing row means the migration ran and the insert did not. Closed is
   // the safe reading: better a form nobody can use than beds nobody has.
@@ -224,7 +240,42 @@ export async function accommodationSettings(env: Env): Promise<AccommodationSett
     note: row.note,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
+    closedRooms: closures.results.map((r) => r.room_type_id),
   }
+}
+
+/** Whether this room type can be booked right now, global switch included. */
+export function roomIsOpen(settings: AccommodationSettings, roomTypeId: string): boolean {
+  return settings.open && !settings.closedRooms.includes(roomTypeId)
+}
+
+/**
+ * Take room types off sale, or put them back, in one go.
+ *
+ * Several at once because that is how the request arrives: "all the
+ * 2 seaters" is four room types. Ids not on the rate card are dropped rather
+ * than stored, so a typo cannot leave a closure nobody can see to undo.
+ */
+export async function setRoomsOpen(
+  env: Env,
+  roomTypeIds: string[],
+  open: boolean,
+  by: string,
+): Promise<string[]> {
+  const ids = [...new Set(roomTypeIds)].filter((id) => BY_ID.has(id))
+  if (!ids.length) return []
+
+  await env.DB.batch(
+    ids.map((id) =>
+      open
+        ? env.DB.prepare('DELETE FROM accommodation_room_closures WHERE room_type_id = ?').bind(id)
+        : env.DB.prepare(
+            `INSERT INTO accommodation_room_closures (room_type_id, closed_by) VALUES (?, ?)
+             ON CONFLICT (room_type_id) DO NOTHING`,
+          ).bind(id, by),
+    ),
+  )
+  return ids
 }
 
 export async function setAccommodationOpen(
