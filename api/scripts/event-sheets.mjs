@@ -31,6 +31,8 @@ import { resolve } from 'node:path'
 import {
   ACCOMMODATION_SHEET,
   ACCOMMODATION_SHEET_TITLE,
+  ARRIVALS_SHEET,
+  ARRIVALS_SHEET_TITLE,
   sheetEvents,
   SEPARATE_SHEET_VERTICALS,
   SHEET_TAG,
@@ -64,6 +66,7 @@ for (const e of editors) {
 const events = [
   ...sheetEvents.map((e) => [e.name, e.territory.code, SEPARATE_SHEET_VERTICALS.has(e.territory.id)]),
   [ACCOMMODATION_SHEET, ACCOMMODATION_SHEET_TITLE, true],
+  [ARRIVALS_SHEET, ARRIVALS_SHEET_TITLE, true],
 ]
 
 const script = `/**
@@ -99,9 +102,9 @@ const EVENT_TAG = ${JSON.stringify(SHEET_TAG)}
 const VERTICAL_TAG = ${JSON.stringify(VERTICAL_TAG)}
 // Developer metadata on a tab, naming the event it holds.
 const TAB_KEY = 'pyrexia-event'
-// The rooming list's reserved name, so its file is titled and tabbed as what
-// it is rather than as an event.
-const ACCOMMODATION = ${JSON.stringify(ACCOMMODATION_SHEET)}
+// Reserved names that are not events, and what their one tab is called, so
+// their files are titled and tabbed as what they are rather than as an event.
+const SPECIAL_TABS = ${JSON.stringify({ [ACCOMMODATION_SHEET]: 'Bookings', [ARRIVALS_SHEET]: 'Arrivals' })}
 
 // [event, vertical, own spreadsheet?]
 const EVENTS = [
@@ -125,9 +128,9 @@ function setUp() {
   for (const [name, vertical, own] of EVENTS) {
     if (own) {
       if (files.events[name]) continue
-      const title = name === ACCOMMODATION ? vertical : vertical + ' · ' + name
+      const title = SPECIAL_TABS[name] ? vertical : vertical + ' · ' + name
       const ss = SpreadsheetApp.create(title + ' — PYREXIA 2026')
-      header_(ss.getSheets()[0].setName(name === ACCOMMODATION ? 'Bookings' : 'Entries'))
+      header_(ss.getSheets()[0].setName(SPECIAL_TABS[name] || 'Entries'))
       files.events[name] = place_(ss, EVENT_TAG + name, folder)
       madeFiles++
       continue

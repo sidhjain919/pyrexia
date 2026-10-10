@@ -53,6 +53,9 @@ export type AuditAction =
   | 'correction.pass_type'
   | 'sticker.activate'
   | 'sticker.void'
+  | 'sticker.activate_guest'
+  | 'sticker.deactivate'
+  | 'arrival.checkin'
   | 'gate.device_pair'
   | 'gate.device_revoke'
 

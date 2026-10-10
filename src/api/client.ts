@@ -1200,8 +1200,14 @@ export type StickerPerson = {
   email: string
   phone: string | null
   festivalPass: boolean
+  /** Holds Basic Registration or the Festival Pass: may be checked in. */
+  registered: boolean
+  /** When and by whom they were checked in at the fest, if they have been. */
+  arrival: { at: string; by: string | null } | null
   sticker: StickerRef | null
 }
+
+export type ArrivalCounts = { total: number; today: number; guests: number }
 
 export type GateOutcome =
   | 'ok'
@@ -1244,7 +1250,8 @@ export type StickerDevice = {
 
 export type StickerOverview = {
   night: string
-  stickers: { stock: number; active: number; void: number }
+  /** `guests` is the part of `active` given out as guest cards. */
+  stickers: { stock: number; active: number; void: number; guests: number }
   festivalPassWithoutSticker: number
   tonight: {
     /** Everybody let in, including by a phone without signal. */
@@ -1283,6 +1290,8 @@ export type StickerLookup = {
     voidReason: string | null
   }
   holder: StickerPerson | null
+  /** Set when the sticker is a guest card rather than somebody's Festival Pass. */
+  guest: { name: string; phone: string | null; note: string | null } | null
   scans: { night: string; result: string; admittedOffline: boolean; at: string; gate: string | null }[]
 }
 
@@ -1310,6 +1319,33 @@ export const stickerApi = {
       body: { registrationId, sticker, replace },
       ...staffAuth(),
       timeoutMs: DESK_TIMEOUT_MS,
+    }),
+
+  checkin: (registrationId: string) =>
+    request<{ person: StickerPerson; already: boolean; arrivals: ArrivalCounts }>('/api/stickers/checkin', {
+      method: 'POST',
+      body: { registrationId },
+      ...staffAuth(),
+      timeoutMs: DESK_TIMEOUT_MS,
+    }),
+
+  arrivals: () => request<ArrivalCounts>('/api/stickers/arrivals', { ...staffAuth(), timeoutMs: DESK_TIMEOUT_MS }),
+
+  /** Supervisor: a guest card for somebody who never registered. */
+  guest: (sticker: string, name: string, phone: string, note: string) =>
+    request<{ label: string; name: string; already: boolean }>('/api/stickers/guest', {
+      method: 'POST',
+      body: { sticker, name, phone, note },
+      auth: true,
+      timeoutMs: DESK_TIMEOUT_MS,
+    }),
+
+  /** Supervisor: undo an activation, so the card can be given to the right person. */
+  deactivate: (sticker: string) =>
+    request<{ label: string; changed: boolean }>('/api/stickers/deactivate', {
+      method: 'POST',
+      body: { sticker },
+      auth: true,
     }),
 
   lookup: (scan: string) =>

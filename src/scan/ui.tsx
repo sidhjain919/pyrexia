@@ -98,7 +98,7 @@ export function PersonCard({ person }: { person: StickerPerson }) {
             person.festivalPass ? 'bg-green-700/70 text-green-100' : 'bg-red-800/70 text-red-100'
           }`}
         >
-          {person.festivalPass ? 'Festival Pass' : 'Basic only'}
+          {person.festivalPass ? 'Festival Pass' : person.registered ? 'Basic only' : 'Not paid'}
         </span>
       </div>
     </Panel>

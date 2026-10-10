@@ -5,9 +5,13 @@
  *   POST /api/devices/pair                 a phone presents its pairing code
  *
  *   GET  /api/stickers/whoami              who this screen belongs to
- *   POST /api/stickers/identify            find a Festival Pass holder
+ *   POST /api/stickers/identify            find a registered person
+ *   POST /api/stickers/checkin             mark them arrived at the fest
+ *   GET  /api/stickers/arrivals            how many have arrived
  *   POST /api/stickers/activate            stick a sticker on them
  *   GET  /api/stickers/lookup              whose sticker is this, and where has it been
+ *   POST /api/stickers/guest               supervisor: a guest card for somebody unregistered
+ *   POST /api/stickers/deactivate          supervisor: undo an activation, back to unused
  *   POST /api/stickers/void                supervisor: a lost pass, or a lost sheet
  *   GET  /api/stickers/overview            supervisor: tonight at the gates
  *   GET  /api/stickers/devices             supervisor: the paired phones
@@ -23,8 +27,10 @@
  *
  *  - **Supervisors** sign in as themselves. An admin with a supervising role
  *    (superadmin, core, gate_supervisor) can do everything here.
- *  - **Desk devices** are phones or laptops a supervisor paired for activation.
- *    They find a Festival Pass holder and activate a sticker, nothing else.
+ *  - **Desk devices** are phones or laptops a supervisor paired for the desk.
+ *    They check people in and activate Festival Pass stickers, nothing else.
+ *    Guest cards are a supervisor's alone: they let in somebody who paid
+ *    nothing, so who may hand one out is kept short.
  *    Making the volunteers admins instead would hand each of them the whole
  *    registration list, which a counter does not need.
  *  - **Gate devices** are the guards' phones. They scan, and that is all.
@@ -46,6 +52,7 @@ import { verifyPass } from '../lib/pass.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import { festNight, readScan, scanMoment, serialLabel } from '../lib/stickers.ts'
 import { normalisePhone } from '../lib/validate.ts'
+import { requestArrivalsSheetSync } from '../jobs/sheets.ts'
 import * as audit from '../lib/audit.ts'
 
 /** Who is using a staff screen. */
@@ -167,16 +174,25 @@ type PersonRow = {
   email: string
   phone: string | null
   tier: number
+  /** 1 when they hold Basic Registration or the Festival Pass, unrevoked. */
+  registered: number
   sticker_code: string | null
   sticker_serial: number | null
+  arrived_at: string | null
+  arrived_by: string | null
 }
 
 const PERSON_SQL = `
   SELECT r.id, r.public_code, r.name, r.college, r.gender, r.email, r.phone, t.tier,
-         s.code AS sticker_code, s.serial AS sticker_serial
+         EXISTS (SELECT 1 FROM entitlements e
+                  WHERE e.registration_id = r.id AND e.product_id IN ('basic', 'delegate')
+                    AND e.revoked_at IS NULL) AS registered,
+         s.code AS sticker_code, s.serial AS sticker_serial,
+         a.checked_in_at AS arrived_at, a.checked_in_by AS arrived_by
     FROM registrations r
     JOIN registration_tier t ON t.registration_id = r.id
-    LEFT JOIN stickers s ON s.registration_id = r.id AND s.status = 'active'`
+    LEFT JOIN stickers s ON s.registration_id = r.id AND s.status = 'active'
+    LEFT JOIN arrivals a ON a.registration_id = r.id`
 
 function personView(p: PersonRow) {
   return {
@@ -188,6 +204,8 @@ function personView(p: PersonRow) {
     email: p.email,
     phone: p.phone,
     festivalPass: p.tier === 1,
+    registered: p.registered === 1,
+    arrival: p.arrived_at ? { at: p.arrived_at, by: p.arrived_by } : null,
     sticker: p.sticker_code
       ? { code: p.sticker_code, serial: p.sticker_serial, label: serialLabel(p.sticker_serial ?? 0) }
       : null,
@@ -253,6 +271,9 @@ type StickerRow = {
   voided_at: string | null
   voided_by: string | null
   void_reason: string | null
+  guest_name: string | null
+  guest_phone: string | null
+  guest_note: string | null
 }
 
 /** A scanned or typed sticker, or a sentence the desk can act on. */
@@ -327,6 +348,67 @@ stickers.post('/stickers/identify', async (c) => {
 })
 
 /**
+ * Mark somebody as arrived at the fest.
+ *
+ * The desk has already found them (usually from the pass QR in their email)
+ * and read the name back, so this is a single tap. Checking in somebody who
+ * already arrived is not an error: it answers with when and by whom, because
+ * that is what the desk is really asking, whether this pass has been used to
+ * come in before.
+ */
+stickers.post('/stickers/checkin', async (c) => {
+  const staff = c.get('staff')
+  const body = (await readJson(c)) as Record<string, unknown>
+  const registrationId = String(body.registrationId ?? '')
+
+  const person = await c.env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(registrationId).first<PersonRow>()
+  if (!person) throw new ApiError('not_found', 'Find the person again: that registration was not found.')
+  if (person.registered !== 1) {
+    throw new ApiError(
+      'forbidden',
+      `${person.name} (${person.public_code}) has not paid for registration. Send them to the registration counter.`,
+    )
+  }
+
+  const res = await c.env.DB.prepare(
+    `INSERT INTO arrivals (registration_id, checked_in_by) VALUES (?, ?)
+     ON CONFLICT (registration_id) DO NOTHING`,
+  ).bind(person.id, staff.label).run()
+  const already = (res.meta.changes ?? 0) === 0
+
+  if (!already) {
+    await audit.record(c.env, {
+      ...actor(staff),
+      action: 'arrival.checkin',
+      entity: 'registration',
+      entityId: person.id,
+      after: { publicCode: person.public_code },
+      ip: clientIp(c),
+    })
+    await requestArrivalsSheetSync(c.env)
+  }
+
+  const updated = await c.env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(person.id).first<PersonRow>()
+  return c.json(
+    { person: personView(updated ?? person), already, arrivals: await arrivalCounts(c.env) },
+    already ? 200 : 201,
+  )
+})
+
+/** Delegates checked in (in all, and today in IST), and guest cards given out. */
+async function arrivalCounts(env: Env) {
+  const row = await env.DB.prepare(
+    `SELECT (SELECT count(*) FROM arrivals) AS total,
+            (SELECT count(*) FROM arrivals
+              WHERE date(checked_in_at, '+330 minutes') = date('now', '+330 minutes')) AS today,
+            (SELECT count(*) FROM stickers WHERE status = 'active' AND guest_name IS NOT NULL) AS guests`,
+  ).first<{ total: number; today: number; guests: number }>()
+  return { total: row?.total ?? 0, today: row?.today ?? 0, guests: row?.guests ?? 0 }
+}
+
+stickers.get('/stickers/arrivals', async (c) => c.json(await arrivalCounts(c.env)))
+
+/**
  * Activate a sticker for a Festival Pass holder.
  *
  * Everything that could go wrong at a counter has its own sentence, because
@@ -352,6 +434,9 @@ stickers.post('/stickers/activate', async (c) => {
 
   if (sticker.status === 'active' && sticker.registration_id === person.id) {
     return c.json({ person: personView(person), already: true })
+  }
+  if (sticker.status === 'active' && sticker.guest_name) {
+    throw new ApiError('conflict', `${label} is a guest card, given to ${sticker.guest_name}. Use a fresh sticker.`)
   }
   if (sticker.status === 'active') {
     const holder = await c.env.DB.prepare('SELECT name, public_code FROM registrations WHERE id = ?')
@@ -398,11 +483,24 @@ stickers.post('/stickers/activate', async (c) => {
         WHERE code = ? AND status = 'stock'`,
     ).bind(person.id, staff.label, sticker.code),
   )
+  const activation = statements.length - 1
+  // Somebody being handed their card is standing at the desk, so they have
+  // arrived, whether or not anybody pressed "check in" first.
+  statements.push(
+    c.env.DB.prepare(
+      `INSERT INTO arrivals (registration_id, checked_in_by)
+       SELECT ?, ? WHERE EXISTS (
+         SELECT 1 FROM stickers WHERE code = ? AND registration_id = ? AND status = 'active')
+       ON CONFLICT (registration_id) DO NOTHING`,
+    ).bind(person.id, staff.label, sticker.code, person.id),
+  )
 
   let changed = 0
+  let arrived = false
   try {
     const results = await c.env.DB.batch(statements)
-    changed = results[results.length - 1].meta.changes ?? 0
+    changed = results[activation].meta.changes ?? 0
+    arrived = (results[results.length - 1].meta.changes ?? 0) === 1
   } catch (err) {
     // The one-sticker-per-person index lost a race with another counter.
     console.error('sticker activation failed', err)
@@ -430,6 +528,7 @@ stickers.post('/stickers/activate', async (c) => {
     after: { serial: sticker.serial, registrationId: person.id, publicCode: person.public_code },
     ip: clientIp(c),
   })
+  if (arrived) await requestArrivalsSheetSync(c.env)
 
   const updated = await c.env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(person.id).first<PersonRow>()
   return c.json({ person: personView(updated ?? person), already: false, replaced: person.sticker_code ? serialLabel(person.sticker_serial ?? 0) : null }, 201)
@@ -466,6 +565,9 @@ stickers.get('/stickers/lookup', async (c) => {
       voidReason: sticker.void_reason,
     },
     holder: holder ? personView(holder) : null,
+    guest: sticker.guest_name
+      ? { name: sticker.guest_name, phone: sticker.guest_phone, note: sticker.guest_note }
+      : null,
     scans: scans.results.map((s) => ({
       night: s.night,
       result: s.result,
@@ -480,6 +582,108 @@ stickers.get('/stickers/lookup', async (c) => {
 /* ------------------------------------------------------------------ *
  * Supervisors
  * ------------------------------------------------------------------ */
+
+/**
+ * Activate a guest card: a sticker for somebody who never registered.
+ *
+ * For the committee's friends and family, handed a printed card at the gate.
+ * Supervisors only, because a guest card is a free Star Night entry. The name
+ * is required: it is what the guard reads off the screen, and what the
+ * Arrivals sheet shows. Giving the same card to the same name twice is a
+ * double tap, not an error.
+ */
+stickers.post('/stickers/guest', async (c) => {
+  const staff = requireSupervisor(c)
+  const body = (await readJson(c)) as Record<string, unknown>
+  const name = String(body.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 80)
+  const phone = normalisePhone(String(body.phone ?? '')).slice(0, 15) || null
+  const note = String(body.note ?? '').trim().replace(/\s+/g, ' ').slice(0, 120) || null
+  if (name.length < 2) {
+    throw new ApiError('validation_failed', 'Their name, as the guard will read it.', {
+      fields: { name: 'Their name.' },
+    })
+  }
+
+  const sticker = await stickerFrom(c.env, body.sticker)
+  const label = serialLabel(sticker.serial)
+
+  if (sticker.status === 'active' && sticker.guest_name?.toLowerCase() === name.toLowerCase()) {
+    return c.json({ label, name: sticker.guest_name, already: true })
+  }
+  if (sticker.status === 'active') {
+    throw new ApiError(
+      'conflict',
+      `${label} is already active for ${sticker.guest_name ?? 'a registered delegate'}. Use a fresh card, or undo it from Look up first.`,
+    )
+  }
+  if (sticker.status === 'void') {
+    throw new ApiError('conflict', `${label} was cancelled${sticker.void_reason ? ` (${sticker.void_reason})` : ''}. Use a fresh card.`)
+  }
+
+  const res = await c.env.DB.prepare(
+    `UPDATE stickers SET status = 'active', guest_name = ?, guest_phone = ?, guest_note = ?,
+            activated_at = datetime('now'), activated_by = ?
+      WHERE code = ? AND status = 'stock'`,
+  ).bind(name, phone, note, staff.label, sticker.code).run()
+  if ((res.meta.changes ?? 0) !== 1) {
+    throw new ApiError('conflict', `${label} was just used by somebody else. Use a fresh card.`)
+  }
+
+  await audit.record(c.env, {
+    ...actor(staff),
+    action: 'sticker.activate_guest',
+    entity: 'sticker',
+    entityId: sticker.code,
+    after: { serial: sticker.serial, name, phone, note },
+    ip: clientIp(c),
+  })
+  await requestArrivalsSheetSync(c.env)
+
+  return c.json({ label, name, already: false }, 201)
+})
+
+/**
+ * Undo an activation: the sticker goes back to unused, as if never handed out.
+ *
+ * For a sticker activated by mistake (a test at the desk, the wrong person, a
+ * guest card given under the wrong name). Unlike cancelling, the card can be
+ * activated again afterwards, for the right person. Its gate history is kept.
+ * Supervisors only.
+ */
+stickers.post('/stickers/deactivate', async (c) => {
+  const staff = requireSupervisor(c)
+  const body = (await readJson(c)) as Record<string, unknown>
+  const sticker = await stickerFrom(c.env, body.sticker)
+  const label = serialLabel(sticker.serial)
+
+  if (sticker.status === 'stock') return c.json({ label, changed: false })
+  if (sticker.status === 'void') {
+    throw new ApiError('conflict', `${label} was cancelled, not activated. A cancelled sticker stays cancelled.`)
+  }
+
+  const res = await c.env.DB.prepare(
+    `UPDATE stickers SET status = 'stock', registration_id = NULL, guest_name = NULL, guest_phone = NULL,
+            guest_note = NULL, activated_at = NULL, activated_by = NULL
+      WHERE code = ? AND status = 'active'`,
+  ).bind(sticker.code).run()
+
+  await audit.record(c.env, {
+    ...actor(staff),
+    action: 'sticker.deactivate',
+    entity: 'sticker',
+    entityId: sticker.code,
+    before: {
+      registrationId: sticker.registration_id,
+      guestName: sticker.guest_name,
+      activatedAt: sticker.activated_at,
+      activatedBy: sticker.activated_by,
+    },
+    ip: clientIp(c),
+  })
+  if (sticker.guest_name) await requestArrivalsSheetSync(c.env)
+
+  return c.json({ label, changed: (res.meta.changes ?? 0) === 1 })
+})
 
 /**
  * Void one sticker, or a run of serials.
@@ -538,7 +742,7 @@ stickers.get('/stickers/overview', async (c) => {
   requireSupervisor(c)
   const night = festNight()
 
-  const [counts, gates, refused, nights, holders, twice] = await Promise.all([
+  const [counts, gates, refused, nights, holders, twice, guests] = await Promise.all([
     c.env.DB.prepare('SELECT status, count(*) AS n FROM stickers GROUP BY status').all<{ status: string; n: number }>(),
     c.env.DB.prepare(
       `SELECT coalesce(gt.name, '?') AS gate, count(*) AS n
@@ -564,7 +768,7 @@ stickers.get('/stickers/overview', async (c) => {
     // copied and cancel it before the next night.
     c.env.DB.prepare(
       `SELECT ss.sticker_code AS code, ss.result, ss.client_scanned_at AS at, gt.name AS gate, g.name AS guard,
-              s.serial, r.name, r.public_code,
+              s.serial, coalesce(r.name, s.guest_name) AS name, r.public_code,
               f.client_scanned_at AS first_at, fg.name AS first_gate
          FROM sticker_scans ss
          LEFT JOIN gates gt ON gt.id = ss.gate_id
@@ -580,12 +784,20 @@ stickers.get('/stickers/overview', async (c) => {
       serial: number | null; name: string | null; public_code: string | null
       first_at: string | null; first_gate: string | null
     }>(),
+    c.env.DB.prepare(
+      `SELECT count(*) AS n FROM stickers WHERE status = 'active' AND guest_name IS NOT NULL`,
+    ).first<{ n: number }>(),
   ])
 
   const byStatus = Object.fromEntries(counts.results.map((r) => [r.status, r.n]))
   return c.json({
     night,
-    stickers: { stock: byStatus.stock ?? 0, active: byStatus.active ?? 0, void: byStatus.void ?? 0 },
+    stickers: {
+      stock: byStatus.stock ?? 0,
+      active: byStatus.active ?? 0,
+      void: byStatus.void ?? 0,
+      guests: guests?.n ?? 0,
+    },
     festivalPassWithoutSticker: holders?.n ?? 0,
     tonight: {
       admitted: gates.results.reduce((sum, g) => sum + g.n, 0),
@@ -790,7 +1002,12 @@ stickers.get('/gate/manifest', async (c) => {
          FROM stickers s
          JOIN registrations r ON r.id = s.registration_id
          JOIN registration_tier t ON t.registration_id = s.registration_id
-        WHERE s.status = 'active' AND t.tier = 1`,
+        WHERE s.status = 'active' AND t.tier = 1
+       UNION ALL
+       -- Guest cards: no registration, so the guard sees the name and "Guest".
+       SELECT s.code, s.serial, s.guest_name, 'Guest', NULL
+         FROM stickers s
+        WHERE s.status = 'active' AND s.guest_name IS NOT NULL`,
     ).all<{ code: string; serial: number; name: string; college: string | null; gender: string | null }>(),
     c.env.DB.prepare(
       `SELECT DISTINCT sticker_code FROM sticker_scans WHERE night = ? AND ${LET_IN}`,
@@ -868,14 +1085,14 @@ stickers.post('/gate/scan', async (c) => {
   }
 
   const row = await c.env.DB.prepare(
-    `SELECT s.code, s.serial, s.status, r.name, r.college, r.gender, r.public_code, t.tier
+    `SELECT s.code, s.serial, s.status, s.guest_name, r.name, r.college, r.gender, r.public_code, t.tier
        FROM stickers s
        LEFT JOIN registrations r ON r.id = s.registration_id
        LEFT JOIN registration_tier t ON t.registration_id = s.registration_id
       WHERE s.code = ?`,
   ).bind(parsed.code).first<{
-    code: string; serial: number; status: string; name: string | null; college: string | null
-    gender: string | null; public_code: string | null; tier: number | null
+    code: string; serial: number; status: string; guest_name: string | null; name: string | null
+    college: string | null; gender: string | null; public_code: string | null; tier: number | null
   }>()
 
   if (!row) {
@@ -884,9 +1101,11 @@ stickers.post('/gate/scan', async (c) => {
   }
 
   const sticker = { serial: row.serial, label: serialLabel(row.serial) }
-  const person = row.name
-    ? { name: row.name, college: row.college, gender: row.gender, publicCode: row.public_code }
-    : null
+  const person = row.guest_name
+    ? { name: row.guest_name, college: 'Guest', gender: null, publicCode: null }
+    : row.name
+      ? { name: row.name, college: row.college, gender: row.gender, publicCode: row.public_code }
+      : null
 
   const refuse = async (outcome: Outcome) => {
     if (!prior) await record(outcome, row.code).run()
@@ -895,8 +1114,8 @@ stickers.post('/gate/scan', async (c) => {
 
   if (row.status === 'stock') return refuse('not_active')
   if (row.status === 'void') return refuse('void')
-  // Refunded since it was activated.
-  if (row.tier !== 1) return refuse('no_festival_pass')
+  // Refunded since it was activated. A guest card has no pass to lose.
+  if (!row.guest_name && row.tier !== 1) return refuse('no_festival_pass')
 
   if (prior?.result === 'ok') return finish('ok', { sticker, person })
 

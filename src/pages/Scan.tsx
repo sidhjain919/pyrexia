@@ -4,7 +4,9 @@ import { Loader2 } from 'lucide-react'
 
 import { ApiError, clearSession, getAccount, getDevice, getSession, setDevice, stickerApi, type PairedDevice } from '../api/client'
 import ActivateTab from '../scan/ActivateTab'
+import CheckInTab from '../scan/CheckInTab'
 import GateScreen from '../scan/GateScreen'
+import GuestTab from '../scan/GuestTab'
 import LookupTab from '../scan/LookupTab'
 import PhonesTab from '../scan/PhonesTab'
 import TonightTab from '../scan/TonightTab'
@@ -12,13 +14,14 @@ import { ErrorLine } from '../scan/ActivateTab'
 import { Panel, TextEntry } from '../scan/ui'
 
 /**
- * Star Night stickers: one page, three kinds of device.
+ * The fest's entry desk and Star Night stickers: one page, three kinds of
+ * device.
  *
  *  - A guard's phone, paired to a gate, opens straight into the scanner and
  *    can do nothing else.
- *  - A desk device, paired for activation, activates and looks up stickers.
- *  - A supervisor, signed in as themselves, does all of that and pairs the
- *    phones, cancels stickers and watches the night.
+ *  - A desk device checks delegates in, activates and looks up stickers.
+ *  - A supervisor, signed in as themselves, does all of that, gives out guest
+ *    cards, pairs the phones, cancels stickers and watches the night.
  *
  * Not the security boundary, like /admin and /desk: every endpoint checks for
  * itself. A device link from a supervisor's screen lands here with
@@ -26,14 +29,35 @@ import { Panel, TextEntry } from '../scan/ui'
  */
 
 type Who = { kind: 'supervisor' | 'desk'; label: string; supervisor: boolean }
-type Tab = 'activate' | 'lookup' | 'phones' | 'tonight'
+type Tab = 'checkin' | 'activate' | 'guest' | 'lookup' | 'phones' | 'tonight'
+
+const TAB_KEY = 'pyrexia.scan.tab'
+
+/** The tab this screen was last on, so a sticker desk stays a sticker desk. */
+function savedTab(): Tab {
+  try {
+    const t = localStorage.getItem(TAB_KEY)
+    if (t === 'checkin' || t === 'activate' || t === 'guest' || t === 'lookup' || t === 'phones' || t === 'tonight') return t
+  } catch {
+    // Storage blocked: start on check-in.
+  }
+  return 'checkin'
+}
 
 export default function Scan() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const [device, setDeviceState] = useState<PairedDevice | null>(() => getDevice())
   const [who, setWho] = useState<Who | null | 'none'>(null)
-  const [tab, setTab] = useState<Tab>('activate')
+  const [tab, setTabState] = useState<Tab>(savedTab)
+  const setTab = (t: Tab) => {
+    setTabState(t)
+    try {
+      localStorage.setItem(TAB_KEY, t)
+    } catch {
+      // Not remembered; nothing else depends on it.
+    }
+  }
   const [pairError, setPairError] = useState<string | null>(null)
   const [pairing, setPairing] = useState(false)
 
@@ -104,8 +128,8 @@ export default function Scan() {
   if (who === 'none') {
     return (
       <Shell>
-        <h1 className="font-display text-3xl text-offwhite">Star Night scanner</h1>
-        <p className="mt-2 text-[0.95rem] text-parchment/65">For PYREXIA crew at the activation desk and the concert gates.</p>
+        <h1 className="font-display text-3xl text-offwhite">PYREXIA scanner</h1>
+        <p className="mt-2 text-[0.95rem] text-parchment/65">For PYREXIA crew at the entry desk, the sticker desk and the concert gates.</p>
 
         <div className="mt-6 space-y-4">
           <Panel>
@@ -150,7 +174,9 @@ export default function Scan() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'activate', label: 'Activate' },
+    { id: 'checkin', label: 'Check in' },
+    { id: 'activate', label: 'Sticker' },
+    ...(who.supervisor ? [{ id: 'guest' as const, label: 'Guest' }] : []),
     { id: 'lookup', label: 'Look up' },
     ...(who.supervisor
       ? [
@@ -159,24 +185,28 @@ export default function Scan() {
         ]
       : []),
   ]
+  // A desk device remembering a supervisor-only tab from before it was paired.
+  const current = tabs.some((t) => t.id === tab) ? tab : 'checkin'
 
   return (
     <Shell>
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-offwhite">Star Night stickers</h1>
+        <h1 className="font-display text-2xl text-offwhite">PYREXIA desk</h1>
         <span className="truncate text-[0.78rem] text-parchment/50">
           {who.kind === 'desk' ? device?.name : who.label}
         </span>
       </div>
 
-      <nav className="mt-4 flex gap-1 rounded-xl bg-abyss/70 p-1">
+      {/* Wraps to two rows of three on a supervisor's phone rather than
+          hiding the last tabs off the edge. */}
+      <nav className="mt-4 flex flex-wrap gap-1 rounded-xl bg-abyss/70 p-1">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`flex-1 rounded-lg py-2.5 text-[0.88rem] ${
-              tab === t.id ? 'bg-gold/20 text-gold-bright' : 'text-parchment/60'
+            className={`flex-1 basis-[30%] whitespace-nowrap rounded-lg px-2 py-2.5 text-[0.88rem] ${
+              current === t.id ? 'bg-gold/20 text-gold-bright' : 'text-parchment/60'
             }`}
           >
             {t.label}
@@ -185,10 +215,12 @@ export default function Scan() {
       </nav>
 
       <div className="mt-4">
-        {tab === 'activate' && <ActivateTab supervisor={who.supervisor} />}
-        {tab === 'lookup' && <LookupTab supervisor={who.supervisor} />}
-        {tab === 'phones' && <PhonesTab />}
-        {tab === 'tonight' && <TonightTab />}
+        {current === 'checkin' && <CheckInTab />}
+        {current === 'activate' && <ActivateTab supervisor={who.supervisor} />}
+        {current === 'guest' && <GuestTab />}
+        {current === 'lookup' && <LookupTab supervisor={who.supervisor} />}
+        {current === 'phones' && <PhonesTab />}
+        {current === 'tonight' && <TonightTab />}
       </div>
 
     </Shell>

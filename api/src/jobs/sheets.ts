@@ -81,6 +81,26 @@ export async function requestAccommodationSheetSync(env: Env): Promise<void> {
 }
 
 /**
+ * Who has arrived at the fest: delegates checked in at the entry desk, and
+ * guests given a card. Rides the same machinery as the rooming list, under a
+ * reserved name of its own, in a spreadsheet of its own.
+ */
+export const ARRIVALS_SHEET = '__arrivals'
+
+/** The spreadsheet's title in Drive; its one tab is called "Arrivals". */
+export const ARRIVALS_SHEET_TITLE = 'Arrivals'
+
+/** Ask for the arrivals list to be brought up to date. Never throws. */
+export async function requestArrivalsSheetSync(env: Env): Promise<void> {
+  if (!config(env)) return
+  try {
+    await env.JOBS.send({ kind: 'sheets.sync', eventName: ARRIVALS_SHEET })
+  } catch (err) {
+    console.error('could not queue the arrivals sheet sync', err)
+  }
+}
+
+/**
  * Ask for an event's sheet to be brought up to date.
  *
  * Never throws: a sheet is a convenience, and nothing a student is waiting on
@@ -280,6 +300,86 @@ async function loadBookingGrid(env: Env): Promise<SheetValue[][]> {
   return buildAccommodationGrid(results)
 }
 
+export type ArrivalRow = {
+  /** UTC, as SQLite writes it. */
+  at: string
+  kind: 'delegate' | 'guest'
+  name: string
+  public_code: string | null
+  tier: number | null
+  phone: string | null
+  email: string | null
+  college: string | null
+  gender: string | null
+  sticker_serial: number | null
+  /** For a guest: whose guest, as the supervisor wrote it. */
+  note: string | null
+  by: string | null
+}
+
+const ARRIVAL_SQL = `
+  SELECT a.checked_in_at AS at, 'delegate' AS kind, r.name, r.public_code, t.tier,
+         r.phone, r.email, r.college, r.gender, s.serial AS sticker_serial,
+         NULL AS note, a.checked_in_by AS by
+    FROM arrivals a
+    JOIN registrations r ON r.id = a.registration_id
+    JOIN registration_tier t ON t.registration_id = a.registration_id
+    LEFT JOIN stickers s ON s.registration_id = a.registration_id AND s.status = 'active'
+  UNION ALL
+  SELECT s.activated_at, 'guest', s.guest_name, NULL, NULL,
+         s.guest_phone, NULL, NULL, NULL, s.serial,
+         s.guest_note, s.activated_by
+    FROM stickers s
+   WHERE s.status = 'active' AND s.guest_name IS NOT NULL`
+
+/**
+ * The arrivals list, in the order people came through the door.
+ *
+ * Oldest first, like a form's response sheet, so a new arrival lands at the
+ * bottom instead of shuffling everybody. A guest whose card is undone drops
+ * off, because they were never really let in under that card.
+ */
+export function buildArrivalsGrid(arrivals: ArrivalRow[]): SheetValue[][] {
+  const headers = [
+    '#', 'Arrived (IST)', 'Name', 'Type', 'Registration No', 'Mobile', 'Email',
+    'College', 'Gender', 'Star Night card', 'Guest of / note', 'Checked in by',
+  ]
+
+  const sorted = [...arrivals].sort((a, b) => a.at.localeCompare(b.at) || a.name.localeCompare(b.name))
+
+  const rows = sorted.map((a, i) => [
+    i + 1,
+    toIst(a.at),
+    a.name,
+    a.kind === 'guest' ? 'Guest card' : a.tier === 1 ? 'Festival Pass' : 'Basic Registration',
+    a.public_code ?? '',
+    a.phone ?? '',
+    a.email ?? '',
+    a.college ?? '',
+    a.gender ?? '',
+    a.sticker_serial ? `No. ${String(a.sticker_serial).padStart(5, '0')}` : '',
+    a.note ?? '',
+    a.by ?? '',
+  ] as SheetValue[])
+
+  return [headers, ...rows]
+}
+
+async function loadArrivalsGrid(env: Env): Promise<SheetValue[][]> {
+  const { results } = await env.DB.prepare(ARRIVAL_SQL).all<ArrivalRow>()
+  return buildArrivalsGrid(results)
+}
+
+/**
+ * The sheets that are not an event's entries, by reserved name, and where
+ * each one's rows come from. Everything else about them (discovery, ordered
+ * writes, the unchanged-content skip) is shared with the event sheets.
+ */
+const SPECIAL_SHEETS: Record<string, (env: Env) => Promise<SheetValue[][]>> = {
+  [ACCOMMODATION_SHEET]: loadBookingGrid,
+  [ARRIVALS_SHEET]: loadArrivalsGrid,
+}
+
 async function hashGrid(grid: SheetValue[][]): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(grid)))
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
@@ -315,11 +415,12 @@ export async function syncEventSheet(env: Env, eventName: string): Promise<void>
   // always carries a smaller version, whichever request reaches Google first.
   const version = Date.now()
 
-  // The one branch the reserved name costs: everything after this point is
-  // identical for a rooming list and an event's entries.
+  // The one branch the reserved names cost: everything after this point is
+  // identical for a rooming list, the arrivals and an event's entries.
   let grid: SheetValue[][]
-  if (eventName === ACCOMMODATION_SHEET) {
-    grid = await loadBookingGrid(env)
+  const special = SPECIAL_SHEETS[eventName]
+  if (special) {
+    grid = await special(env)
   } else {
     const { results } = await env.DB.prepare(`${ENTRY_SQL} AND ev.event_name = ?${ORDER}`)
       .bind(eventName)
@@ -384,7 +485,7 @@ export async function discoverSheets(env: Env): Promise<number> {
   const cfg = config(env)
   if (!cfg) return 0
 
-  const known = new Set([...sheetEvents.map((e) => e.name), ACCOMMODATION_SHEET])
+  const known = new Set([...sheetEvents.map((e) => e.name), ...Object.keys(SPECIAL_SHEETS)])
   const matched = (await listSheets(cfg)).filter((f) => known.has(f.event))
 
   if (matched.length) {
@@ -440,16 +541,11 @@ export async function sweepSheets(env: Env): Promise<{ found: number; queued: nu
     byEvent.set(e.event_name, list)
   }
 
-  const bookingGrid = records.some((r) => r.event_name === ACCOMMODATION_SHEET)
-    ? await loadBookingGrid(env)
-    : null
-
   const stale: string[] = []
   for (const r of records) {
+    const special = SPECIAL_SHEETS[r.event_name]
     const hash = await hashGrid(
-      r.event_name === ACCOMMODATION_SHEET
-        ? (bookingGrid ?? [])
-        : buildGrid(r.event_name, byEvent.get(r.event_name) ?? []),
+      special ? await special(env) : buildGrid(r.event_name, byEvent.get(r.event_name) ?? []),
     )
     // An error flag is re-checked too: the sync either rewrites the tab or,
     // finding it already current, clears the flag.

@@ -8,8 +8,10 @@ import assert from 'node:assert/strict'
 
 import {
   ACCOMMODATION_SHEET,
+  ARRIVALS_SHEET,
   SEPARATE_SHEET_VERTICALS,
   buildAccommodationGrid,
+  buildArrivalsGrid,
   buildGrid,
   sheetEvents,
   toIst,
@@ -220,4 +222,37 @@ test('an empty rooming list still has its header row', () => {
 test('the reserved name cannot collide with a real event', () => {
   assert.ok(ACCOMMODATION_SHEET.startsWith('__'))
   assert.ok(!sheetEvents.some((e) => e.name === ACCOMMODATION_SHEET))
+})
+
+test('arrivals list delegates and guests in the order they came, in IST', () => {
+  const grid = buildArrivalsGrid([
+    {
+      at: '2026-10-12 06:00:00', kind: 'guest', name: 'Asha Rao', public_code: null, tier: null,
+      phone: '9000000002', email: null, college: null, gender: null, sticker_serial: 7,
+      note: "Dean's family", by: 'core@pyrexia.local',
+    },
+    {
+      at: '2026-10-12 04:30:00', kind: 'delegate', name: 'Ravi Kumar', public_code: 'PYX26-ABC123', tier: 1,
+      phone: '9000000001', email: 'ravi@example.com', college: 'AIIMS Delhi', gender: 'Male', sticker_serial: null,
+      note: null, by: 'desk:Gate 1',
+    },
+    {
+      at: '2026-10-12 05:00:00', kind: 'delegate', name: 'Meera Shah', public_code: 'PYX26-XYZ789', tier: 0,
+      phone: null, email: 'meera@example.com', college: null, gender: null, sticker_serial: null,
+      note: null, by: 'desk:Gate 1',
+    },
+  ])
+
+  assert.equal(grid[0][0], '#')
+  assert.deepEqual(grid.slice(1).map((r) => r[2]), ['Ravi Kumar', 'Meera Shah', 'Asha Rao'])
+  assert.deepEqual(grid.slice(1).map((r) => r[3]), ['Festival Pass', 'Basic Registration', 'Guest card'])
+  assert.equal(grid[1][1], '2026-10-12 10:00')
+  assert.equal(grid[3][9], 'No. 00007')
+  assert.equal(grid[3][10], "Dean's family")
+})
+
+test('the reserved sheet names cannot collide with an event', () => {
+  const names = new Set(sheetEvents.map((e) => e.name))
+  assert.ok(!names.has(ARRIVALS_SHEET))
+  assert.notEqual(ARRIVALS_SHEET, ACCOMMODATION_SHEET)
 })

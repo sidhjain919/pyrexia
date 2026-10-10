@@ -118,6 +118,8 @@ export default function TonightTab() {
         </div>
         <p className="mt-3 text-[0.85rem] text-parchment/65">
           {data.festivalPassWithoutSticker.toLocaleString('en-IN')} Festival Pass holders have not collected a sticker yet.
+          {data.stickers.guests > 0 &&
+            ` ${data.stickers.guests.toLocaleString('en-IN')} of the activated are guest cards.`}
         </p>
       </Panel>
 

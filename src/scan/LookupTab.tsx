@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ban } from 'lucide-react'
+import { Ban, Undo2 } from 'lucide-react'
 
 import { stickerApi, type StickerLookup } from '../api/client'
 import { ErrorLine } from './ActivateTab'
@@ -19,7 +19,9 @@ const RESULT_LABEL: Record<string, string> = {
 /**
  * Whose sticker is this, and where has it been. For the desk when somebody
  * turns up with a card they say is theirs, and for a supervisor called to a
- * red screen at the gate. Only a supervisor sees the cancel button.
+ * red screen at the gate. Only a supervisor sees the buttons: cancel (a lost
+ * card, never usable again) and undo (activated by mistake, back to unused so
+ * it can go to the right person).
  */
 export default function LookupTab({ supervisor }: { supervisor: boolean }) {
   const [found, setFound] = useState<StickerLookup | null>(null)
@@ -54,8 +56,21 @@ export default function LookupTab({ supervisor }: { supervisor: boolean }) {
     }
   }
 
+  const undo = async () => {
+    if (!found) return
+    const who = found.holder?.name ?? found.guest?.name ?? 'its holder'
+    if (!confirm(`Undo ${found.sticker.label}? It stops working for ${who} and goes back to unused, ready to activate for the right person.`)) return
+    try {
+      await stickerApi.deactivate(scanned)
+      await look(scanned)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not undo it.')
+    }
+  }
+
   const s = found?.sticker
-  const status = s?.status === 'active' ? 'Active' : s?.status === 'void' ? 'Cancelled' : 'Not activated'
+  const status =
+    s?.status === 'active' ? (found?.guest ? 'Active · guest card' : 'Active') : s?.status === 'void' ? 'Cancelled' : 'Not activated'
 
   return (
     <div className="space-y-4">
@@ -80,17 +95,37 @@ export default function LookupTab({ supervisor }: { supervisor: boolean }) {
               {s.voidedAt && <div>Cancelled by {s.voidedBy}: {s.voidReason}</div>}
             </div>
             {supervisor && s.status !== 'void' && (
-              <button
-                type="button"
-                onClick={cancel}
-                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-400/50 px-4 py-2 text-[0.9rem] text-red-200"
-              >
-                <Ban size={16} /> Cancel this sticker
-              </button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {s.status === 'active' && (
+                  <button
+                    type="button"
+                    onClick={undo}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gold/40 px-4 py-2 text-[0.9rem] text-gold-bright"
+                  >
+                    <Undo2 size={16} /> Undo activation
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={cancel}
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-400/50 px-4 py-2 text-[0.9rem] text-red-200"
+                >
+                  <Ban size={16} /> Cancel this sticker
+                </button>
+              </div>
             )}
           </Panel>
 
           {found.holder && <PersonCard person={found.holder} />}
+          {found.guest && (
+            <Panel>
+              <div className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">Guest card</div>
+              <div className="mt-2 text-2xl leading-tight text-offwhite">{found.guest.name}</div>
+              <div className="mt-1 text-[0.9rem] text-parchment/70">
+                {[found.guest.note, found.guest.phone].filter(Boolean).join(' · ') || 'No details given'}
+              </div>
+            </Panel>
+          )}
 
           <Panel>
             <div className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">At the gates</div>
