@@ -101,7 +101,7 @@ function present(r: GateResult): Display {
       }
     }
     case 'not_active':
-      return { tone: 'bad', title: 'NOT ACTIVATED', lines: ['This sticker was never activated.', 'Send them to the activation desk.', ...serial] }
+      return { tone: 'bad', title: 'NOT ACTIVATED', lines: ['This sticker was never activated.', 'Send them to the entry desk.', ...serial] }
     case 'void':
       return {
         tone: 'bad',
