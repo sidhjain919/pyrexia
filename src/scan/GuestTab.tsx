@@ -12,9 +12,9 @@ import { Panel, PrimaryButton, TextEntry } from './ui'
  * committee's friends and family, activated on the spot. Supervisors only;
  * the server refuses anyone else.
  *
- * The name comes first and the scan second, because scanning activates: the
- * guard at the Star Night gate is shown exactly the name typed here, so it
- * has to be there before the card goes live.
+ * The details come first and the scan second, because scanning activates:
+ * whatever is typed here is what the guard sees, so it has to be there before
+ * the card goes live. All of it is optional; an unnamed card shows "Guest".
  */
 export default function GuestTab() {
   const [name, setName] = useState('')
@@ -22,12 +22,10 @@ export default function GuestTab() {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ label: string; name: string; already: boolean } | null>(null)
-
-  const ready = name.trim().length >= 2
+  const [done, setDone] = useState<{ label: string; name: string | null; already: boolean } | null>(null)
 
   const activate = async (sticker: string) => {
-    if (busy || !ready) return
+    if (busy) return
     setBusy(true)
     setError(null)
     try {
@@ -57,7 +55,7 @@ export default function GuestTab() {
             <Check size={34} strokeWidth={3} className="text-white" />
           </div>
           <div className="mt-4 font-mono text-3xl tracking-widest text-gold-bright">{done.label}</div>
-          <div className="mt-1 text-xl text-offwhite">{done.name}</div>
+          <div className="mt-1 text-xl text-offwhite">{done.name ?? 'Guest'}</div>
           <p className="mt-3 max-w-xs text-[0.9rem] text-parchment/70">
             {done.already
               ? 'This card was already theirs. Nothing changed.'
@@ -78,10 +76,10 @@ export default function GuestTab() {
     <div className="space-y-4">
       <Panel>
         <div className="flex items-center gap-2 font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">
-          <UserPlus size={14} /> 1. Who is the guest
+          <UserPlus size={14} /> 1. Who is the guest (all optional)
         </div>
         <div className="mt-3 space-y-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name (shown to the guard)" className={field} maxLength={80} />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional; the guard sees it)" className={field} maxLength={80} />
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -96,13 +94,10 @@ export default function GuestTab() {
 
       <Panel>
         <div className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">2. Scan the card to activate it</div>
-        {ready ? (
-          <>
-            <Camera onRead={activate} paused={busy} className="mt-3 h-56 rounded-xl" />
-            <TextEntry className="mt-3" placeholder="or type the code" button="Activate" busy={busy} onSubmit={activate} mono />
-          </>
-        ) : (
-          <p className="mt-2 text-[0.9rem] text-parchment/55">Type their name first.</p>
+        <Camera onRead={activate} paused={busy} className="mt-3 h-56 rounded-xl" />
+        <TextEntry className="mt-3" placeholder="or type the code" button="Activate" busy={busy} onSubmit={activate} mono />
+        {!name.trim() && (
+          <p className="mt-2 text-[0.8rem] text-parchment/50">No name: the guard will see “Guest” and the card number.</p>
         )}
       </Panel>
 

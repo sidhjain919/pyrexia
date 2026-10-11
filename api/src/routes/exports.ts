@@ -39,6 +39,8 @@ import { registerableEvents, resolveEvent } from '../data/events.ts'
 import {
   ACCOMMODATION_SHEET,
   ACCOMMODATION_SHEET_TITLE,
+  ARRIVALS_SHEET,
+  ARRIVALS_SHEET_TITLE,
   SEPARATE_SHEET_VERTICALS,
   sheetEvents,
   sweepSheets,
@@ -541,6 +543,27 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     ])
   }
 
+  // Who has arrived: the entry desk's check-ins and the guest cards. The same
+  // kind of file as the rooming list, and invisible for the same reason
+  // without a row of its own.
+  const arrivals = byEvent.get(ARRIVALS_SHEET)
+  if (arrivals) {
+    const n = await c.env.DB.prepare(
+      `SELECT (SELECT count(*) FROM arrivals)
+            + (SELECT count(*) FROM stickers WHERE status = 'active' AND guest_name IS NOT NULL) AS n`,
+    ).first<{ n: number }>()
+    rows.push([
+      ARRIVALS_SHEET_TITLE,
+      '—',
+      { link: sheetUrl(arrivals.spreadsheet_id), text: 'Open spreadsheet' },
+      1,
+      'Arrivals',
+      n?.n ?? 0,
+      arrivals.synced_at ? toIst(arrivals.synced_at) : '',
+      arrivals.last_error ? 'Last write failed (retried automatically)' : 'Live',
+    ])
+  }
+
   if (unplaced.length) {
     rows.push([
       'Not set up yet', '', '', unplaced.length, unplaced.join(', '),
@@ -560,7 +583,7 @@ exports_.get('/admin/export/event-sheets', async (c) => {
     [
       tab(
         'Spreadsheets',
-        `${books.size + (stay ? 1 : 0)} live Google spreadsheets: one per vertical with a tab per event, one per Velocity event, and the accommodation rooming list`,
+        `${books.size + (stay ? 1 : 0) + (arrivals ? 1 : 0)} live Google spreadsheets: one per vertical with a tab per event, one per Velocity event, the accommodation rooming list and the arrivals list`,
         ['Spreadsheet', 'Vertical', 'Link', 'Tabs', 'Events inside', 'Confirmed entries',
          'Last changed (IST)', 'Status'],
         rows,

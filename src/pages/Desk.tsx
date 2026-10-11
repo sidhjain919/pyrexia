@@ -29,7 +29,7 @@ import { Choice, Legend } from '../desk/ui'
  * their registration number and QR, and that is what the gate scans.
  */
 
-const YEARS = ['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate', 'Not a student']
+const YEARS = ['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate']
 const GENDERS = ['Female', 'Male', 'Other', 'Prefer not to say']
 
 type Done = {

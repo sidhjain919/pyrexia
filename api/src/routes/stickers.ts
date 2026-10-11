@@ -257,8 +257,9 @@ async function findPerson(env: Env, query: string): Promise<PersonRow | null> {
     if (s?.status === 'active' && s.registration_id) {
       return env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(s.registration_id).first<PersonRow>()
     }
-    if (s?.status === 'active' && s.guest_name) {
-      throw new ApiError('bad_request', `That is ${s.guest_name}'s guest card. Guests are not checked in; they go straight to the gate.`)
+    // An unnamed guest card has an empty name, not a null one.
+    if (s?.status === 'active' && s.guest_name !== null) {
+      throw new ApiError('bad_request', `That is ${s.guest_name ? `${s.guest_name}'s` : 'a'} guest card. Guests are not checked in; they go straight to the gate.`)
     }
     throw new ApiError('bad_request', "That card is not anybody's yet. Find the person first: scan the pass QR from their email, or type their email or mobile.")
   }
@@ -508,8 +509,8 @@ stickers.post('/stickers/activate', async (c) => {
   if (sticker.status === 'active' && sticker.registration_id === person.id) {
     return c.json({ person: personView(person), already: true })
   }
-  if (sticker.status === 'active' && sticker.guest_name) {
-    throw new ApiError('conflict', `${label} is a guest card, given to ${sticker.guest_name}. Use a fresh sticker.`)
+  if (sticker.status === 'active' && sticker.guest_name !== null) {
+    throw new ApiError('conflict', `${label} is a guest card${sticker.guest_name ? `, given to ${sticker.guest_name}` : ''}. Use a fresh sticker.`)
   }
   if (sticker.status === 'active') {
     const holder = await c.env.DB.prepare('SELECT name, public_code FROM registrations WHERE id = ?')
@@ -638,8 +639,8 @@ stickers.get('/stickers/lookup', async (c) => {
       voidReason: sticker.void_reason,
     },
     holder: holder ? personView(holder) : null,
-    guest: sticker.guest_name
-      ? { name: sticker.guest_name, phone: sticker.guest_phone, note: sticker.guest_note }
+    guest: sticker.guest_name !== null
+      ? { name: sticker.guest_name || null, phone: sticker.guest_phone, note: sticker.guest_note }
       : null,
     scans: scans.results.map((s) => ({
       night: s.night,
@@ -660,10 +661,12 @@ stickers.get('/stickers/lookup', async (c) => {
  * Activate a guest card: a sticker for somebody who never registered.
  *
  * For the committee's friends and family, handed a printed card at the gate.
- * Supervisors only, because a guest card is a free Star Night entry. The name
- * is required: it is what the guard reads off the screen, and what the
- * Arrivals sheet shows. Giving the same card to the same name twice is a
- * double tap, not an error.
+ * Core admins only, because a guest card is a free Star Night entry. The name
+ * is optional, at the committee's request: the gate shows it when given and
+ * "Guest" when not. An unnamed guest card is stored with an empty name, not a
+ * null one, because `guest_name IS NOT NULL` is what marks a sticker as a
+ * guest card everywhere else. Giving the same card to the same name twice is
+ * a double tap, not an error.
  */
 stickers.post('/stickers/guest', async (c) => {
   const staff = requireSupervisor(c)
@@ -672,22 +675,23 @@ stickers.post('/stickers/guest', async (c) => {
   const name = String(body.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 80)
   const phone = normalisePhone(String(body.phone ?? '')).slice(0, 15) || null
   const note = String(body.note ?? '').trim().replace(/\s+/g, ' ').slice(0, 120) || null
-  if (name.length < 2) {
-    throw new ApiError('validation_failed', 'Their name, as the guard will read it.', {
-      fields: { name: 'Their name.' },
+  if (name.length === 1) {
+    throw new ApiError('validation_failed', 'A name needs at least two letters, or leave it blank.', {
+      fields: { name: 'Two letters or more, or blank.' },
     })
   }
 
   const sticker = await stickerFrom(c.env, body.sticker)
   const label = serialLabel(sticker.serial)
 
-  if (sticker.status === 'active' && sticker.guest_name?.toLowerCase() === name.toLowerCase()) {
-    return c.json({ label, name: sticker.guest_name, already: true })
+  if (sticker.status === 'active' && sticker.guest_name !== null && sticker.guest_name.toLowerCase() === name.toLowerCase()) {
+    return c.json({ label, name: sticker.guest_name || null, already: true })
   }
   if (sticker.status === 'active') {
+    const holder = sticker.guest_name === null ? 'a registered delegate' : sticker.guest_name || 'an unnamed guest'
     throw new ApiError(
       'conflict',
-      `${label} is already active for ${sticker.guest_name ?? 'a registered delegate'}. Use a fresh card, or undo it from Look up first.`,
+      `${label} is already active for ${holder}. Use a fresh card, or undo it from Look up first.`,
     )
   }
   if (sticker.status === 'void') {
@@ -713,7 +717,7 @@ stickers.post('/stickers/guest', async (c) => {
   })
   await requestArrivalsSheetSync(c.env)
 
-  return c.json({ label, name, already: false }, 201)
+  return c.json({ label, name: name || null, already: false }, 201)
 })
 
 /**
@@ -855,7 +859,7 @@ stickers.get('/stickers/overview', async (c) => {
     // copied and cancel it before the next night.
     c.env.DB.prepare(
       `SELECT ss.sticker_code AS code, ss.result, ss.client_scanned_at AS at, gt.name AS gate, g.name AS guard,
-              s.serial, coalesce(r.name, s.guest_name) AS name, r.public_code,
+              s.serial, coalesce(r.name, nullif(s.guest_name, ''), CASE WHEN s.guest_name IS NOT NULL THEN 'Guest' END) AS name, r.public_code,
               f.client_scanned_at AS first_at, fg.name AS first_gate
          FROM sticker_scans ss
          LEFT JOIN gates gt ON gt.id = ss.gate_id
@@ -1091,8 +1095,10 @@ stickers.get('/gate/manifest', async (c) => {
          JOIN registration_tier t ON t.registration_id = s.registration_id
         WHERE s.status = 'active' AND t.tier = 1
        UNION ALL
-       -- Guest cards: no registration, so the guard sees the name and "Guest".
-       SELECT s.code, s.serial, s.guest_name, 'Guest', NULL
+       -- Guest cards: no registration, so the guard sees the name (or just
+       -- "Guest" for an unnamed card) and the word Guest.
+       SELECT s.code, s.serial, coalesce(nullif(s.guest_name, ''), 'Guest'),
+              CASE WHEN s.guest_name = '' THEN '' ELSE 'Guest' END, NULL
          FROM stickers s
         WHERE s.status = 'active' AND s.guest_name IS NOT NULL`,
     ).all<{ code: string; serial: number; name: string; college: string | null; gender: string | null }>(),
@@ -1188,8 +1194,8 @@ stickers.post('/gate/scan', async (c) => {
   }
 
   const sticker = { serial: row.serial, label: serialLabel(row.serial) }
-  const person = row.guest_name
-    ? { name: row.guest_name, college: 'Guest', gender: null, publicCode: null }
+  const person = row.guest_name !== null
+    ? { name: row.guest_name || 'Guest', college: row.guest_name ? 'Guest' : null, gender: null, publicCode: null }
     : row.name
       ? { name: row.name, college: row.college, gender: row.gender, publicCode: row.public_code }
       : null
@@ -1202,7 +1208,7 @@ stickers.post('/gate/scan', async (c) => {
   if (row.status === 'stock') return refuse('not_active')
   if (row.status === 'void') return refuse('void')
   // Refunded since it was activated. A guest card has no pass to lose.
-  if (!row.guest_name && row.tier !== 1) return refuse('no_festival_pass')
+  if (row.guest_name === null && row.tier !== 1) return refuse('no_festival_pass')
 
   if (prior?.result === 'ok') return finish('ok', { sticker, person })
 

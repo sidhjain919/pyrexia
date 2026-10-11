@@ -26,9 +26,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 /** Indian mobile numbers start 6–9 and run to ten digits. */
 const PHONE_RE = /^[6-9]\d{9}$/
 
-export const YEARS = [
-  '1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate', 'Not a student',
-] as const
+/**
+ * Years of study. There is no "not a student": the fest is for students of
+ * medical, nursing and allied health colleges, and the college ID uploaded at
+ * registration is checked against that. Registrations made while that option
+ * existed keep their answer; only new and edited ones are held to this list.
+ */
+export const YEARS = ['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate'] as const
 
 export const GENDERS = ['Female', 'Male', 'Other', 'Prefer not to say'] as const
 

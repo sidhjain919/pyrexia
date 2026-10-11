@@ -1291,7 +1291,7 @@ export type StickerLookup = {
   }
   holder: StickerPerson | null
   /** Set when the sticker is a guest card rather than somebody's Festival Pass. */
-  guest: { name: string; phone: string | null; note: string | null } | null
+  guest: { name: string | null; phone: string | null; note: string | null } | null
   scans: { night: string; result: string; admittedOffline: boolean; at: string; gate: string | null }[]
 }
 
@@ -1333,7 +1333,7 @@ export const stickerApi = {
 
   /** Supervisor: a guest card for somebody who never registered. */
   guest: (sticker: string, name: string, phone: string, note: string) =>
-    request<{ label: string; name: string; already: boolean }>('/api/stickers/guest', {
+    request<{ label: string; name: string | null; already: boolean }>('/api/stickers/guest', {
       method: 'POST',
       body: { sticker, name, phone, note },
       auth: true,

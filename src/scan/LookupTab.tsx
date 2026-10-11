@@ -58,7 +58,7 @@ export default function LookupTab({ supervisor }: { supervisor: boolean }) {
 
   const undo = async () => {
     if (!found) return
-    const who = found.holder?.name ?? found.guest?.name ?? 'its holder'
+    const who = found.holder?.name ?? found.guest?.name ?? (found.guest ? 'the guest' : 'its holder')
     if (!confirm(`Undo ${found.sticker.label}? It stops working for ${who} and goes back to unused, ready to activate for the right person.`)) return
     try {
       await stickerApi.deactivate(scanned)
@@ -120,7 +120,7 @@ export default function LookupTab({ supervisor }: { supervisor: boolean }) {
           {found.guest && (
             <Panel>
               <div className="font-log text-[0.66rem] uppercase tracking-wide2 text-parchment/60">Guest card</div>
-              <div className="mt-2 text-2xl leading-tight text-offwhite">{found.guest.name}</div>
+              <div className="mt-2 text-2xl leading-tight text-offwhite">{found.guest.name ?? 'Unnamed guest'}</div>
               <div className="mt-1 text-[0.9rem] text-parchment/70">
                 {[found.guest.note, found.guest.phone].filter(Boolean).join(' · ') || 'No details given'}
               </div>

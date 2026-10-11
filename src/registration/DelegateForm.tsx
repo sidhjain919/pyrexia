@@ -375,7 +375,7 @@ export default function DelegateForm() {
                   value={form.year}
                   onChange={(v) => set('year', v)}
                   invalid={!!errors.year}
-                  options={['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate', 'Not a student']}
+                  options={['1st', '2nd', '3rd', '4th', '5th', 'Intern', 'Postgraduate']}
                 />
               </Field>
 

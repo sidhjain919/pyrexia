@@ -326,7 +326,7 @@ const ARRIVAL_SQL = `
     JOIN registration_tier t ON t.registration_id = a.registration_id
     LEFT JOIN stickers s ON s.registration_id = a.registration_id AND s.status = 'active'
   UNION ALL
-  SELECT s.activated_at, 'guest', s.guest_name, NULL, NULL,
+  SELECT s.activated_at, 'guest', coalesce(nullif(s.guest_name, ''), 'Guest'), NULL, NULL,
          s.guest_phone, NULL, NULL, NULL, s.serial,
          s.guest_note, s.activated_by
     FROM stickers s
