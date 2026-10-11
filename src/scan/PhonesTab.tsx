@@ -159,7 +159,7 @@ export default function PhonesTab() {
                 <Check size={30} className="text-white" />
               </div>
               <div className="mt-3 text-lg text-offwhite">
-                {pairing.who} is {pairing.repair ? 'back on' : 'paired to'} {pairing.gate ?? 'the activation desk'}
+                {pairing.who} is {pairing.repair ? 'back on' : 'paired to'} {pairing.gate ?? 'the entry desk'}
               </div>
               <PrimaryButton className="mt-5" onClick={() => setPairing(null)}>Done</PrimaryButton>
             </div>
@@ -220,7 +220,7 @@ export default function PhonesTab() {
                   kind === k ? 'bg-gold/15 text-gold-bright ring-gold/70' : 'text-parchment/70 ring-gold/25'
                 }`}
               >
-                {k === 'gate' ? 'Gate phone (guard)' : 'Activation desk'}
+                {k === 'gate' ? 'Gate phone (guard)' : 'Entry desk'}
               </button>
             ))}
           </div>
@@ -266,7 +266,7 @@ export default function PhonesTab() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-offwhite">{d.name}</div>
                   <div className="text-[0.78rem] text-parchment/55">
-                    {d.kind === 'gate' ? d.gate : 'Activation desk'}
+                    {d.kind === 'gate' ? d.gate : 'Entry desk'}
                     {d.paired && ` · seen ${ago(d.lastSeenAt)}`}
                     {d.kind === 'gate' ? ` · ${d.admittedTonight} in tonight` : ''}
                   </div>
