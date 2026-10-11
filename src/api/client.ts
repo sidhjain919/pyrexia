@@ -1300,7 +1300,7 @@ export const stickerApi = {
     request<PairedDevice>('/api/devices/pair', { method: 'POST', body: { code } }),
 
   whoami: () =>
-    request<{ kind: 'supervisor' | 'desk'; label: string; supervisor: boolean; night: string }>(
+    request<{ kind: 'supervisor' | 'desk'; label: string; supervisor: boolean; guest: boolean; night: string }>(
       '/api/stickers/whoami',
       staffAuth(),
     ),
@@ -1442,6 +1442,30 @@ export async function waitForConfirmation(
  * and the URL is revoked by the caller when the viewer closes: the bytes live
  * in the tab for as long as somebody is looking and not a moment longer.
  */
+/**
+ * The college ID of somebody the desk just looked up, as a blob URL to show.
+ * A desk device sends its own token; a supervisor their session.
+ */
+export async function fetchStaffPhoto(registrationId: string): Promise<{ url: string; mime: string }> {
+  const device = getDevice()
+  const token = device?.kind === 'desk' ? device.token : getSession()
+  const res = await fetch(`${BASE}/api/stickers/photo/${encodeURIComponent(registrationId)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal: AbortSignal.timeout(DESK_TIMEOUT_MS),
+  })
+  if (!res.ok) {
+    let message = 'That photo could not be opened.'
+    try {
+      message = ((await res.json()) as { error?: { message?: string } }).error?.message ?? message
+    } catch {
+      /* not JSON */
+    }
+    throw new ApiError(message, res.status === 404 ? 'not_found' : 'internal', res.status)
+  }
+  const blob = await res.blob()
+  return { url: URL.createObjectURL(blob), mime: res.headers.get('Content-Type') ?? blob.type }
+}
+
 export async function fetchAdminDocument(id: string): Promise<{ url: string; mime: string }> {
   const token = getSession()
   const res = await fetch(`${BASE}/api/admin/documents/${id}`, {

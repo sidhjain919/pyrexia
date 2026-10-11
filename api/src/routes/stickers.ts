@@ -8,6 +8,7 @@
  *   POST /api/stickers/identify            find a registered person
  *   POST /api/stickers/checkin             mark them arrived at the fest
  *   GET  /api/stickers/arrivals            how many have arrived
+ *   GET  /api/stickers/photo/:registrationId   their college ID, for the desk to compare
  *   POST /api/stickers/activate            stick a sticker on them
  *   GET  /api/stickers/lookup              whose sticker is this, and where has it been
  *   POST /api/stickers/guest               supervisor: a guest card for somebody unregistered
@@ -48,6 +49,7 @@ import type { Env } from '../types.ts'
 import { ApiError, clientIp, readJson } from '../lib/http.ts'
 import { newId, newSecretToken, randomCode, sha256Hex } from '../lib/ids.ts'
 import { importVerifyKey } from '../lib/keys.ts'
+import { decryptBytes } from '../lib/crypto.ts'
 import { verifyPass } from '../lib/pass.ts'
 import { readToken, resolveSession } from '../lib/session.ts'
 import { festNight, readScan, scanMoment, serialLabel } from '../lib/stickers.ts'
@@ -63,6 +65,8 @@ type Staff = {
   /** What goes in `activated_by` and the audit log. */
   label: string
   supervisor: boolean
+  /** May hand out guest cards: a free Star Night entry, so core admins only. */
+  guest: boolean
 }
 
 type Device = { id: string; name: string; gateId: string | null; gateName: string | null }
@@ -72,6 +76,8 @@ type Vars = { staff: Staff; device: Device }
 export const stickers = new Hono<{ Bindings: Env; Variables: Vars }>()
 
 const SUPERVISING_ROLES = new Set(['superadmin', 'core', 'gate_supervisor'])
+/** Who may give a guest card. A gate supervisor runs the gates; they do not decide who gets in free. */
+const GUEST_ROLES = new Set(['superadmin', 'core'])
 
 /** Device tokens carry a prefix so they are never mistaken for a session. */
 const DEVICE_PREFIX = 'dvc_'
@@ -118,7 +124,7 @@ stickers.use('/stickers/*', async (c, next) => {
     const device = await deviceFor(c.env, token)
     // A gate phone has no business at the desk: it scans, and that is all.
     if (!device || device.gateId) throw new ApiError('unauthorised', 'This device is not paired for the desk.')
-    c.set('staff', { kind: 'desk', id: device.id, label: `desk:${device.name}`, supervisor: false })
+    c.set('staff', { kind: 'desk', id: device.id, label: `desk:${device.name}`, supervisor: false, guest: false })
     return next()
   }
 
@@ -135,7 +141,13 @@ stickers.use('/stickers/*', async (c, next) => {
     throw new ApiError('forbidden', 'You do not have access to this.')
   }
 
-  c.set('staff', { kind: 'supervisor', id: row.id, label: row.email, supervisor: true })
+  c.set('staff', {
+    kind: 'supervisor',
+    id: row.id,
+    label: row.email,
+    supervisor: true,
+    guest: GUEST_ROLES.has(row.role),
+  })
   await next()
 })
 
@@ -236,8 +248,19 @@ async function findPerson(env: Env, query: string): Promise<PersonRow | null> {
       .first<PersonRow>()
   }
 
+  // The card on a lanyard names its holder as well as the phone does, and on
+  // day three the phone is often dead. A card nobody holds yet cannot.
   if (scanned.kind === 'sticker') {
-    throw new ApiError('bad_request', "That's a sticker. Find the person first: scan their online pass, or type their email or mobile.")
+    const s = await env.DB.prepare('SELECT status, registration_id, guest_name FROM stickers WHERE code = ?')
+      .bind(scanned.code)
+      .first<{ status: string; registration_id: string | null; guest_name: string | null }>()
+    if (s?.status === 'active' && s.registration_id) {
+      return env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(s.registration_id).first<PersonRow>()
+    }
+    if (s?.status === 'active' && s.guest_name) {
+      throw new ApiError('bad_request', `That is ${s.guest_name}'s guest card. Guests are not checked in; they go straight to the gate.`)
+    }
+    throw new ApiError('bad_request', "That card is not anybody's yet. Find the person first: scan the pass QR from their email, or type their email or mobile.")
   }
 
   if (/^PYX26-[0-9A-Z]{6}$/i.test(q)) {
@@ -337,7 +360,7 @@ stickers.post('/devices/pair', async (c) => {
 
 stickers.get('/stickers/whoami', (c) => {
   const staff = c.get('staff')
-  return c.json({ kind: staff.kind, label: staff.label, supervisor: staff.supervisor, night: festNight() })
+  return c.json({ kind: staff.kind, label: staff.label, supervisor: staff.supervisor, guest: staff.guest, night: festNight() })
 })
 
 stickers.post('/stickers/identify', async (c) => {
@@ -407,6 +430,56 @@ async function arrivalCounts(env: Env) {
 }
 
 stickers.get('/stickers/arrivals', async (c) => c.json(await arrivalCounts(c.env)))
+
+/**
+ * The college ID they uploaded at registration, for the desk to hold up
+ * against the face in front of it.
+ *
+ * A pass QR is a picture anybody can be forwarded; this is what makes the
+ * check-in a check. Served one person at a time, only after the desk has
+ * looked that person up, decrypted here and logged like every other view.
+ * Never the government ID: the college card is what the desk needs, and the
+ * Aadhaar stays behind the admin dashboard.
+ */
+stickers.get('/stickers/photo/:registrationId', async (c) => {
+  const staff = c.get('staff')
+  const row = await c.env.DB.prepare(
+    `SELECT id, kind, r2_key, mime FROM documents
+      WHERE registration_id = ? AND purged_at IS NULL AND kind IN ('student_id', 'photo')
+      ORDER BY kind = 'student_id' DESC LIMIT 1`,
+  )
+    .bind(c.req.param('registrationId'))
+    .first<{ id: string; kind: string; r2_key: string; mime: string | null }>()
+  if (!row) throw new ApiError('not_found', 'No college ID on file. Ask to see the physical card.')
+
+  const object = await c.env.DOCS.get(row.r2_key)
+  if (!object) throw new ApiError('not_found', 'That file is no longer stored.')
+
+  let plain: ArrayBuffer
+  try {
+    plain = await decryptBytes(c.env.DOC_ENCRYPTION_KEY, await object.arrayBuffer())
+  } catch {
+    throw new ApiError('internal', 'That file could not be decrypted.')
+  }
+
+  await audit.record(c.env, {
+    ...actor(staff),
+    action: 'document.view',
+    entity: 'document',
+    entityId: row.id,
+    after: { registrationId: c.req.param('registrationId'), kind: row.kind, at: 'entry desk' },
+    ip: clientIp(c),
+  })
+
+  return new Response(plain, {
+    headers: {
+      'Content-Type': row.mime || 'application/octet-stream',
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'no-store, private',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
+})
 
 /**
  * Activate a sticker for a Festival Pass holder.
@@ -496,11 +569,9 @@ stickers.post('/stickers/activate', async (c) => {
   )
 
   let changed = 0
-  let arrived = false
   try {
     const results = await c.env.DB.batch(statements)
     changed = results[activation].meta.changes ?? 0
-    arrived = (results[results.length - 1].meta.changes ?? 0) === 1
   } catch (err) {
     // The one-sticker-per-person index lost a race with another counter.
     console.error('sticker activation failed', err)
@@ -528,7 +599,9 @@ stickers.post('/stickers/activate', async (c) => {
     after: { serial: sticker.serial, registrationId: person.id, publicCode: person.public_code },
     ip: clientIp(c),
   })
-  if (arrived) await requestArrivalsSheetSync(c.env)
+  // The sheet shows the card number beside the name, so it changes even when
+  // they were checked in before. Unchanged content is skipped by hash anyway.
+  await requestArrivalsSheetSync(c.env)
 
   const updated = await c.env.DB.prepare(`${PERSON_SQL} WHERE r.id = ?`).bind(person.id).first<PersonRow>()
   return c.json({ person: personView(updated ?? person), already: false, replaced: person.sticker_code ? serialLabel(person.sticker_serial ?? 0) : null }, 201)
@@ -594,6 +667,7 @@ stickers.get('/stickers/lookup', async (c) => {
  */
 stickers.post('/stickers/guest', async (c) => {
   const staff = requireSupervisor(c)
+  if (!staff.guest) throw new ApiError('forbidden', 'Only a core admin can give out guest cards.')
   const body = (await readJson(c)) as Record<string, unknown>
   const name = String(body.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 80)
   const phone = normalisePhone(String(body.phone ?? '')).slice(0, 15) || null
@@ -661,6 +735,19 @@ stickers.post('/stickers/deactivate', async (c) => {
     throw new ApiError('conflict', `${label} was cancelled, not activated. A cancelled sticker stays cancelled.`)
   }
 
+  // One admission per card per night is enforced on the card, not the person.
+  // Reusing a card that already went through a gate tonight would have its
+  // next holder refused as a re-entry, so it is not reused tonight.
+  const used = await c.env.DB.prepare(
+    `SELECT 1 AS used FROM sticker_scans WHERE sticker_code = ? AND night = ? AND ${LET_IN} LIMIT 1`,
+  ).bind(sticker.code, festNight()).first<{ used: number }>()
+  if (used) {
+    throw new ApiError(
+      'conflict',
+      `${label} already went through a gate tonight, so it cannot be reused tonight. Cancel it instead and give a fresh card.`,
+    )
+  }
+
   const res = await c.env.DB.prepare(
     `UPDATE stickers SET status = 'stock', registration_id = NULL, guest_name = NULL, guest_phone = NULL,
             guest_note = NULL, activated_at = NULL, activated_by = NULL
@@ -680,7 +767,7 @@ stickers.post('/stickers/deactivate', async (c) => {
     },
     ip: clientIp(c),
   })
-  if (sticker.guest_name) await requestArrivalsSheetSync(c.env)
+  await requestArrivalsSheetSync(c.env)
 
   return c.json({ label, changed: (res.meta.changes ?? 0) === 1 })
 })

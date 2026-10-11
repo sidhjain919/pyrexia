@@ -28,7 +28,7 @@ import { Panel, TextEntry } from '../scan/ui'
  * `?pair=CODE` and pairs on the spot.
  */
 
-type Who = { kind: 'supervisor' | 'desk'; label: string; supervisor: boolean }
+type Who = { kind: 'supervisor' | 'desk'; label: string; supervisor: boolean; guest: boolean }
 type Tab = 'checkin' | 'activate' | 'guest' | 'lookup' | 'phones' | 'tonight'
 
 const TAB_KEY = 'pyrexia.scan.tab'
@@ -176,7 +176,7 @@ export default function Scan() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'checkin', label: 'Check in' },
     { id: 'activate', label: 'Sticker' },
-    ...(who.supervisor ? [{ id: 'guest' as const, label: 'Guest' }] : []),
+    ...(who.guest ? [{ id: 'guest' as const, label: 'Guest' }] : []),
     { id: 'lookup', label: 'Look up' },
     ...(who.supervisor
       ? [
