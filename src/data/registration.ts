@@ -45,11 +45,11 @@ export const BASIC_AMOUNT = 500
 /**
  * Rupees, charged *on top of* Basic Registration. Covers the full programme.
  *
- * Was 2200 while early bird was running. Display only: the price actually
+ * Was 2200 while early bird was running, then 2400. Display only: the price actually
  * charged is the `delegate` row in the `products` table, and this has to be
  * kept in step with it.
  */
-export const DELEGATE_ADDON = 2400
+export const DELEGATE_ADDON = 2700
 
 /**
  * The payment gateway's cut, added on top of every amount on this page.
@@ -83,7 +83,7 @@ export type PassTier = {
 /**
  * Two tiers, and the second contains the first:
  *  - Basic Registration (BR): campus entry, and the right to compete.
- *  - Festival Pass: BR plus a ₹2400 add-on covering the whole programme.
+ *  - Festival Pass: BR plus a ₹2700 add-on covering the whole programme.
  * Nobody buys the Festival Pass alone, so its `amount` is the full BR + add-on.
  *
  * The wording across every surface describes levels of *festival access*, not
