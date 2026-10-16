@@ -857,5 +857,102 @@ export function Recent({ recent }: { recent: AdminStats['recent'] }) {
   )
 }
 
+/* ------------------------------------------------------------------ *
+ * Money by day
+ * ------------------------------------------------------------------ */
+
+const FEST_DAYS = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16']
+
+export function MoneyByDay({ days }: { days: AdminStats['moneyDaily'] }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? days : days.slice(0, 14)
+  const today = istToday()
+
+  const sum = (k: Exclude<keyof AdminStats['moneyDaily'][number], 'day'>) => days.reduce((s, d) => s + d[k], 0)
+  const totals = {
+    payments: sum('payments'), basicPaise: sum('basicPaise'), festivalPaise: sum('festivalPaise'),
+    eventsPaise: sum('eventsPaise'), accommodationPaise: sum('accommodationPaise'), gatewayPaise: sum('gatewayPaise'),
+    totalPaise: sum('totalPaise'), onlinePaise: sum('onlinePaise'), cashPaise: sum('cashPaise'), upiPaise: sum('upiPaise'),
+  }
+
+  // Zero reads as a dash so the columns that did move on a day stand out.
+  const money = (p: number) => (p === 0 ? <span className="ink-3">–</span> : inr(p))
+  const cells = (d: typeof totals) => (
+    <>
+      <td className="n num">{d.payments}</td>
+      <td className="n num">{money(d.basicPaise)}</td>
+      <td className="n num">{money(d.festivalPaise)}</td>
+      <td className="n num">{money(d.eventsPaise)}</td>
+      <td className="n num">{money(d.accommodationPaise)}</td>
+      <td className="n num">{money(d.gatewayPaise)}</td>
+      <td className="n num font-semibold" style={{ color: 'var(--cs-ink)' }}>{money(d.totalPaise)}</td>
+      <td className="n num">{money(d.onlinePaise)}</td>
+      <td className="n num">{money(d.cashPaise)}</td>
+      <td className="n num">{money(d.upiPaise)}</td>
+    </>
+  )
+
+  return (
+    <Card
+      title="Money by day"
+      definition="What each day collected (IST), by what it paid for and how it came in. Both groups add up to the day's total. Refunded payments are left out."
+    >
+      {days.length === 0 ? (
+        <p className="ink-3 text-[0.82rem]">Nothing yet. The first payment will appear here.</p>
+      ) : (
+        <>
+          <div className="-mx-1 overflow-x-auto">
+            <table className="data min-w-[58rem]">
+              <thead>
+                <tr>
+                  <th />
+                  <th />
+                  <th colSpan={5} className="text-center">Paid for</th>
+                  <th />
+                  <th colSpan={3} className="text-center">Came in by</th>
+                </tr>
+                <tr>
+                  {['Day', 'Payments', 'Basic', 'Festival Pass', 'Events', 'Stay', 'Gateway fee', 'Total', 'Online', 'Desk cash', 'Desk UPI'].map((h, i) => (
+                    <th key={h} className={i > 0 ? 'n' : ''}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ background: 'rgba(230, 194, 94, 0.06)' }}>
+                  <td className="font-semibold" style={{ color: 'var(--cs-ink)' }}>All days</td>
+                  {cells(totals)}
+                </tr>
+                {shown.map((d) => {
+                  const fest = FEST_DAYS.indexOf(d.day)
+                  return (
+                    <tr key={d.day}>
+                      <td style={{ color: 'var(--cs-ink)' }}>
+                        {dayLabel(d.day)}
+                        {(fest >= 0 || d.day === today) && (
+                          <span className="ink-3 ml-2 text-[0.72rem]">
+                            {[fest >= 0 ? `Fest day ${fest + 1}` : '', d.day === today ? 'Today' : ''].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                      </td>
+                      {cells(d)}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {days.length > 14 && (
+            <div className="mt-3 flex justify-center">
+              <button type="button" onClick={() => setAll((v) => !v)} className="ghost !py-1 !text-[0.75rem]">
+                {all ? 'Show the last 14 days' : `Show all ${days.length} days`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
 /** Exported for the axis helpers used by the page header. */
 export { istToday, inrShort }

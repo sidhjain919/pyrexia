@@ -17,6 +17,7 @@ import {
   HourChart,
   KpiStrip,
   Momentum,
+  MoneyByDay,
   Pace,
   Payments,
   Recent,
@@ -272,6 +273,9 @@ export default function Admin() {
               <div className="lg:col-span-3"><Hero stats={stats} /></div>
               <div className="lg:col-span-2"><Composition stats={stats} /></div>
             </div>
+
+            {/* The same money, a day at a time: what each day of the fest took in. */}
+            <div className="mt-4"><MoneyByDay days={stats.moneyDaily ?? []} /></div>
 
             {/* The headline counts. */}
             <div className="mt-4">

@@ -43,6 +43,20 @@ export type AdminStats = {
     gatewayPaise: number
   }
   revenueDaily: { day: string; paise: number }[]
+  /** Every IST day with a payment, newest first. Purposes and channels each sum to totalPaise. */
+  moneyDaily: {
+    day: string
+    payments: number
+    basicPaise: number
+    festivalPaise: number
+    eventsPaise: number
+    accommodationPaise: number
+    gatewayPaise: number
+    totalPaise: number
+    onlinePaise: number
+    cashPaise: number
+    upiPaise: number
+  }[]
 
   accounts: number
   accountsToday: number

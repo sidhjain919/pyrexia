@@ -28,6 +28,7 @@ import {
 import { readToken, resolveSession } from '../lib/session.ts'
 import { DESK_AGENTS } from './desk.ts'
 import * as audit from '../lib/audit.ts'
+import { moneyByDay } from '../lib/money-by-day.ts'
 
 type Admin = { id: string; email: string; role: string; registrationId: string }
 
@@ -236,6 +237,27 @@ admin.get('/admin/stats', async (c) => {
     products: string | null
   }>()
 
+  // Every paid order, for the money-by-day table. Grouped in JS rather than SQL
+  // because a registration order can carry Basic and the Festival Pass at once,
+  // and what it collected has to be split between them by their line items.
+  const { results: paidOrders } = await db.prepare(
+    `SELECT date(o.paid_at, ${IST}) AS day, o.kind, o.method, o.amount_paise, o.convenience_paise,
+            o.event_entry_id, o.accommodation_booking_id,
+            (SELECT group_concat(i.product_id || ':' || i.amount_paise) FROM order_items i
+              WHERE i.order_id = o.id) AS items
+       FROM orders o
+      WHERE o.status = 'paid' AND o.paid_at IS NOT NULL`,
+  ).all<{
+    day: string
+    kind: string
+    method: string | null
+    amount_paise: number
+    convenience_paise: number
+    event_entry_id: string | null
+    accommodation_booking_id: string | null
+    items: string | null
+  }>()
+
   const t = totals ?? {}
   const n = (k: string) => Number(t[k] ?? 0)
   const registered = n('basic')
@@ -255,6 +277,7 @@ admin.get('/admin/stats', async (c) => {
       gatewayPaise: n('gateway_paise'),
     },
     revenueDaily,
+    moneyDaily: moneyByDay(paidOrders),
 
     // People. `registered` means holds Basic Registration, the same basis as
     // the People table's flag, so the headline and the list never disagree.
